@@ -108,7 +108,8 @@ let STATE = {
   aiLoading: false,
   aiStatus: null,
   aiError: null,
-  pendingPreds: {},   // local unsaved predictions
+  pendingPreds: {},      // local unsaved group predictions
+  pendingPodium: null,   // local podium being edited [p1, p2, p3]
 };
 
 function setState(patch) {
@@ -372,25 +373,28 @@ function renderGroupTab() {
 }
 
 function renderPodiumTab() {
-  const { players, user } = STATE;
+  const { players, user, pendingPodium, savingPodium } = STATE;
   const me = players.find(p => p.nombre === user);
-  const myPodium = me?.podium || null;
+  const savedPodium = me?.podium || null;
+  // Use pendingPodium while editing, fall back to saved
+  const formPodium = pendingPodium || savedPodium || ["","",""];
+  const isSaved = savedPodium && !pendingPodium;
 
-  const podiumPreview = myPodium ? `
+  const podiumPreview = savedPodium && !pendingPodium ? `
     <div style="background:#eff6ff;border-radius:.5rem;padding:.75rem;margin-bottom:1rem;display:flex;gap:.5rem">
-      ${myPodium.map((t,i)=>`<div style="text-align:center;flex:1"><p style="font-size:1.25rem;margin:0">${["🥇","🥈","🥉"][i]}</p><p style="font-size:.75rem;margin:0">${fl(t)}</p><p style="font-size:.65rem;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis">${t}</p></div>`).join("")}
+      ${savedPodium.map((t,i)=>`<div style="text-align:center;flex:1"><p style="font-size:1.25rem;margin:0">${["🥇","🥈","🥉"][i]}</p><p style="font-size:.75rem;margin:0">${fl(t)}</p><p style="font-size:.65rem;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis">${t}</p></div>`).join("")}
     </div>` : "";
 
   const selStyle = "width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.5rem .75rem;font-size:.85rem;font-weight:500;outline:none;box-sizing:border-box";
-  const used = myPodium ? [...myPodium] : ["","",""];
+  const used = formPodium.filter(Boolean);
 
   const podiumForm = [["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
-    const avail = ALL_TEAMS.filter(t => !used.includes(t) || t === used[idx]);
+    const avail = ALL_TEAMS.filter(t => !used.includes(t) || t === formPodium[idx]);
     return `<div>
       <label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;margin-bottom:.25rem">${label}</label>
       <select onchange="setPodiumPos(${idx}, this.value)" style="${selStyle}">
         <option value="">— Selecciona —</option>
-        ${avail.map(t=>`<option value="${t}" ${used[idx]===t?'selected':''}>${fl(t)} ${t}</option>`).join("")}
+        ${avail.map(t=>`<option value="${t}" ${formPodium[idx]===t?'selected':''}>${fl(t)} ${t}</option>`).join("")}
       </select>
     </div>`;
   }).join("");
@@ -410,7 +414,11 @@ function renderPodiumTab() {
     <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
     ${podiumPreview}
     <div style="display:flex;flex-direction:column;gap:.75rem">${podiumForm}</div>
-    ${STATE.savingPodium ? '<p style="text-align:center;font-size:.75rem;color:#3b82f6;margin-top:.5rem">Guardando...</p>' : myPodium ? '<p style="text-align:center;font-size:.8rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pódium guardado</p>' : ''}
+    ${pendingPodium && pendingPodium.filter(Boolean).length === 3
+      ? `<button onclick="doSavePodium()" style="width:100%;margin-top:.75rem;padding:.65rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${savingPodium?'#9ca3af':'#16a34a'}">${savingPodium?'Guardando...':'💾 GUARDAR PÓDIUM'}</button>`
+      : isSaved ? '<p style="text-align:center;font-size:.8rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pódium guardado</p>'
+      : '<p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:.5rem">Selecciona los 3 equipos para guardar</p>'
+    }
   </div>
   <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
     <h3 style="font-weight:900;color:#111;margin:0 0 .75rem">Pódiums de todos (${players.length})</h3>
@@ -541,7 +549,7 @@ window.doLogin = function() {
   const v = document.getElementById("loginInput")?.value?.trim();
   if (v) handleLogin(v);
 };
-window.doLogout = function() { setState({ user: null, pendingPreds: {}, adminResults: {} }); };
+window.doLogout = function() { setState({ user: null, pendingPreds: {}, adminResults: {}, pendingPodium: null }); };
 window.setTab = function(t) { setState({ tab: t }); };
 window.setGroup = function(g) { setState({ activeGroup: g, pendingPreds: {}, adminResults: {} }); };
 window.tapAdmin = function() {
@@ -569,9 +577,18 @@ window.doSaveResults = async function() {
 };
 window.setPodiumPos = function(idx, val) {
   const me = STATE.players.find(p => p.nombre === STATE.user);
-  const current = me?.podium ? [...me.podium] : ["","",""];
-  current[idx] = val;
-  if (current[0] && current[1] && current[2]) savePodium(current);
+  const base = STATE.pendingPodium || (me?.podium ? [...me.podium] : ["","",""]);
+  const updated = [...base];
+  updated[idx] = val;
+  setState({ pendingPodium: updated });
+};
+window.doSavePodium = async function() {
+  if (STATE.savingPodium || !STATE.pendingPodium) return;
+  const podium = STATE.pendingPodium;
+  if (!podium[0] || !podium[1] || !podium[2]) return;
+  setState({ savingPodium: true });
+  await savePodium(podium);
+  setState({ savingPodium: false, pendingPodium: null });
 };
 window.doAIUpdate = function() { handleAIUpdate(); };
 

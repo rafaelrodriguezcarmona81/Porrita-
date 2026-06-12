@@ -108,7 +108,7 @@ let STATE = {
   aiLoading: false,
   aiStatus: null,
   aiError: null,
-  pendingPreds: {},      // local unsaved group predictions
+  adminGroup: "A",
   pendingPodium: null,   // local podium being edited [p1, p2, p3]
 };
 
@@ -546,7 +546,7 @@ function render() {
     grupos: renderGroupTab,
     podium: renderPodiumTab,
     marcador: renderRankingTab,
-    ia: renderIATab
+    admin: renderAdminTab
   }[STATE.tab]?.() || "";
 
   app.innerHTML = `
@@ -582,7 +582,7 @@ window.setAdminResult = function(key, val) {
   setState({ adminResults });
 };
 window.doSaveResults = async function() {
-  if (STATE.savingGroup || !STATE.adminResults) return;
+  if (STATE.savingGroup || !STATE.adminResults || Object.keys(STATE.adminResults).length === 0) return;
   setState({ savingGroup: true });
   await saveGroupResults(STATE.adminResults);
   setState({ savingGroup: false, adminResults: {} });
@@ -602,7 +602,8 @@ window.doSavePodium = async function() {
   await savePodium(podium);
   setState({ savingPodium: false, pendingPodium: null });
 };
-window.doAIUpdate = function() { handleAIUpdate(); };
+window.setAdminGroup = function(g) { setState({ adminGroup: g, adminResults: {} }); };
+window.doAIUpdate = function() {}; // disabled
 
 // Keyboard enter on login
 document.addEventListener("keydown", function(e) {

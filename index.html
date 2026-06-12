@@ -208,11 +208,14 @@ function renderGrupos(){
   }).join("");
 
   const myGroupKeys=matches.map(m=>g+"_"+m[0]+"_"+m[1]);
-  const myGroupSaved=myGroupKeys.every(k=>(me?.group_predictions||{})[k]);
+  const editableKeys=myGroupKeys.filter(k=>!S.groupResults[k]);
+  const editableSaved=editableKeys.length>0&&editableKeys.every(k=>(me?.group_predictions||{})[k]);
   const hasPendingInGroup=myGroupKeys.some(k=>S.pendingPreds[k]);
-  const saveBtn=(myGroupSaved&&!hasPendingInGroup)?
-    `<p style="text-align:center;font-size:.75rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pronósticos guardados</p>`:
-    `<button onclick="doSavePreds()" style="width:100%;padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingGroup?'#9ca3af':'#2563eb'};margin-top:.5rem">${S.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`;
+  const saveBtn=editableKeys.length===0
+    ?`<p style="text-align:center;font-size:.75rem;color:#6b7280;margin-top:.5rem">Todos los partidos tienen resultado oficial</p>`
+    :(editableSaved&&!hasPendingInGroup)
+    ?`<p style="text-align:center;font-size:.75rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pronósticos guardados</p>`
+    :`<button onclick="doSavePreds()" style="width:100%;padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingGroup?'#9ca3af':'#2563eb'};margin-top:.5rem">${S.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`;
 
   return`
   ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p style="font-size:.7rem;color:#6b7280;margin:0">1=Local · X=Empate · 2=Visitante · 1pt por acierto</p>`)}

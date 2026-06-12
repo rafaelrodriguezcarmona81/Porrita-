@@ -69,7 +69,8 @@ let S={
   activeGroup:"A", loading:true, loginBusy:false,
   savingGroup:false, savingPodium:false,
   pendingPreds:{}, pendingPodium:null,
-  adminGroup:"A", adminResults:{}, adminUnlocked:false, adminPwdError:false
+  adminGroup:"A", adminResults:{}, adminUnlocked:false, adminPwdError:false,
+  refreshing:false, rankChange:null, lastRank:null
 };
 function ss(patch){Object.assign(S,patch);render();}
 
@@ -84,8 +85,16 @@ async function loadData(){
     const players=Array.isArray(pls)?pls:[];
     let groupResults={};
     if(Array.isArray(res)&&res[0])groupResults=res[0].group_results||{};
-    ss({players,groupResults,loading:false});
-  }catch(e){console.error(e);ss({loading:false});}
+    // Track rank change
+    let rankChange=null,newRank=null;
+    if(S.user){
+      const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);
+      newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
+      if(newRank&&S.lastRank&&newRank!==S.lastRank){rankChange=S.lastRank-newRank;}
+    }
+    ss({players,groupResults,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
+  }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
 
 async function handleLogin(nombre){
@@ -154,6 +163,9 @@ function renderHeader(){
   const myPts=gPts(me?.group_predictions||{},S.groupResults);
   const rc=Object.keys(S.groupResults).length;
   const tabs=[["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
+  const rankBanner=S.rankChange!==null?`<div style="background:${S.rankChange>0?'#16a34a':'#dc2626'};text-align:center;padding:.35rem;font-size:.75rem;font-weight:700">
+    ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
+  </div>`:"";
   return`<div style="background:linear-gradient(90deg,#0a2240,#1a4a8a);color:white;position:sticky;top:0;z-index:50">
     <div style="max-width:600px;margin:0 auto;padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:.5rem">
@@ -163,8 +175,12 @@ function renderHeader(){
           <p style="font-size:.7rem;color:#93c5fd;margin:0">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
         </div>
       </div>
-      <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:#93c5fd;font-size:.75rem;font-weight:600">Salir</button>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <button onclick="doRefresh()" style="background:rgba(255,255,255,.15);border:none;cursor:pointer;color:white;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:.4rem">${S.refreshing?'⏳':'🔄'}</button>
+        <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:#93c5fd;font-size:.75rem;font-weight:600">Salir</button>
+      </div>
     </div>
+    ${rankBanner}
     <div style="display:flex;border-top:1px solid rgba(255,255,255,.15)">
       ${tabs.map(([id,label])=>`<button onclick="setTab('${id}')" style="flex:1;padding:.5rem .25rem;font-size:.7rem;font-weight:900;border:none;cursor:pointer;background:${S.tab===id?'white':'transparent'};color:${S.tab===id?'#1e3a8a':'#bfdbfe'}">${label}</button>`).join("")}
     </div>
@@ -182,10 +198,12 @@ function renderGrupos(){
   const groupBtns=Object.keys(GROUPS).map(gr=>{
     const keys=GM[gr].map(m=>gr+"_"+m[0]+"_"+m[1]);
     const withR=keys.filter(k=>S.groupResults[k]).length;
+    const pending=keys.length-withR;
     const isActive=gr===g;
     const isDone=withR===keys.length&&withR>0;
-    return`<button onclick="setGroup('${gr}')" style="padding:.5rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:none;cursor:pointer;position:relative;background:${isActive?'#2563eb':isDone?'#dcfce7':'white'};color:${isActive?'white':isDone?'#166534':'#374151'}">
-      ${gr}${isDone?'<span style="position:absolute;top:-4px;right:-4px;font-size:.6rem">✅</span>':withR>0?'<span style="position:absolute;top:-4px;right:-4px;font-size:.6rem">⚽</span>':''}
+    return`<button onclick="setGroup('${gr}')" style="padding:.4rem .2rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:none;cursor:pointer;position:relative;background:${isActive?'#2563eb':isDone?'#dcfce7':'white'};color:${isActive?'white':isDone?'#166534':'#374151'}">
+      <div>${gr}</div>
+      <div style="font-size:.55rem;font-weight:600;color:${isActive?'rgba(255,255,255,.8)':isDone?'#16a34a':'#9ca3af'}">${isDone?'✅':pending+"⏳"}</div>
     </button>`;
   }).join("");
 
@@ -225,7 +243,7 @@ function renderGrupos(){
     <div style="display:flex;flex-direction:column;gap:.4rem">${matchRows}</div>
     <div style="display:flex;justify-content:space-between;font-size:.65rem;color:#9ca3af;padding:.25rem .1rem;margin-top:.25rem"><span>${Object.keys(myPreds).filter(k=>k.startsWith(g)).length}/${matches.length} pronosticados</span><span>🟢=acierto · 🔴=fallo</span></div>
     ${saveBtn}`)}
-  <p style="text-align:center;font-size:.65rem;color:#9ca3af;margin:0">🔄 Se actualiza cada 30 segundos</p>`;
+  `;
 }
 
 // ─── RENDER: PÓDIUM ───────────────────────────────────────────────────────────
@@ -381,6 +399,7 @@ window.setAdminGroup=g=>ss({adminGroup:g,adminResults:{}});
 window.setAdminResult=(key,val)=>ss({adminResults:{...S.adminResults,[key]:val}});
 window.clearAdminResult=key=>ss({adminResults:{...S.adminResults,[key]:null}});
 window.doSaveResults=()=>{if(!S.savingGroup&&Object.keys(S.adminResults||{}).length>0)saveResults();};
+window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
 
 document.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!S.user)window.doLogin();
@@ -390,7 +409,7 @@ document.addEventListener("keydown",e=>{
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 render();
 loadData();
-setInterval(loadData,30000);
+
 </script>
 </body>
 </html>

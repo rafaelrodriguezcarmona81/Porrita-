@@ -109,6 +109,8 @@ let STATE = {
   aiStatus: null,
   aiError: null,
   adminGroup: "A",
+  adminUnlocked: false,
+  adminPwdError: false,
   pendingPodium: null,   // local podium being edited [p1, p2, p3]
 };
 
@@ -470,6 +472,20 @@ function renderRankingTab() {
 
 function renderAdminTab() {
   const { groupResults } = STATE;
+
+  // Password gate
+  if (!STATE.adminUnlocked) {
+    return `
+    <div style="background:white;border-radius:.75rem;padding:2rem;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center">
+      <div style="font-size:3rem;margin-bottom:.75rem">🔒</div>
+      <h2 style="font-weight:900;color:#111;margin:0 0 .25rem">Zona Admin</h2>
+      <p style="font-size:.8rem;color:#6b7280;margin:0 0 1.5rem">Introduce la clave para acceder</p>
+      <input id="adminPwdInput" type="password" style="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.75rem 1rem;font-size:1rem;font-weight:500;box-sizing:border-box;outline:none;text-align:center;letter-spacing:.2em" placeholder="••••" />
+      <button onclick="checkAdminPwd()" style="width:100%;margin-top:.75rem;padding:.75rem;border-radius:.5rem;font-weight:900;color:white;font-size:1rem;border:none;cursor:pointer;background:#dc2626">ENTRAR</button>
+      ${STATE.adminPwdError ? '<p style="color:#dc2626;font-size:.8rem;font-weight:700;margin-top:.5rem">❌ Clave incorrecta</p>' : ''}
+    </div>`;
+  }
+
   const resultCount = Object.keys(groupResults).length;
   const total = Object.values(GROUP_MATCHES).flat().length;
   const stats = [["1","Victorias local"],["X","Empates"],["2","Victorias visit."]].map(([v,l])=>
@@ -561,7 +577,7 @@ window.doLogin = function() {
   const v = document.getElementById("loginInput")?.value?.trim();
   if (v) handleLogin(v);
 };
-window.doLogout = function() { setState({ user: null, pendingPreds: {}, adminResults: {}, pendingPodium: null }); };
+window.doLogout = function() { setState({ user: null, pendingPreds: {}, adminResults: {}, pendingPodium: null, adminUnlocked: false, adminPwdError: false }); };
 window.setTab = function(t) { setState({ tab: t }); };
 window.setGroup = function(g) { setState({ activeGroup: g, pendingPreds: {}, adminResults: {} }); };
 window.tapAdmin = function() {
@@ -601,6 +617,14 @@ window.doSavePodium = async function() {
   setState({ savingPodium: true });
   await savePodium(podium);
   setState({ savingPodium: false, pendingPodium: null });
+};
+window.checkAdminPwd = function() {
+  const val = document.getElementById("adminPwdInput")?.value || "";
+  if (val === "S&R") {
+    setState({ adminUnlocked: true, adminPwdError: false });
+  } else {
+    setState({ adminPwdError: true });
+  }
 };
 window.setAdminGroup = function(g) { setState({ adminGroup: g, adminResults: {} }); };
 window.doAIUpdate = function() {}; // disabled

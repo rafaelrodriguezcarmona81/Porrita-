@@ -509,12 +509,14 @@ function renderAdminTab() {
   const matchRows = matches.map(m => {
     const key = activeG+"_"+m[0]+"_"+m[1];
     const current = groupResults[key];
-    const pending = (STATE.adminResults||{})[key];
-    const display = pending !== undefined ? pending : current;
-    return `<div style="display:flex;align-items:center;gap:.5rem;background:#fff9f0;border:1px solid #fed7aa;border-radius:.5rem;padding:.6rem">
+    const pendingVal = (STATE.adminResults||{})[key]; // undefined=untouched, null=cleared, "1"/"X"/"2"=set
+    const display = pendingVal !== undefined ? pendingVal : current;
+    const hasValue = !!display;
+    return `<div style="display:flex;align-items:center;gap:.4rem;background:${hasValue?'#fff9f0':'#f9fafb'};border:1px solid ${hasValue?'#fed7aa':'#e5e7eb'};border-radius:.5rem;padding:.6rem">
       <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
-      <div style="display:flex;gap:3px">
-        ${["1","X","2"].map(v=>`<button onclick="setAdminResult('${key}','${v}')" style="width:36px;height:36px;border-radius:.4rem;font-weight:900;font-size:.85rem;border:2px solid ${display===v?'#dc2626':'#e5e7eb'};cursor:pointer;background:${display===v?'#dc2626':'white'};color:${display===v?'white':'#9ca3af'}">${v}</button>`).join("")}
+      <div style="display:flex;gap:3px;align-items:center">
+        ${["1","X","2"].map(v=>`<button onclick="setAdminResult('${key}','${v}')" style="width:34px;height:34px;border-radius:.4rem;font-weight:900;font-size:.85rem;border:2px solid ${display===v?'#dc2626':'#e5e7eb'};cursor:pointer;background:${display===v?'#dc2626':'white'};color:${display===v?'white':'#9ca3af'}">${v}</button>`).join("")}
+        <button onclick="clearAdminResult('${key}')" title="Borrar resultado" style="width:28px;height:28px;border-radius:.4rem;font-size:.8rem;border:2px solid ${hasValue?'#fca5a5':'#e5e7eb'};cursor:pointer;background:${hasValue?'#fee2e2':'#f3f4f6'};color:${hasValue?'#dc2626':'#9ca3af'}">✕</button>
       </div>
       <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
     </div>`;
@@ -629,9 +631,10 @@ window.checkAdminPwd = function() {
 window.setAdminGroup = function(g) { setState({ adminGroup: g, adminResults: {} }); };
 window.doAIUpdate = function() {}; // disabled
 
-// Keyboard enter on login
+// Keyboard enter on login and admin password
 document.addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !STATE.user) window.doLogin();
+  if (e.key === "Enter" && STATE.tab === "admin" && !STATE.adminUnlocked) window.checkAdminPwd();
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────

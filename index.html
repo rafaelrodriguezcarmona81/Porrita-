@@ -262,21 +262,18 @@ function renderHeader() {
   const myPts = calcGroupPts(me?.group_predictions||{}, groupResults);
   const resultCount = Object.keys(groupResults).length;
   const total = Object.values(GROUP_MATCHES).flat().length;
-  const tabs = [["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["ia","🤖 IA"]];
+  const tabs = [["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
   return `
   <div style="background:linear-gradient(90deg,#0a2240,#1a4a8a);color:white;position:sticky;top:0;z-index:50">
     <div style="max-width:600px;margin:0 auto;padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:.5rem">
-        <button onclick="tapAdmin()" style="background:none;border:none;cursor:pointer;font-size:1.25rem;padding:0">⚽</button>
+        <span style="font-size:1.25rem">⚽</span>
         <div>
           <p style="font-weight:900;font-size:.85rem;margin:0">PORRA MUNDIAL 2026</p>
           <p style="font-size:.7rem;color:#93c5fd;margin:0">${user} · ${myPts} pts · ${resultCount}/${total} jugados</p>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:.5rem">
-        ${adminMode ? pill("ADMIN","yellow") : ""}
-        <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:#93c5fd;font-size:.75rem;font-weight:600">Salir</button>
-      </div>
+      <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:#93c5fd;font-size:.75rem;font-weight:600">Salir</button>
     </div>
     <div style="display:flex;border-top:1px solid rgba(255,255,255,.15)">
       ${tabs.map(([id,label])=>`
@@ -471,8 +468,8 @@ function renderRankingTab() {
   </div>`;
 }
 
-function renderIATab() {
-  const { groupResults, aiLoading, aiStatus, aiError, lastSummary, lastUpdated } = STATE;
+function renderAdminTab() {
+  const { groupResults } = STATE;
   const resultCount = Object.keys(groupResults).length;
   const total = Object.values(GROUP_MATCHES).flat().length;
   const stats = [["1","Victorias local"],["X","Empates"],["2","Victorias visit."]].map(([v,l])=>
@@ -482,38 +479,53 @@ function renderIATab() {
     </div>`
   ).join("");
 
-  return `
-  <div style="background:white;border-radius:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden">
-    <div style="padding:1rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-        <div>
-          <h3 style="font-weight:900;color:#111;margin:0 0 .1rem;display:flex;align-items:center;gap:.4rem">🤖 Actualización automática ${pill("IA","purple")}</h3>
-          <p style="font-size:.7rem;color:#6b7280;margin:0">Busca resultados reales del Mundial en internet</p>
-        </div>
-        <div style="text-align:right">
-          <p style="font-size:1.5rem;font-weight:900;margin:0">${resultCount}<span style="font-size:.8rem;color:#9ca3af">/${total}</span></p>
-          <p style="font-size:.65rem;color:#9ca3af;margin:0">resultados</p>
-        </div>
+  const groupButtons = Object.keys(GROUPS).map(g => {
+    const keys = GROUP_MATCHES[g].map(m => g+"_"+m[0]+"_"+m[1]);
+    const withR = keys.filter(k => groupResults[k]).length;
+    const done = withR === keys.length;
+    return `<button onclick="setAdminGroup('${g}')" style="padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:2px solid ${STATE.adminGroup===g?'#dc2626':'#e5e7eb'};cursor:pointer;background:${STATE.adminGroup===g?'#dc2626':done?'#dcfce7':'white'};color:${STATE.adminGroup===g?'white':done?'#166534':'#374151'};position:relative">
+      ${g} ${done?'✅':withR>0?`<span style="font-size:.6rem">${withR}/${keys.length}</span>`:''}
+    </button>`;
+  }).join("");
+
+  const activeG = STATE.adminGroup || "A";
+  const matches = GROUP_MATCHES[activeG];
+  const matchRows = matches.map(m => {
+    const key = activeG+"_"+m[0]+"_"+m[1];
+    const current = groupResults[key];
+    const pending = (STATE.adminResults||{})[key];
+    const display = pending !== undefined ? pending : current;
+    return `<div style="display:flex;align-items:center;gap:.5rem;background:#fff9f0;border:1px solid #fed7aa;border-radius:.5rem;padding:.6rem">
+      <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
+      <div style="display:flex;gap:3px">
+        ${["1","X","2"].map(v=>`<button onclick="setAdminResult('${key}','${v}')" style="width:36px;height:36px;border-radius:.4rem;font-weight:900;font-size:.85rem;border:2px solid ${display===v?'#dc2626':'#e5e7eb'};cursor:pointer;background:${display===v?'#dc2626':'white'};color:${display===v?'white':'#9ca3af'}">${v}</button>`).join("")}
       </div>
-      <button onclick="doAIUpdate()" ${aiLoading?'disabled':''} style="width:100%;padding:.75rem;border-radius:.75rem;font-weight:900;color:white;font-size:.85rem;border:none;cursor:${aiLoading?'not-allowed':'pointer'};background:${aiLoading?'#9ca3af':'linear-gradient(135deg,#7c3aed,#4f46e5)'}">
-        ${aiLoading ? '⏳ Buscando en internet...' : '🔍 Actualizar resultados ahora'}
-      </button>
-      ${aiStatus ? `<div style="margin-top:.75rem;background:#f0fdf4;border:1px solid #86efac;border-radius:.5rem;padding:.75rem;font-size:.75rem;color:#166534;font-weight:500">${aiStatus}</div>` : ""}
-      ${aiError ? `<div style="margin-top:.75rem;background:#fef2f2;border:1px solid #fca5a5;border-radius:.5rem;padding:.75rem;font-size:.75rem;color:#991b1b">⚠️ ${aiError}</div>` : ""}
+      <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
+    </div>`;
+  }).join("");
+
+  const hasPending = STATE.adminResults && Object.keys(STATE.adminResults).length > 0;
+
+  return `
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+      <h2 style="font-weight:900;color:#111;margin:0">🔧 Introducir Resultados</h2>
+      ${pill(resultCount+"/"+total+" jugados", resultCount===total?"green":"yellow")}
     </div>
-    <div style="background:#f9fafb;border-top:1px solid #f3f4f6;padding:.5rem 1rem">
-      <p style="font-size:.65rem;color:#9ca3af;margin:0">💡 Cualquier participante puede actualizar. Modo admin manual: pulsa ⚽ × 5</p>
-    </div>
+    <p style="font-size:.7rem;color:#6b7280;margin:0 0 .75rem">Selecciona el grupo y marca el resultado de cada partido</p>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:.75rem">${groupButtons}</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem">${matchRows}</div>
+    <button onclick="doSaveResults()" ${!hasPending||STATE.savingGroup?'disabled':''} style="width:100%;padding:.7rem;border-radius:.5rem;font-weight:900;font-size:.9rem;color:white;border:none;cursor:${hasPending&&!STATE.savingGroup?'pointer':'not-allowed'};background:${hasPending&&!STATE.savingGroup?'#dc2626':'#9ca3af'}">
+      ${STATE.savingGroup ? "Guardando..." : hasPending ? "💾 GUARDAR RESULTADOS" : "Selecciona resultados para guardar"}
+    </button>
   </div>
-  ${lastSummary ? `<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
-    <h3 style="font-weight:900;color:#111;margin:0 0 .5rem">📰 Último informe</h3>
-    <p style="font-size:.85rem;color:#4b5563;margin:0">${lastSummary}</p>
-    ${lastUpdated ? `<p style="font-size:.65rem;color:#9ca3af;margin:.5rem 0 0">Actualizado: ${new Date(lastUpdated).toLocaleString("es-ES")}</p>` : ""}
-  </div>` : ""}
   ${resultCount > 0 ? `<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
-    <h3 style="font-weight:900;color:#111;margin:0 0 .75rem">Estadísticas de resultados</h3>
+    <h3 style="font-weight:900;color:#111;margin:0 0 .75rem">📊 Estadísticas</h3>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">${stats}</div>
-  </div>` : ""}`;
+  </div>` : ""}
+  <div style="background:#fef9c3;border:1px solid #fde047;border-radius:.75rem;padding:.75rem">
+    <p style="font-size:.75rem;color:#854d0e;margin:0;font-weight:500">⚠️ Esta pestaña es solo para el administrador de la porra. Los resultados que introduzcas afectan a la puntuación de todos los participantes.</p>
+  </div>`;
 }
 
 // ─── MAIN RENDER ──────────────────────────────────────────────────────────────

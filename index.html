@@ -119,7 +119,7 @@ let S={
   savingGroup:false, savingPodium:false,
   pendingPreds:{}, pendingPodium:null,
   adminGroup:"A", adminResults:{}, adminUnlocked:false, adminPwdError:false,
-  refreshing:false, rankChange:null, lastRank:null
+  refreshing:false, rankChange:null, lastRank:null, lastUpdated:null
 };
 function ss(patch){Object.assign(S,patch);render();}
 
@@ -130,10 +130,13 @@ function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 async function loadData(){
   try{
-    const[pls,res]=await Promise.all([sbGet("porra_jugadores","select=*"),sbGet("porra_resultados","select=*&id=eq.1")]);
+    // Pronósticos desde Supabase, resultados desde results.json estático
+    const[pls,resJson]=await Promise.all([
+      sbGet("porra_jugadores","select=*"),
+      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{}}))
+    ]);
     const players=Array.isArray(pls)?pls:[];
-    let groupResults={};
-    if(Array.isArray(res)&&res[0])groupResults=res[0].group_results||{};
+    const groupResults=resJson.results||{};
     // Track rank change
     let rankChange=null,newRank=null;
     if(S.user){
@@ -141,7 +144,8 @@ async function loadData(){
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank){rankChange=S.lastRank-newRank;}
     }
-    ss({players,groupResults,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    const lastUpdated=resJson.updated||null;
+    ss({players,groupResults,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null,lastUpdated});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -172,11 +176,9 @@ async function savePodium(podium){
 }
 
 async function saveResults(){
-  const merged={...S.groupResults};
-  for(const[k,v]of Object.entries(S.adminResults)){if(v===null)delete merged[k];else merged[k]=v;}
-  ss({savingGroup:true});
-  await sbPatch("porra_resultados","id=eq.1",{group_results:merged,last_updated:new Date().toISOString()});
-  await loadData();
+  // Results now come from results.json updated by GitHub Actions
+  // This function is kept for manual override via admin if needed
+  console.log("Results are managed automatically via GitHub Actions");
   ss({savingGroup:false,adminResults:{}});
 }
 
@@ -221,7 +223,7 @@ function renderHeader(){
         <span style="font-size:1.25rem">⚽</span>
         <div>
           <p style="font-weight:900;font-size:.85rem;margin:0">PORRA MUNDIAL 2026</p>
-          <p style="font-size:.7rem;color:#93c5fd;margin:0">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
+          <p style="font-size:.7rem;color:#93c5fd;margin:0">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados${S.lastUpdated?" · 🕐"+new Date(S.lastUpdated).toLocaleDateString("es-ES"):""}</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:.5rem">

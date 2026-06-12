@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Porra Mundial 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+<div id="app"></div>
+
+<script>
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+const SB_URL = "https://qkxenqexxdvpjnagsudk.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFreGVucWV4eGR2cGpuYWdzdWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzI4ODksImV4cCI6MjA5Njc0ODg4OX0.hSo4lkK_-RjDWVPQKHbVfM0AfVlDPQxMZbTtvyLHiik";
+const SB_HEADERS = {
+  "Content-Type": "application/json",
+  "apikey": SB_KEY,
+  "Authorization": "Bearer " + SB_KEY
+};
+async function sbGet(table, params) {
+  const r = await fetch(SB_URL + "/rest/v1/" + table + "?" + (params||""), { headers: SB_HEADERS });
+  return r.json();
+}
+async function sbUpsert(table, body) {
+  const r = await fetch(SB_URL + "/rest/v1/" + table, {
+    method: "POST",
+    headers: { ...SB_HEADERS, "Prefer": "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function sbPatch(table, params, body) {
+  const r = await fetch(SB_URL + "/rest/v1/" + table + "?" + params, {
+    method: "PATCH",
+    headers: { ...SB_HEADERS, "Prefer": "return=representation" },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const GROUPS = {
+  A: ["México","Sudáfrica","Corea del Sur","Rep. Checa"],
+  B: ["Canadá","Bosnia y Herc.","Catar","Suiza"],
+  C: ["Brasil","Marruecos","Haití","Escocia"],
+  D: ["Estados Unidos","Paraguay","Australia","Turquía"],
+  E: ["Alemania","Curazao","Costa de Marfil","Ecuador"],
+  F: ["Países Bajos","Japón","Suecia","Túnez"],
+  G: ["Bélgica","Egipto","Irán","Nueva Zelanda"],
+  H: ["España","Cabo Verde","Arabia Saudí","Uruguay"],
+  I: ["Francia","Senegal","Irak","Noruega"],
+  J: ["Argentina","Argelia","Austria","Jordania"],
+  K: ["Portugal","RD Congo","Uzbekistán","Colombia"],
+  L: ["Inglaterra","Croacia","Ghana","Panamá"]
+};
+const GROUP_MATCHES = {
+  A:[["México","Sudáfrica"],["Corea del Sur","Rep. Checa"],["Rep. Checa","Sudáfrica"],["México","Corea del Sur"],["Rep. Checa","México"],["Sudáfrica","Corea del Sur"]],
+  B:[["Canadá","Bosnia y Herc."],["Catar","Suiza"],["Suiza","Bosnia y Herc."],["Canadá","Catar"],["Suiza","Canadá"],["Bosnia y Herc.","Catar"]],
+  C:[["Brasil","Marruecos"],["Haití","Escocia"],["Escocia","Marruecos"],["Brasil","Haití"],["Escocia","Brasil"],["Marruecos","Haití"]],
+  D:[["Estados Unidos","Paraguay"],["Australia","Turquía"],["Estados Unidos","Australia"],["Turquía","Paraguay"],["Turquía","Estados Unidos"],["Paraguay","Australia"]],
+  E:[["Alemania","Curazao"],["Costa de Marfil","Ecuador"],["Alemania","Costa de Marfil"],["Ecuador","Curazao"],["Curazao","Costa de Marfil"],["Ecuador","Alemania"]],
+  F:[["Países Bajos","Japón"],["Suecia","Túnez"],["Países Bajos","Suecia"],["Túnez","Japón"],["Japón","Suecia"],["Túnez","Países Bajos"]],
+  G:[["Bélgica","Egipto"],["Irán","Nueva Zelanda"],["Bélgica","Irán"],["Nueva Zelanda","Egipto"],["Egipto","Irán"],["Nueva Zelanda","Bélgica"]],
+  H:[["España","Cabo Verde"],["Arabia Saudí","Uruguay"],["España","Arabia Saudí"],["Uruguay","Cabo Verde"],["Cabo Verde","Arabia Saudí"],["Uruguay","España"]],
+  I:[["Francia","Senegal"],["Irak","Noruega"],["Francia","Irak"],["Noruega","Senegal"],["Noruega","Francia"],["Senegal","Irak"]],
+  J:[["Argentina","Argelia"],["Austria","Jordania"],["Argentina","Austria"],["Jordania","Argelia"],["Argelia","Austria"],["Jordania","Argentina"]],
+  K:[["Portugal","RD Congo"],["Uzbekistán","Colombia"],["Portugal","Uzbekistán"],["Colombia","RD Congo"],["Colombia","Portugal"],["RD Congo","Uzbekistán"]],
+  L:[["Inglaterra","Croacia"],["Ghana","Panamá"],["Inglaterra","Ghana"],["Panamá","Croacia"],["Panamá","Inglaterra"],["Croacia","Ghana"]]
+};
+const ALL_TEAMS = Object.values(GROUPS).flat();
+const FLAGS = {
+  "México":"🇲🇽","Sudáfrica":"🇿🇦","Corea del Sur":"🇰🇷","Rep. Checa":"🇨🇿",
+  "Canadá":"🇨🇦","Bosnia y Herc.":"🇧🇦","Catar":"🇶🇦","Suiza":"🇨🇭",
+  "Brasil":"🇧🇷","Marruecos":"🇲🇦","Haití":"🇭🇹","Escocia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "Estados Unidos":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turquía":"🇹🇷",
+  "Alemania":"🇩🇪","Curazao":"🇨🇼","Costa de Marfil":"🇨🇮","Ecuador":"🇪🇨",
+  "Países Bajos":"🇳🇱","Japón":"🇯🇵","Suecia":"🇸🇪","Túnez":"🇹🇳",
+  "Bélgica":"🇧🇪","Egipto":"🇪🇬","Irán":"🇮🇷","Nueva Zelanda":"🇳🇿",
+  "España":"🇪🇸","Cabo Verde":"🇨🇻","Arabia Saudí":"🇸🇦","Uruguay":"🇺🇾",
+  "Francia":"🇫🇷","Senegal":"🇸🇳","Irak":"🇮🇶","Noruega":"🇳🇴",
+  "Argentina":"🇦🇷","Argelia":"🇩🇿","Austria":"🇦🇹","Jordania":"🇯🇴",
+  "Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbekistán":"🇺🇿","Colombia":"🇨🇴",
+  "Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croacia":"🇭🇷","Ghana":"🇬🇭","Panamá":"🇵🇦"
+};
+const fl = t => FLAGS[t] || "🏳️";
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let STATE = {
+  user: null,
+  players: [],
+  groupResults: {},
+  lastSummary: "",
+  lastUpdated: null,
+  tab: "grupos",
+  activeGroup: "A",
+  adminMode: false,
+  adminTap: 0,
+  loading: true,
+  loginBusy: false,
+  savingGroup: false,
+  savingPodium: false,
+  aiLoading: false,
+  aiStatus: null,
+  aiError: null,
+  pendingPreds: {},   // local unsaved predictions
+};
+
+function setState(patch) {
+  Object.assign(STATE, patch);
+  render();
+}
+
+// ─── SCORING ──────────────────────────────────────────────────────────────────
+function calcGroupPts(preds, results) {
+  let pts = 0;
+  for (const k in results) if (preds[k] && preds[k] === results[k]) pts++;
+  return pts;
+}
+function calcPodiumBonus(podium, final) {
+  if (!podium || !final) return 0;
+  let pts = 0;
+  if (podium[0] === final[0]) pts += 5;
+  if (podium[1] === final[1]) pts += 3;
+  if (podium[2] === final[2]) pts += 2;
+  return pts;
+}
+
+// ─── DATA LOADING ─────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [pls, res] = await Promise.all([
+      sbGet("porra_jugadores", "select=*"),
+      sbGet("porra_resultados", "select=*&id=eq.1")
+    ]);
+    const players = Array.isArray(pls) ? pls : [];
+    let groupResults = {}, lastSummary = "", lastUpdated = null;
+    if (Array.isArray(res) && res[0]) {
+      groupResults = res[0].group_results || {};
+      lastSummary = res[0].last_summary || "";
+      lastUpdated = res[0].last_updated || null;
+    }
+    setState({ players, groupResults, lastSummary, lastUpdated, loading: false });
+  } catch(e) {
+    console.error(e);
+    setState({ loading: false });
+  }
+}
+
+async function handleLogin(nombre) {
+  setState({ loginBusy: true });
+  try {
+    await sbUpsert("porra_jugadores", { nombre, group_predictions: {}, podium: null });
+    await loadData();
+    setState({ user: nombre, loginBusy: false, pendingPreds: {} });
+  } catch(e) {
+    setState({ loginBusy: false });
+  }
+}
+
+async function saveGroupPreds(group) {
+  const me = STATE.players.find(p => p.nombre === STATE.user);
+  const merged = { ...(me?.group_predictions || {}), ...STATE.pendingPreds };
+  setState({ savingGroup: true });
+  await sbPatch("porra_jugadores", "nombre=eq." + encodeURIComponent(STATE.user), {
+    group_predictions: merged, updated_at: new Date().toISOString()
+  });
+  await loadData();
+  setState({ savingGroup: false, pendingPreds: {} });
+}
+
+async function savePodium(podium) {
+  setState({ savingPodium: true });
+  await sbPatch("porra_jugadores", "nombre=eq." + encodeURIComponent(STATE.user), {
+    podium, updated_at: new Date().toISOString()
+  });
+  await loadData();
+  setState({ savingPodium: false });
+}
+
+async function saveGroupResults(results) {
+  const merged = { ...STATE.groupResults, ...results };
+  await sbPatch("porra_resultados", "id=eq.1", {
+    group_results: merged, last_updated: new Date().toISOString()
+  });
+  await loadData();
+}
+
+async function handleAIUpdate() {
+  setState({ aiLoading: true, aiStatus: null, aiError: null });
+  try {
+    const matchList = Object.entries(GROUP_MATCHES).flatMap(([grp, ms]) =>
+      ms.map(([l, v]) => grp+"_"+l+"_"+v+" → "+l+" vs "+v+" (Grupo "+grp+")")
+    ).join("\n");
+    const prompt = `Eres un asistente que consulta resultados del Mundial de Fútbol 2026 (FIFA World Cup 2026), jugado en USA, Canadá y México desde el 11 de junio de 2026.\n\nBusca en internet los resultados actuales de la fase de grupos y devuelve SOLO un JSON válido sin markdown:\n\n{"resultados":{"CLAVE":"RESULTADO"},"resumen":"1-2 frases"}\n\nCLAVE exactamente como abajo. RESULTADO: "1"=local, "X"=empate, "2"=visitante. Solo partidos ya jugados.\n\n${matchList}\n\nResponde ÚNICAMENTE con el JSON.`;
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 1000,
+        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.filter(b => b.type === "text").map(b => b.text).join("");
+    const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+    const merged = { ...STATE.groupResults, ...(parsed.resultados || {}) };
+    await sbPatch("porra_resultados", "id=eq.1", {
+      group_results: merged, last_summary: parsed.resumen || "",
+      last_updated: new Date().toISOString()
+    });
+    await loadData();
+    setState({ aiStatus: "✅ " + Object.keys(parsed.resultados||{}).length + " resultados actualizados. " + (parsed.resumen||""), aiLoading: false });
+  } catch(e) {
+    setState({ aiError: "No se pudieron obtener los resultados. Inténtalo de nuevo.", aiLoading: false });
+  }
+}
+
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
+function pill(text, color) {
+  const colors = {
+    blue: "background:#dbeafe;color:#1e40af",
+    green: "background:#dcfce7;color:#166534",
+    yellow: "background:#fef9c3;color:#854d0e",
+    red: "background:#fee2e2;color:#991b1b",
+    purple: "background:#f3e8ff;color:#6b21a8",
+    gray: "background:#f3f4f6;color:#4b5563"
+  };
+  return `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;${colors[color]||colors.blue}">${text}</span>`;
+}
+
+function renderLogin() {
+  const { loginBusy } = STATE;
+  return `
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(135deg,#0a2240 0%,#1a4a8a 60%,#c8102e 100%)">
+    <div style="background:white;border-radius:1rem;box-shadow:0 25px 50px rgba(0,0,0,.3);padding:2rem;width:100%;max-width:360px">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:3rem;margin-bottom:.5rem">⚽</div>
+        <h1 style="font-size:1.5rem;font-weight:900;color:#111;margin:0">PORRA MUNDIAL</h1>
+        <p style="font-size:.75rem;color:#6b7280;font-weight:600;letter-spacing:.1em;margin:.25rem 0 0">EEUU · CANADÁ · MÉXICO 2026</p>
+      </div>
+      <label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:.35rem">Tu nombre</label>
+      <input id="loginInput" style="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.75rem 1rem;font-size:1rem;font-weight:500;box-sizing:border-box;outline:none" placeholder="Ej: Carlos García" />
+      <button onclick="doLogin()" style="width:100%;margin-top:1rem;padding:.75rem;border-radius:.5rem;font-weight:900;color:white;font-size:1rem;border:none;cursor:pointer;background:${loginBusy?'#9ca3af':'#c8102e'}">
+        ${loginBusy ? "Entrando..." : "ENTRAR A LA PORRA"}
+      </button>
+      <p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:1rem">Todos los participantes comparten los mismos datos en tiempo real</p>
+    </div>
+  </div>`;
+}
+
+function renderHeader() {
+  const { user, groupResults, adminMode, tab } = STATE;
+  const me = STATE.players.find(p => p.nombre === user);
+  const myPts = calcGroupPts(me?.group_predictions||{}, groupResults);
+  const resultCount = Object.keys(groupResults).length;
+  const total = Object.values(GROUP_MATCHES).flat().length;
+  const tabs = [["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["ia","🤖 IA"]];
+  return `
+  <div style="background:linear-gradient(90deg,#0a2240,#1a4a8a);color:white;position:sticky;top:0;z-index:50">
+    <div style="max-width:600px;margin:0 auto;padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <button onclick="tapAdmin()" style="background:none;border:none;cursor:pointer;font-size:1.25rem;padding:0">⚽</button>
+        <div>
+          <p style="font-weight:900;font-size:.85rem;margin:0">PORRA MUNDIAL 2026</p>
+          <p style="font-size:.7rem;color:#93c5fd;margin:0">${user} · ${myPts} pts · ${resultCount}/${total} jugados</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        ${adminMode ? pill("ADMIN","yellow") : ""}
+        <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:#93c5fd;font-size:.75rem;font-weight:600">Salir</button>
+      </div>
+    </div>
+    <div style="display:flex;border-top:1px solid rgba(255,255,255,.15)">
+      ${tabs.map(([id,label])=>`
+        <button onclick="setTab('${id}')" style="flex:1;padding:.5rem .25rem;font-size:.7rem;font-weight:900;border:none;cursor:pointer;background:${tab===id?'white':'transparent'};color:${tab===id?'#1e3a8a':'#bfdbfe'}">
+          ${label}
+        </button>`).join("")}
+    </div>
+  </div>`;
+}
+
+function renderGroupTab() {
+  const { activeGroup, adminMode, groupResults, pendingPreds } = STATE;
+  const me = STATE.players.find(p => p.nombre === STATE.user);
+  const myPreds = { ...(me?.group_predictions||{}), ...pendingPreds };
+  const total = Object.values(GROUP_MATCHES).flat().length;
+  const predCount = Object.keys(myPreds).length;
+  const resultCount = Object.keys(groupResults).length;
+
+  const groupButtons = Object.keys(GROUPS).map(g => {
+    const keys = GROUP_MATCHES[g].map(m => g+"_"+m[0]+"_"+m[1]);
+    const withR = keys.filter(k => groupResults[k]).length;
+    const allR = withR === keys.length;
+    const bg = activeGroup===g ? "background:#2563eb;color:white" : withR>0 ? "background:#dcfce7;color:#166534" : "background:white;color:#374151";
+    return `<button onclick="setGroup('${g}')" style="padding:.5rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:none;cursor:pointer;position:relative;${bg}">
+      ${g}${allR?'<span style="position:absolute;top:-4px;right:-4px;font-size:.65rem">✅</span>':withR>0?'<span style="position:absolute;top:-4px;right:-4px;font-size:.65rem">⚽</span>':''}
+    </button>`;
+  }).join("");
+
+  const teamBadges = GROUPS[activeGroup].map(t =>
+    `<span style="background:#f3f4f6;border-radius:.5rem;padding:.25rem .5rem;font-size:.7rem;font-weight:600">${fl(t)} ${t}</span>`
+  ).join("");
+
+  const matches = GROUP_MATCHES[activeGroup];
+  const matchRows = matches.map(m => {
+    const key = activeGroup+"_"+m[0]+"_"+m[1];
+    const hasR = !!groupResults[key];
+    const pred = myPreds[key];
+    const correct = hasR && pred === groupResults[key];
+    const wrong = hasR && pred && pred !== groupResults[key];
+    const rowBg = hasR ? (correct ? "background:#f0fdf4;border:1px solid #86efac" : wrong ? "background:#fef2f2;border:1px solid #fca5a5" : "background:#f9fafb;border:1px solid transparent") : "background:#f9fafb;border:1px solid transparent";
+
+    if (adminMode) {
+      const adminPred = STATE.adminResults && STATE.adminResults[key];
+      return `<div style="display:flex;align-items:center;gap:.5rem;border-radius:.5rem;padding:.6rem;${rowBg};background:#fefce8;border:1px solid #fde047">
+        <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
+        <div style="display:flex;gap:3px">
+          ${["1","X","2"].map(v=>`<button onclick="setAdminResult('${key}','${v}')" style="width:36px;height:36px;border-radius:.4rem;font-weight:900;font-size:.8rem;border:none;cursor:pointer;background:${(STATE.adminResults||{})[key]===v?'#eab308':'white'};color:${(STATE.adminResults||{})[key]===v?'white':'#6b7280'};border:2px solid ${(STATE.adminResults||{})[key]===v?'#eab308':'#e5e7eb'}">${v}</button>`).join("")}
+        </div>
+        <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
+      </div>`;
+    }
+
+    const badge = hasR ? `<span style="font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:999px;margin-left:2px;background:${correct?'#dcfce7':wrong?'#fee2e2':'#f3f4f6'};color:${correct?'#166534':wrong?'#991b1b':'#6b7280'}">${correct?'+1 ✓':wrong?'✗':'—'}</span>` : '';
+
+    return `<div style="display:flex;align-items:center;gap:.5rem;border-radius:.5rem;padding:.6rem;${rowBg}">
+      <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
+      <div style="display:flex;gap:3px;align-items:center">
+        ${["1","X","2"].map(v=>`<button onclick="${hasR?'':("setPred('"+key+"','"+v+"')")}" style="width:36px;height:36px;border-radius:.4rem;font-weight:900;font-size:.8rem;border:2px solid ${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'#e5e7eb'};cursor:${hasR?'default':'pointer'};background:${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'white'};color:${pred===v?'white':'#9ca3af'}">${v}</button>`).join("")}
+        ${badge}
+      </div>
+      <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
+    </div>`;
+  }).join("");
+
+  const saveBtn = adminMode
+    ? `<button onclick="doSaveResults()" style="width:100%;padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${STATE.savingGroup?'#9ca3af':'#eab308'};margin-top:.5rem">${STATE.savingGroup?'Guardando...':'GUARDAR RESULTADOS'}</button>`
+    : (!Object.keys(groupResults).some(k=>k.startsWith(activeGroup))
+      ? `<button onclick="doSavePreds()" style="width:100%;padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${STATE.savingGroup?'#9ca3af':'#2563eb'};margin-top:.5rem">${STATE.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`
+      : "");
+
+  return `
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+      <h2 style="font-weight:900;color:#111;margin:0">Fase de Grupos</h2>
+      ${pill(predCount+"/"+total, predCount===total?"green":"yellow")}
+    </div>
+    <p style="font-size:.7rem;color:#6b7280;margin:0">1=Local · X=Empate · 2=Visitante · 1pt por acierto · ${resultCount} resultados oficiales</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">${groupButtons}</div>
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h3 style="font-weight:900;color:#111;margin:0">Grupo ${activeGroup}</h3>
+      ${adminMode ? pill("Admin","yellow") : ""}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">${teamBadges}</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem">${matchRows}</div>
+    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:#9ca3af;padding:.25rem .1rem;margin-top:.25rem">
+      <span>${Object.keys(myPreds).filter(k=>k.startsWith(activeGroup)).length}/${matches.length} pronosticados</span>
+      <span>🟢=acierto · 🔴=fallo</span>
+    </div>
+    ${saveBtn}
+  </div>
+  <p style="text-align:center;font-size:.65rem;color:#9ca3af">🔄 Se actualiza automáticamente cada 30 segundos</p>`;
+}
+
+function renderPodiumTab() {
+  const { players, user } = STATE;
+  const me = players.find(p => p.nombre === user);
+  const myPodium = me?.podium || null;
+
+  const podiumPreview = myPodium ? `
+    <div style="background:#eff6ff;border-radius:.5rem;padding:.75rem;margin-bottom:1rem;display:flex;gap:.5rem">
+      ${myPodium.map((t,i)=>`<div style="text-align:center;flex:1"><p style="font-size:1.25rem;margin:0">${["🥇","🥈","🥉"][i]}</p><p style="font-size:.75rem;margin:0">${fl(t)}</p><p style="font-size:.65rem;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis">${t}</p></div>`).join("")}
+    </div>` : "";
+
+  const selStyle = "width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.5rem .75rem;font-size:.85rem;font-weight:500;outline:none;box-sizing:border-box";
+  const used = myPodium ? [...myPodium] : ["","",""];
+
+  const podiumForm = [["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
+    const avail = ALL_TEAMS.filter(t => !used.includes(t) || t === used[idx]);
+    return `<div>
+      <label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;margin-bottom:.25rem">${label}</label>
+      <select onchange="setPodiumPos(${idx}, this.value)" style="${selStyle}">
+        <option value="">— Selecciona —</option>
+        ${avail.map(t=>`<option value="${t}" ${used[idx]===t?'selected':''}>${fl(t)} ${t}</option>`).join("")}
+      </select>
+    </div>`;
+  }).join("");
+
+  const otherPlayers = players.filter(p => p.nombre !== user).map(p => `
+    <div style="display:flex;align-items:center;gap:.75rem;background:#f9fafb;border-radius:.5rem;padding:.75rem">
+      <div style="width:32px;height:32px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-weight:900;color:#1d4ed8">${p.nombre[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <p style="font-weight:700;font-size:.85rem;margin:0">${p.nombre}</p>
+        ${p.podium ? `<p style="font-size:.7rem;color:#6b7280;margin:0">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>` : `<p style="font-size:.7rem;color:#9ca3af;font-style:italic;margin:0">Sin pronóstico aún</p>`}
+      </div>
+    </div>`).join("");
+
+  return `
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <h2 style="font-weight:900;color:#111;margin:0 0 .25rem">Mi Pronóstico de Pódium</h2>
+    <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
+    ${podiumPreview}
+    <div style="display:flex;flex-direction:column;gap:.75rem">${podiumForm}</div>
+    ${STATE.savingPodium ? '<p style="text-align:center;font-size:.75rem;color:#3b82f6;margin-top:.5rem">Guardando...</p>' : myPodium ? '<p style="text-align:center;font-size:.8rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pódium guardado</p>' : ''}
+  </div>
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <h3 style="font-weight:900;color:#111;margin:0 0 .75rem">Pódiums de todos (${players.length})</h3>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      ${otherPlayers || '<p style="text-align:center;font-size:.85rem;color:#9ca3af;padding:1rem 0;margin:0">Aún no hay otros participantes</p>'}
+    </div>
+  </div>`;
+}
+
+function renderRankingTab() {
+  const { players, groupResults } = STATE;
+  const scores = players.map(p => {
+    const gpts = calcGroupPts(p.group_predictions||{}, groupResults);
+    const ppts = calcPodiumBonus(p.podium, null);
+    return { name: p.nombre, gpts, ppts, total: gpts+ppts };
+  }).sort((a,b) => b.total - a.total);
+
+  const medals = ["🥇","🥈","🥉"];
+  const rows = scores.map((s,i) => `
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;border-radius:.75rem;border:2px solid ${s.name===STATE.user?'#60a5fa':'transparent'};background:${s.name===STATE.user?'#eff6ff':'#f9fafb'}">
+      <span style="font-size:1.25rem;width:28px;text-align:center">${medals[i]||((i+1)+".")}</span>
+      <div style="flex:1">
+        <p style="font-weight:900;color:#111;margin:0">${s.name} ${s.name===STATE.user?'<span style="color:#3b82f6;font-size:.65rem">(tú)</span>':''}</p>
+        <p style="font-size:.65rem;color:#9ca3af;margin:0">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
+      </div>
+      <div style="text-align:right">
+        <p style="font-size:1.5rem;font-weight:900;color:#111;margin:0">${s.total}</p>
+        <p style="font-size:.65rem;color:#9ca3af;margin:0">pts</p>
+      </div>
+    </div>`).join("");
+
+  const rules = [["⚽ Grupos (72 partidos)","1pt/acierto"],["🔟 Dieciseisavos","Base 2pts"],["8️⃣ Octavos","Base 4pts"],["4️⃣ Cuartos","Base 8pts"],["2️⃣ Semifinales","Base 16pts"],["🏅 3º/4º puesto","Base 24pts"],["🏆 Gran Final","Base 32pts"],["🎯 Bonus Pódium","+5+3+2pts"]];
+
+  return `
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+      <h2 style="font-weight:900;color:#111;margin:0">Clasificación en vivo</h2>
+      ${pill(players.length+" jugadores","blue")}
+    </div>
+    <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">${Object.keys(groupResults).length} resultados oficiales aplicados</p>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      ${rows || '<p style="text-align:center;color:#9ca3af;padding:2rem 0;margin:0">Aún no hay participantes</p>'}
+    </div>
+  </div>
+  <div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <h3 style="font-weight:900;color:#111;margin:0 0 .75rem">📋 Puntuación por fase</h3>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      ${rules.map(([l,r],i)=>`<div style="display:flex;justify-content:space-between;font-size:.85rem;padding-bottom:.4rem;${i<rules.length-1?'border-bottom:1px solid #f3f4f6':''}"><span style="color:#6b7280">${l}</span><span style="font-weight:700">${r}</span></div>`).join("")}
+    </div>
+  </div>`;
+}
+
+function renderIATab() {
+  const { groupResults, aiLoading, aiStatus, aiError, lastSummary, lastUpdated } = STATE;
+  const resultCount = Object.keys(groupResults).length;
+  const total = Object.values(GROUP_MATCHES).flat().length;
+  const stats = [["1","Victorias local"],["X","Empates"],["2","Victorias visit."]].map(([v,l])=>
+    `<div style="background:#f9fafb;border-radius:.5rem;padding:.75rem;text-align:center">
+      <p style="font-size:1.5rem;font-weight:900;margin:0">${Object.values(groupResults).filter(r=>r===v).length}</p>
+      <p style="font-size:.65rem;color:#6b7280;margin:0">${l}</p>
+    </div>`
+  ).join("");
+
+  return `
+  <div style="background:white;border-radius:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow:hidden">
+    <div style="padding:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <div>
+          <h3 style="font-weight:900;color:#111;margin:0 0 .1rem;display:flex;align-items:center;gap:.4rem">🤖 Actualización automática ${pill("IA","purple")}</h3>
+          <p style="font-size:.7rem;color:#6b7280;margin:0">Busca resultados reales del Mundial en internet</p>
+        </div>
+        <div style="text-align:right">
+          <p style="font-size:1.5rem;font-weight:900;margin:0">${resultCount}<span style="font-size:.8rem;color:#9ca3af">/${total}</span></p>
+          <p style="font-size:.65rem;color:#9ca3af;margin:0">resultados</p>
+        </div>
+      </div>
+      <button onclick="doAIUpdate()" ${aiLoading?'disabled':''} style="width:100%;padding:.75rem;border-radius:.75rem;font-weight:900;color:white;font-size:.85rem;border:none;cursor:${aiLoading?'not-allowed':'pointer'};background:${aiLoading?'#9ca3af':'linear-gradient(135deg,#7c3aed,#4f46e5)'}">
+        ${aiLoading ? '⏳ Buscando en internet...' : '🔍 Actualizar resultados ahora'}
+      </button>
+      ${aiStatus ? `<div style="margin-top:.75rem;background:#f0fdf4;border:1px solid #86efac;border-radius:.5rem;padding:.75rem;font-size:.75rem;color:#166534;font-weight:500">${aiStatus}</div>` : ""}
+      ${aiError ? `<div style="margin-top:.75rem;background:#fef2f2;border:1px solid #fca5a5;border-radius:.5rem;padding:.75rem;font-size:.75rem;color:#991b1b">⚠️ ${aiError}</div>` : ""}
+    </div>
+    <div style="background:#f9fafb;border-top:1px solid #f3f4f6;padding:.5rem 1rem">
+      <p style="font-size:.65rem;color:#9ca3af;margin:0">💡 Cualquier participante puede actualizar. Modo admin manual: pulsa ⚽ × 5</p>
+    </div>
+  </div>
+  ${lastSummary ? `<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <h3 style="font-weight:900;color:#111;margin:0 0 .5rem">📰 Último informe</h3>
+    <p style="font-size:.85rem;color:#4b5563;margin:0">${lastSummary}</p>
+    ${lastUpdated ? `<p style="font-size:.65rem;color:#9ca3af;margin:.5rem 0 0">Actualizado: ${new Date(lastUpdated).toLocaleString("es-ES")}</p>` : ""}
+  </div>` : ""}
+  ${resultCount > 0 ? `<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+    <h3 style="font-weight:900;color:#111;margin:0 0 .75rem">Estadísticas de resultados</h3>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">${stats}</div>
+  </div>` : ""}`;
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  if (STATE.loading) {
+    app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a2240">
+      <div style="text-align:center;color:white"><div style="font-size:3rem;margin-bottom:.5rem">⚽</div><p style="font-weight:700;margin:0">Conectando con Supabase...</p></div>
+    </div>`;
+    return;
+  }
+
+  if (!STATE.user) { app.innerHTML = renderLogin(); return; }
+
+  const tabContent = {
+    grupos: renderGroupTab,
+    podium: renderPodiumTab,
+    marcador: renderRankingTab,
+    ia: renderIATab
+  }[STATE.tab]?.() || "";
+
+  app.innerHTML = `
+    ${renderHeader()}
+    <div style="max-width:600px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:1rem">
+      ${tabContent}
+    </div>`;
+}
+
+// ─── EVENT HANDLERS ───────────────────────────────────────────────────────────
+window.doLogin = function() {
+  const v = document.getElementById("loginInput")?.value?.trim();
+  if (v) handleLogin(v);
+};
+window.doLogout = function() { setState({ user: null, pendingPreds: {}, adminResults: {} }); };
+window.setTab = function(t) { setState({ tab: t }); };
+window.setGroup = function(g) { setState({ activeGroup: g, pendingPreds: {}, adminResults: {} }); };
+window.tapAdmin = function() {
+  const t = STATE.adminTap + 1;
+  if (t >= 5) { setState({ adminMode: !STATE.adminMode, adminTap: 0, adminResults: {} }); }
+  else setState({ adminTap: t });
+};
+window.setPred = function(key, val) {
+  const preds = { ...STATE.pendingPreds, [key]: val };
+  setState({ pendingPreds: preds });
+};
+window.doSavePreds = async function() {
+  if (STATE.savingGroup) return;
+  await saveGroupPreds(STATE.activeGroup);
+};
+window.setAdminResult = function(key, val) {
+  const adminResults = { ...(STATE.adminResults||{}), [key]: val };
+  setState({ adminResults });
+};
+window.doSaveResults = async function() {
+  if (STATE.savingGroup || !STATE.adminResults) return;
+  setState({ savingGroup: true });
+  await saveGroupResults(STATE.adminResults);
+  setState({ savingGroup: false, adminResults: {} });
+};
+window.setPodiumPos = function(idx, val) {
+  const me = STATE.players.find(p => p.nombre === STATE.user);
+  const current = me?.podium ? [...me.podium] : ["","",""];
+  current[idx] = val;
+  if (current[0] && current[1] && current[2]) savePodium(current);
+};
+window.doAIUpdate = function() { handleAIUpdate(); };
+
+// Keyboard enter on login
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !STATE.user) window.doLogin();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+render();
+loadData();
+setInterval(loadData, 30000);
+</script>
+</body>
+</html>

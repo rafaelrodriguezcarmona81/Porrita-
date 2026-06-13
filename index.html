@@ -16,14 +16,10 @@
 const SB_URL="https://qkxenqexxdvpjnagsudk.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFreGVucWV4eGR2cGpuYWdzdWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzI4ODksImV4cCI6MjA5Njc0ODg4OX0.hSo4lkK_-RjDWVPQKHbVfM0AfVlDPQxMZbTtvyLHiik";
 const HDR={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY};
-
 async function sbGet(t,p){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+(p||""),{headers:HDR});return r.json();}
 async function sbUpsert(t,b){
-  // Check if exists first, then insert or update
-  const existing=await sbGet(t,"nombre=eq."+encodeURIComponent(b.nombre)+"&select=nombre");
-  if(Array.isArray(existing)&&existing.length>0){
-    return sbPatch(t,"nombre=eq."+encodeURIComponent(b.nombre),{updated_at:new Date().toISOString()});
-  }
+  const ex=await sbGet(t,"nombre=eq."+encodeURIComponent(b.nombre)+"&select=nombre");
+  if(Array.isArray(ex)&&ex.length>0)return sbPatch(t,"nombre=eq."+encodeURIComponent(b.nombre),{updated_at:new Date().toISOString()});
   const r=await fetch(SB_URL+"/rest/v1/"+t,{method:"POST",headers:{...HDR,"Prefer":"return=representation"},body:JSON.stringify(b)});
   return r.json();
 }
@@ -59,11 +55,12 @@ const GM={
   L:[["Inglaterra","Croacia"],["Ghana","Panamá"],["Inglaterra","Ghana"],["Panamá","Croacia"],["Panamá","Inglaterra"],["Croacia","Ghana"]]
 };
 const ALL_TEAMS=Object.values(GROUPS).flat();
+const TOTAL_MATCHES=Object.values(GM).flat().length;
 const FLAGS={"México":"🇲🇽","Sudáfrica":"🇿🇦","Corea del Sur":"🇰🇷","Rep. Checa":"🇨🇿","Canadá":"🇨🇦","Bosnia y Herc.":"🇧🇦","Catar":"🇶🇦","Suiza":"🇨🇭","Brasil":"🇧🇷","Marruecos":"🇲🇦","Haití":"🇭🇹","Escocia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Estados Unidos":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turquía":"🇹🇷","Alemania":"🇩🇪","Curazao":"🇨🇼","Costa de Marfil":"🇨🇮","Ecuador":"🇪🇨","Países Bajos":"🇳🇱","Japón":"🇯🇵","Suecia":"🇸🇪","Túnez":"🇹🇳","Bélgica":"🇧🇪","Egipto":"🇪🇬","Irán":"🇮🇷","Nueva Zelanda":"🇳🇿","España":"🇪🇸","Cabo Verde":"🇨🇻","Arabia Saudí":"🇸🇦","Uruguay":"🇺🇾","Francia":"🇫🇷","Senegal":"🇸🇳","Irak":"🇮🇶","Noruega":"🇳🇴","Argentina":"🇦🇷","Argelia":"🇩🇿","Austria":"🇦🇹","Jordania":"🇯🇴","Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbekistán":"🇺🇿","Colombia":"🇨🇴","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croacia":"🇭🇷","Ghana":"🇬🇭","Panamá":"🇵🇦"};
 const fl=t=>FLAGS[t]||"🏳️";
 
-// ─── MATCH KICKOFF TIMES (CEST = UTC+2) ──────────────────────────────────────
-const MATCH_TIMES = {
+// ─── HORARIOS CEST (UTC+2) — bloqueo 1h antes ─────────────────────────────────
+const MATCH_TIMES={
   "A_México_Sudáfrica":"2026-06-11T21:00","A_Corea del Sur_Rep. Checa":"2026-06-12T04:00",
   "A_Rep. Checa_Sudáfrica":"2026-06-18T18:00","A_México_Corea del Sur":"2026-06-19T03:00",
   "A_Rep. Checa_México":"2026-06-25T03:00","A_Sudáfrica_Corea del Sur":"2026-06-25T03:00",
@@ -101,24 +98,23 @@ const MATCH_TIMES = {
   "L_Inglaterra_Ghana":"2026-06-18T21:00","L_Panamá_Croacia":"2026-06-19T00:00",
   "L_Panamá_Inglaterra":"2026-06-27T05:00","L_Croacia_Ghana":"2026-06-27T05:00"
 };
-// Bloqueo 1 hora antes del inicio (CEST = UTC+2)
 function isLocked(key){
   const t=MATCH_TIMES[key];
   if(!t)return false;
   const kickoff=new Date(t+":00+02:00");
-  return Date.now() >= kickoff.getTime() - 60*60*1000;
+  return Date.now()>=kickoff.getTime()-60*60*1000;
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
-  user:null, players:[], groupResults:{}, tab:"grupos",
-  activeGroup:"A", loading:true, loginBusy:false,
-  savingGroup:false, savingPodium:false,
-  pendingPreds:{}, pendingPodium:null,
-  adminGroup:"A", adminResults:{}, adminUnlocked:false, adminPwdError:false,
-  refreshing:false, rankChange:null, lastRank:null, lastUpdated:null
+  user:null,players:[],groupResults:{},tab:"grupos",
+  activeGroup:"A",loading:true,loginBusy:false,
+  savingGroup:false,savingPodium:false,
+  pendingPreds:{},pendingPodium:null,
+  adminGroup:"A",adminResults:{},adminUnlocked:false,adminPwdError:false,
+  refreshing:false,rankChange:null,lastRank:null
 };
-function ss(patch){Object.assign(S,patch);render();}
+function ss(p){Object.assign(S,p);render();}
 
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 function gPts(preds,results){let p=0;for(const k in results)if(preds[k]&&preds[k]===results[k])p++;return p;}
@@ -134,14 +130,13 @@ async function loadData(){
     const players=Array.isArray(pls)?pls:[];
     let groupResults={};
     if(Array.isArray(res)&&res[0])groupResults=res[0].group_results||{};
-    // Track rank change
     let rankChange=null,newRank=null;
     if(S.user){
       const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
-      if(newRank&&S.lastRank&&newRank!==S.lastRank){rankChange=S.lastRank-newRank;}
+      if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null,lastUpdated:null});
+    ss({players,groupResults,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -185,9 +180,9 @@ function pill(text,color){
   const c={blue:"#dbeafe;color:#1e40af",green:"#dcfce7;color:#166534",yellow:"#fef9c3;color:#854d0e",red:"#fee2e2;color:#991b1b",gray:"#f3f4f6;color:#4b5563"};
   return`<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${c[color]||c.blue}">${text}</span>`;
 }
-function card(content,extra=""){return`<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1);${extra}">${content}</div>`;}
+function card(content){return`<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">${content}</div>`;}
 
-// ─── RENDER: LOGIN ────────────────────────────────────────────────────────────
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
 function renderLogin(){
   return`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(135deg,#0a2240 0%,#1a4a8a 60%,#c8102e 100%)">
     <div style="background:white;border-radius:1rem;box-shadow:0 25px 50px rgba(0,0,0,.3);padding:2rem;width:100%;max-width:360px">
@@ -206,13 +201,13 @@ function renderLogin(){
   </div>`;
 }
 
-// ─── RENDER: HEADER ───────────────────────────────────────────────────────────
+// ─── HEADER ───────────────────────────────────────────────────────────────────
 function renderHeader(){
   const me=S.players.find(p=>p.nombre===S.user);
   const myPts=gPts(me?.group_predictions||{},S.groupResults);
   const rc=Object.keys(S.groupResults).length;
   const tabs=[["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
-  const rankBanner=S.rankChange!==null?`<div style="background:${S.rankChange>0?'#16a34a':'#dc2626'};text-align:center;padding:.35rem;font-size:.75rem;font-weight:700">
+  const rankBanner=S.rankChange!==null?`<div style="background:${S.rankChange>0?'#16a34a':'#dc2626'};text-align:center;padding:.35rem;font-size:.75rem;font-weight:700;color:white">
     ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
   </div>`:"";
   return`<div style="background:linear-gradient(90deg,#0a2240,#1a4a8a);color:white;position:sticky;top:0;z-index:50">
@@ -236,7 +231,7 @@ function renderHeader(){
   </div>`;
 }
 
-// ─── RENDER: GRUPOS ───────────────────────────────────────────────────────────
+// ─── GRUPOS ───────────────────────────────────────────────────────────────────
 function renderGrupos(){
   const me=S.players.find(p=>p.nombre===S.user);
   const myPreds={...(me?.group_predictions||{}),...S.pendingPreds};
@@ -250,9 +245,9 @@ function renderGrupos(){
     const pending=keys.length-withR;
     const isActive=gr===g;
     const isDone=withR===keys.length&&withR>0;
-    return`<button onclick="setGroup('${gr}')" style="padding:.4rem .2rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:none;cursor:pointer;position:relative;background:${isActive?'#2563eb':isDone?'#dcfce7':'white'};color:${isActive?'white':isDone?'#166534':'#374151'}">
+    return`<button onclick="setGroup('${gr}')" style="padding:.4rem .2rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:none;cursor:pointer;background:${isActive?'#2563eb':isDone?'#dcfce7':'white'};color:${isActive?'white':isDone?'#166534':'#374151'}">
       <div>${gr}</div>
-      <div style="font-size:.55rem;font-weight:600;color:${isActive?'rgba(255,255,255,.8)':isDone?'#16a34a':'#9ca3af'}">${isDone?'✅':pending+"⏳"}</div>
+      <div style="font-size:.55rem;font-weight:600;color:${isActive?'rgba(255,255,255,.8)':isDone?'#16a34a':'#9ca3af'}">${isDone?'✅':pending+'⏳'}</div>
     </button>`;
   }).join("");
 
@@ -262,12 +257,17 @@ function renderGrupos(){
     const pred=myPreds[key];
     const correct=hasR&&pred===S.groupResults[key];
     const wrong=hasR&&pred&&pred!==S.groupResults[key];
-    const bg=hasR?(correct?"background:#f0fdf4;border:1px solid #86efac":wrong?"background:#fef2f2;border:1px solid #fca5a5":"background:#f9fafb;border:1px solid #e5e7eb"):"background:#f9fafb;border:1px solid #e5e7eb";
-    const badge=hasR?`<span style="font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:999px;background:${correct?'#dcfce7':wrong?'#fee2e2':'#f3f4f6'};color:${correct?'#166534':wrong?'#991b1b':'#6b7280'}">${correct?'+1✓':wrong?'✗':'—'}</span>`:'';
+    const locked=isLocked(key);
+    const blocked=hasR||locked;
+    const bg=hasR?(correct?"background:#f0fdf4;border:1px solid #86efac":wrong?"background:#fef2f2;border:1px solid #fca5a5":"background:#f9fafb;border:1px solid #e5e7eb"):locked?"background:#fafafa;border:1px solid #e5e7eb":"background:#f9fafb;border:1px solid #e5e7eb";
+    const badge=hasR
+      ?`<span style="font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:999px;background:${correct?'#dcfce7':wrong?'#fee2e2':'#f3f4f6'};color:${correct?'#166534':wrong?'#991b1b':'#6b7280'}">${correct?'+1✓':wrong?'✗':'—'}</span>`
+      :locked?'<span style="font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:999px;background:#fef9c3;color:#854d0e">🔒</span>'
+      :'';
     return`<div style="display:flex;align-items:center;gap:.4rem;border-radius:.5rem;padding:.6rem;${bg}">
       <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
       <div style="display:flex;gap:3px;align-items:center">
-        ${["1","X","2"].map(v=>`<button onclick="${hasR?'':("setPred('"+key+"','"+v+"')")}" style="width:34px;height:34px;border-radius:.4rem;font-weight:900;font-size:.85rem;border:2px solid ${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'#e5e7eb'};cursor:${hasR?'default':'pointer'};background:${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'white'};color:${pred===v?'white':'#9ca3af'}">${v}</button>`).join("")}
+        ${["1","X","2"].map(v=>`<button onclick="${blocked?'':('setPred(\''+key+'\',\''+v+'\')')}" style="width:34px;height:34px;border-radius:.4rem;font-weight:900;font-size:.85rem;border:2px solid ${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'#e5e7eb'};cursor:${blocked?'default':'pointer'};background:${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'white'};color:${pred===v?'white':'#9ca3af'};opacity:${locked&&!hasR?'0.4':'1'}">${v}</button>`).join("")}
         ${badge}
       </div>
       <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
@@ -279,32 +279,29 @@ function renderGrupos(){
   const editableSaved=editableKeys.length>0&&editableKeys.every(k=>(me?.group_predictions||{})[k]);
   const hasPendingInGroup=myGroupKeys.some(k=>S.pendingPreds[k]);
   const saveBtn=editableKeys.length===0
-    ?`<p style="text-align:center;font-size:.75rem;color:#6b7280;margin-top:.5rem">Todos los partidos tienen resultado oficial</p>`
+    ?`<p style="text-align:center;font-size:.75rem;color:#6b7280;margin-top:.5rem">Todos los partidos están bloqueados o tienen resultado oficial</p>`
     :(editableSaved&&!hasPendingInGroup)
     ?`<p style="text-align:center;font-size:.75rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pronósticos guardados</p>`
     :`<button onclick="doSavePreds()" style="width:100%;padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingGroup?'#9ca3af':'#2563eb'};margin-top:.5rem">${S.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`;
 
   return`
-  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p style="font-size:.7rem;color:#6b7280;margin:0">1=Local · X=Empate · 2=Visitante · 1pt por acierto</p>`)}
+  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p style="font-size:.7rem;color:#6b7280;margin:0">1=Local · X=Empate · 2=Visitante · 1pt por acierto · 🔒=bloqueado 1h antes</p>`)}
   <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">${groupBtns}</div>
   ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem"><h3 style="font-weight:900;color:#111;margin:0">Grupo ${g}</h3></div>
     <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">${GROUPS[g].map(t=>`<span style="background:#f3f4f6;border-radius:.5rem;padding:.2rem .5rem;font-size:.7rem;font-weight:600">${fl(t)} ${t}</span>`).join("")}</div>
     <div style="display:flex;flex-direction:column;gap:.4rem">${matchRows}</div>
     <div style="display:flex;justify-content:space-between;font-size:.65rem;color:#9ca3af;padding:.25rem .1rem;margin-top:.25rem"><span>${Object.keys(myPreds).filter(k=>k.startsWith(g)).length}/${matches.length} pronosticados</span><span>🟢=acierto · 🔴=fallo</span></div>
-    ${saveBtn}`)}
-  `;
+    ${saveBtn}`)}`;
 }
 
-// ─── RENDER: PÓDIUM ───────────────────────────────────────────────────────────
+// ─── PÓDIUM ───────────────────────────────────────────────────────────────────
 function renderPodium(){
   const me=S.players.find(p=>p.nombre===S.user);
   const saved=me?.podium||null;
   const form=S.pendingPodium||(saved?[...saved]:["","",""]);
   const used=form.filter(Boolean);
   const isSaved=saved&&!S.pendingPodium;
-
   const preview=isSaved?`<div style="background:#eff6ff;border-radius:.5rem;padding:.75rem;margin-bottom:1rem;display:flex;gap:.5rem">${saved.map((t,i)=>`<div style="text-align:center;flex:1"><p style="font-size:1.25rem;margin:0">${["🥇","🥈","🥉"][i]}</p><p style="font-size:.7rem;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis">${fl(t)} ${t}</p></div>`).join("")}</div>`:"";
-
   const selStyle="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.5rem .75rem;font-size:.85rem;font-weight:500;outline:none";
   const podForm=[["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
     const avail=ALL_TEAMS.filter(t=>!used.includes(t)||t===form[idx]).sort((a,b)=>a.localeCompare(b,"es"));
@@ -314,28 +311,26 @@ function renderPodium(){
         ${avail.map(t=>`<option value="${t}" ${form[idx]===t?'selected':''}>${fl(t)} ${t}</option>`).join("")}
       </select></div>`;
   }).join("");
-
-  const allSelected=form[0]&&form[1]&&form[2];
-  const saveBtn=allSelected?`<button onclick="doSavePodium()" style="width:100%;margin-top:.75rem;padding:.65rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingPodium?'#9ca3af':'#16a34a'}">${S.savingPodium?'Guardando...':'💾 GUARDAR PÓDIUM'}</button>`:isSaved?'<p style="text-align:center;font-size:.8rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pódium guardado</p>':'<p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:.5rem">Selecciona los 3 equipos para guardar</p>';
-
+  const allSel=form[0]&&form[1]&&form[2];
+  const saveBtn=allSel
+    ?`<button onclick="doSavePodium()" style="width:100%;margin-top:.75rem;padding:.65rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingPodium?'#9ca3af':'#16a34a'}">${S.savingPodium?'Guardando...':'💾 GUARDAR PÓDIUM'}</button>`
+    :isSaved?'<p style="text-align:center;font-size:.8rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pódium guardado</p>'
+    :'<p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:.5rem">Selecciona los 3 equipos para guardar</p>';
   const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
     <div style="display:flex;align-items:center;gap:.75rem;background:#f9fafb;border-radius:.5rem;padding:.75rem">
       <div style="width:32px;height:32px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-weight:900;color:#1d4ed8">${p.nombre[0].toUpperCase()}</div>
       <div style="flex:1"><p style="font-weight:700;font-size:.85rem;margin:0">${p.nombre}</p>
         ${p.podium?`<p style="font-size:.7rem;color:#6b7280;margin:0">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>`:`<p style="font-size:.7rem;color:#9ca3af;font-style:italic;margin:0">Sin pronóstico aún</p>`}
       </div></div>`).join("");
-
   return`
   ${card(`<h2 style="font-weight:900;color:#111;margin:0 0 .25rem">Mi Pronóstico de Pódium</h2>
     <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
-    ${preview}
-    <div style="display:flex;flex-direction:column;gap:.75rem">${podForm}</div>
-    ${saveBtn}`)}
+    ${preview}<div style="display:flex;flex-direction:column;gap:.75rem">${podForm}</div>${saveBtn}`)}
   ${card(`<h3 style="font-weight:900;color:#111;margin:0 0 .75rem">Pódiums del grupo (${S.players.length})</h3>
     <div style="display:flex;flex-direction:column;gap:.4rem">${others||'<p style="text-align:center;font-size:.85rem;color:#9ca3af;padding:1rem 0;margin:0">Aún no hay otros participantes</p>'}</div>`)}`;
 }
 
-// ─── RENDER: RANKING ──────────────────────────────────────────────────────────
+// ─── RANKING ──────────────────────────────────────────────────────────────────
 function renderRanking(){
   const scores=S.players.map(p=>({
     name:p.nombre,
@@ -343,7 +338,6 @@ function renderRanking(){
     ppts:podiumBonus(p.podium,null),
     get total(){return this.gpts+this.ppts;}
   })).sort((a,b)=>b.total-a.total);
-
   const medals=["🥇","🥈","🥉"];
   const rows=scores.map((s,i)=>`
     <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;border-radius:.75rem;border:2px solid ${s.name===S.user?'#60a5fa':'transparent'};background:${s.name===S.user?'#eff6ff':'#f9fafb'}">
@@ -354,9 +348,7 @@ function renderRanking(){
       </div>
       <div style="text-align:right"><p style="font-size:1.5rem;font-weight:900;color:#111;margin:0">${s.total}</p><p style="font-size:.65rem;color:#9ca3af;margin:0">pts</p></div>
     </div>`).join("");
-
   const rules=[["⚽ Grupos (72 partidos)","1pt/acierto"],["🔟 Dieciseisavos","Base 2pts"],["8️⃣ Octavos","Base 4pts"],["4️⃣ Cuartos","Base 8pts"],["2️⃣ Semifinales","Base 16pts"],["🏅 3º/4º puesto","Base 24pts"],["🏆 Gran Final","Base 32pts"],["🎯 Bonus Pódium","+5+3+2pts"]];
-
   return`
   ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">Clasificación en vivo</h2>${pill(S.players.length+" jugadores","blue")}</div>
     <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">${Object.keys(S.groupResults).length} resultados aplicados</p>
@@ -365,7 +357,7 @@ function renderRanking(){
     <div style="display:flex;flex-direction:column;gap:.4rem">${rules.map(([l,r],i)=>`<div style="display:flex;justify-content:space-between;font-size:.85rem;padding-bottom:.4rem;${i<rules.length-1?'border-bottom:1px solid #f3f4f6':''}"><span style="color:#6b7280">${l}</span><span style="font-weight:700">${r}</span></div>`).join("")}</div>`)}`;
 }
 
-// ─── RENDER: ADMIN ────────────────────────────────────────────────────────────
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
 function renderAdmin(){
   if(!S.adminUnlocked){
     return card(`<div style="text-align:center">
@@ -377,11 +369,8 @@ function renderAdmin(){
       ${S.adminPwdError?'<p style="color:#dc2626;font-size:.8rem;font-weight:700;margin-top:.5rem">❌ Clave incorrecta</p>':""}
     </div>`);
   }
-
   const rc=Object.keys(S.groupResults).length;
-  const total=TOTAL_MATCHES;
   const ag=S.adminGroup||"A";
-
   const groupBtns=Object.keys(GROUPS).map(g=>{
     const keys=GM[g].map(m=>g+"_"+m[0]+"_"+m[1]);
     const withR=keys.filter(k=>S.groupResults[k]).length;
@@ -390,7 +379,6 @@ function renderAdmin(){
       ${g}${done?'<span style="position:absolute;top:-4px;right:-4px;font-size:.6rem">✅</span>':withR>0?`<span style="position:absolute;top:-4px;right:-4px;font-size:.6rem">${withR}/${keys.length}</span>`:''}
     </button>`;
   }).join("");
-
   const matchRows=GM[ag].map(m=>{
     const key=ag+"_"+m[0]+"_"+m[1];
     const cur=S.groupResults[key];
@@ -406,14 +394,12 @@ function renderAdmin(){
       <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
     </div>`;
   }).join("");
-
   const hasPending=Object.keys(S.adminResults||{}).length>0;
   const stats=[["1","Victorias local"],["X","Empates"],["2","Victorias visit."]].map(([v,l])=>
     `<div style="background:#f9fafb;border-radius:.5rem;padding:.75rem;text-align:center"><p style="font-size:1.5rem;font-weight:900;margin:0">${Object.values(S.groupResults).filter(r=>r===v).length}</p><p style="font-size:.65rem;color:#6b7280;margin:0">${l}</p></div>`
   ).join("");
-
   return`
-  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">🔧 Introducir Resultados</h2>${pill(rc+"/"+total+" jugados",rc===total?"green":"yellow")}</div>
+  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">🔧 Introducir Resultados</h2>${pill(rc+"/"+TOTAL_MATCHES+" jugados",rc===TOTAL_MATCHES?"green":"yellow")}</div>
     <p style="font-size:.7rem;color:#6b7280;margin:0 0 .75rem">Selecciona el grupo, marca resultados con 1/X/2 y borra con ✕</p>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:.75rem">${groupBtns}</div>
     <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem">${matchRows}</div>
@@ -424,7 +410,7 @@ function renderAdmin(){
   <div style="background:#fef9c3;border:1px solid #fde047;border-radius:.75rem;padding:.75rem"><p style="font-size:.75rem;color:#854d0e;margin:0;font-weight:500">⚠️ Los resultados que introduzcas afectan a la puntuación de todos los participantes.</p></div>`;
 }
 
-// ─── MAIN RENDER ──────────────────────────────────────────────────────────────
+// ─── RENDER ───────────────────────────────────────────────────────────────────
 function render(){
   const app=document.getElementById("app");
   if(!app)return;
@@ -441,7 +427,7 @@ window.setTab=t=>ss({tab:t});
 window.setGroup=g=>ss({activeGroup:g,pendingPreds:{}});
 window.setPred=(key,val)=>ss({pendingPreds:{...S.pendingPreds,[key]:val}});
 window.doSavePreds=()=>{if(!S.savingGroup)saveGroupPreds();};
-window.setPodiumPos=(idx,val)=>{const base=S.pendingPodium||(S.players.find(p=>p.nombre===S.user)?.podium?[...S.players.find(p=>p.nombre===S.user).podium]:["","",""]);const u=[...base];u[idx]=val;ss({pendingPodium:u});};
+window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);const base=S.pendingPodium||(me?.podium?[...me.podium]:["","",""]);const u=[...base];u[idx]=val;ss({pendingPodium:u});};
 window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
 window.checkAdminPwd=()=>{const v=document.getElementById("adminPwdInput")?.value||"";if(v==="S&R")ss({adminUnlocked:true,adminPwdError:false});else ss({adminPwdError:true});};
 window.setAdminGroup=g=>ss({adminGroup:g,adminResults:{}});
@@ -458,7 +444,6 @@ document.addEventListener("keydown",e=>{
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 render();
 loadData();
-
 </script>
 </body>
 </html>

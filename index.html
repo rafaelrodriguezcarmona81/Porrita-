@@ -159,13 +159,15 @@ function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 async function loadData(){
   try{
-    const[pls,res]=await Promise.all([
+    const[pls,resJson,sbRes]=await Promise.all([
       sbGet("porra_jugadores","select=*"),
+      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{}})),
       sbGet("porra_resultados","select=*&id=eq.1")
     ]);
     const players=Array.isArray(pls)?pls:[];
-    let groupResults={};
-    if(Array.isArray(res)&&res[0])groupResults=res[0].group_results||{};
+    // Base: resultados automáticos del JSON; override: correcciones manuales del admin en Supabase
+    const groupResults={...(resJson.results||{})};
+    if(Array.isArray(sbRes)&&sbRes[0])Object.assign(groupResults,sbRes[0].group_results||{});
     let rankChange=null,newRank=null;
     if(S.user){
       const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);

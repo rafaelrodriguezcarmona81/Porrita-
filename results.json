@@ -1,13 +1,14 @@
 {
-  "updated": "2026-06-14T10:06:09Z",
+  "updated": "2026-06-14T21:42:04Z",
   "results": {
-    "A_México_Sudáfrica": "1",
-    "A_Corea del Sur_Rep. Checa": "1",
-    "B_Canadá_Bosnia y Herc.": "X",
-    "D_Estados Unidos_Paraguay": "1",
-    "C_Haití_Escocia": "2",
     "D_Australia_Turquía": "1",
+    "B_Catar_Suiza": "X",
+    "C_Haití_Escocia": "2",
+    "A_Corea del Sur_Rep. Checa": "1",
+    "D_Estados Unidos_Paraguay": "1",
+    "E_Alemania_Curazao": "1",
+    "A_México_Sudáfrica": "1",
     "C_Brasil_Marruecos": "X",
-    "B_Catar_Suiza": "X"
+    "B_Canadá_Bosnia y Herc.": "X"
   }
 }

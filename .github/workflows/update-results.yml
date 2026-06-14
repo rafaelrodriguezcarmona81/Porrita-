@@ -1,0 +1,31 @@
+name: Actualizar Resultados Mundial 2026
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 10:00 CEST (UTC+2) — partidos de la jornada anterior ya terminados
+  workflow_dispatch:        # Ejecución manual desde GitHub Actions
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch y procesar resultados
+        run: python3 .github/scripts/update_results.py
+
+      - name: Commit y push si hay cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add results.json
+          if git diff --staged --quiet; then
+            echo "Sin cambios en results.json, nada que commitear"
+          else
+            git commit -m "bot: resultados $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi

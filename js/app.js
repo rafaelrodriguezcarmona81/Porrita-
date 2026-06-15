@@ -237,25 +237,24 @@ async function savePodium(podium){
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function pill(text,color){
-  const c={blue:"#dbeafe;color:#1e40af",green:"#dcfce7;color:#166534",yellow:"#fef9c3;color:#854d0e",red:"#fee2e2;color:#991b1b",gray:"#f3f4f6;color:#4b5563"};
-  return`<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:${c[color]||c.blue}">${text}</span>`;
+  return`<span class="pill pill--${color||'blue'}">${text}</span>`;
 }
-function card(content){return`<div style="background:white;border-radius:.75rem;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.1)">${content}</div>`;}
+function card(content){return`<div class="card">${content}</div>`;}
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function renderLogin(){
-  return`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(135deg,#0a2240 0%,#1a4a8a 60%,#c8102e 100%)">
-    <div style="background:white;border-radius:1rem;box-shadow:0 25px 50px rgba(0,0,0,.3);padding:2rem;width:100%;max-width:360px">
-      <div style="text-align:center;margin-bottom:1.5rem">
-        <div style="font-size:3rem;margin-bottom:.5rem">⚽</div>
-        <h1 style="font-size:1.5rem;font-weight:900;color:#111;margin:0">PORRA MUNDIAL</h1>
-        <p style="font-size:.75rem;color:#6b7280;font-weight:600;letter-spacing:.1em;margin:.25rem 0 0">EEUU · CANADÁ · MÉXICO 2026</p>
+  return`<div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-head">
+        <div class="auth-logo">⚽</div>
+        <h1 class="auth-title">PORRA MUNDIAL</h1>
+        <p class="auth-sub">EEUU · CANADÁ · MÉXICO 2026</p>
       </div>
-      <button onclick="doGoogleLogin()" style="width:100%;padding:.75rem;border-radius:.5rem;font-weight:900;font-size:1rem;border:none;cursor:pointer;background:#4285f4;color:white;display:flex;align-items:center;justify-content:center;gap:.6rem">
+      <button onclick="doGoogleLogin()" class="login-btn">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.4-.1-2.7-.5-4z"/></svg>
         Entrar con Google
       </button>
-      <p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:1rem">Todos los participantes comparten los mismos datos en tiempo real</p>
+      <p class="login-foot">Todos los participantes comparten los mismos datos en tiempo real</p>
     </div>
   </div>`;
 }
@@ -264,22 +263,22 @@ function renderLogin(){
 function renderLinking(){
   const{googleName}=S.linkingSession;
   const opts=S.linkPlayers;
-  return`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(135deg,#0a2240 0%,#1a4a8a 60%,#c8102e 100%)">
-    <div style="background:white;border-radius:1rem;box-shadow:0 25px 50px rgba(0,0,0,.3);padding:2rem;width:100%;max-width:360px">
-      <div style="text-align:center;margin-bottom:1.5rem">
-        <div style="font-size:2.5rem;margin-bottom:.5rem">👋</div>
-        <h1 style="font-size:1.25rem;font-weight:900;color:#111;margin:0">¡Hola, ${googleName}!</h1>
-        <p style="font-size:.8rem;color:#6b7280;margin:.5rem 0 0">¿Ya participabas con otro nombre?</p>
+  return`<div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-head">
+        <div class="auth-logo--sm">👋</div>
+        <h1 class="auth-title--sm">¡Hola, ${googleName}!</h1>
+        <p class="link-greet">¿Ya participabas con otro nombre?</p>
       </div>
       ${opts.length>0?`
-      <label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:.35rem">Tu nombre anterior</label>
-      <select id="linkSelect" style="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.75rem 1rem;font-size:1rem;font-weight:500;outline:none;background:white">
+      <label class="link-label">Tu nombre anterior</label>
+      <select id="linkSelect" class="link-select">
         <option value="">— Elige tu nombre —</option>
         ${opts.map(n=>`<option value="${n}">${n}</option>`).join("")}
       </select>
-      <button onclick="doLinkAccount()" style="width:100%;margin-top:.75rem;padding:.75rem;border-radius:.5rem;font-weight:900;color:white;font-size:.9rem;border:none;cursor:pointer;background:#2563eb">VINCULAR MI CUENTA</button>
-      <p style="text-align:center;font-size:.75rem;color:#9ca3af;margin:.75rem 0">— o —</p>`:""}
-      <button onclick="doFreshAccount()" style="width:100%;padding:.75rem;border-radius:.5rem;font-weight:900;color:#374151;font-size:.9rem;border:2px solid #e5e7eb;cursor:pointer;background:white">Soy nuevo, empezar desde cero</button>
+      <button onclick="doLinkAccount()" class="link-btn-primary">VINCULAR MI CUENTA</button>
+      <p class="link-or">— o —</p>`:""}
+      <button onclick="doFreshAccount()" class="link-btn-secondary">Soy nuevo, empezar desde cero</button>
     </div>
   </div>`;
 }
@@ -290,26 +289,26 @@ function renderHeader(){
   const myPts=gPts(me?.group_predictions||{},S.groupResults);
   const rc=Object.keys(S.groupResults).length;
   const tabs=[["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"]];
-  const rankBanner=S.rankChange!==null?`<div style="background:${S.rankChange>0?'#16a34a':'#dc2626'};text-align:center;padding:.35rem;font-size:.75rem;font-weight:700;color:white">
+  const rankBanner=S.rankChange!==null?`<div class="rank-banner ${S.rankChange>0?'rank-banner--up':'rank-banner--down'}">
     ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
   </div>`:"";
-  return`<div style="background:linear-gradient(90deg,#0a2240,#1a4a8a);color:white;position:sticky;top:0;z-index:50">
-    <div style="max-width:600px;margin:0 auto;padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:.5rem">
-        <span style="font-size:1.25rem">⚽</span>
+  return`<div class="hdr">
+    <div class="hdr-inner">
+      <div class="hdr-brand">
+        <span class="hdr-logo">⚽</span>
         <div>
-          <p style="font-weight:900;font-size:.85rem;margin:0">PORRA MUNDIAL 2026</p>
-          <p style="font-size:.7rem;color:#93c5fd;margin:0">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
+          <p class="hdr-title">PORRA MUNDIAL 2026</p>
+          <p class="hdr-meta">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:.5rem">
-        <button onclick="doRefresh()" style="background:rgba(255,255,255,.15);border:none;cursor:pointer;color:white;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:.4rem;display:flex;align-items:center;gap:.3rem">${S.refreshing?'⏳ Actualizando...':'🔄 Actualizar datos'}</button>
-        <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:#93c5fd;font-size:.75rem;font-weight:600">Salir</button>
+      <div class="hdr-actions">
+        <button onclick="doRefresh()" class="btn-refresh">${S.refreshing?'⏳ Actualizando...':'🔄 Actualizar datos'}</button>
+        <button onclick="doLogout()" class="btn-logout">Salir</button>
       </div>
     </div>
     ${rankBanner}
-    <div style="display:flex;border-top:1px solid rgba(255,255,255,.15)">
-      ${tabs.map(([id,label])=>`<button onclick="setTab('${id}')" style="flex:1;padding:.5rem .25rem;font-size:.7rem;font-weight:900;border:none;cursor:pointer;background:${S.tab===id?'white':'transparent'};color:${S.tab===id?'#1e3a8a':'#bfdbfe'}">${label}</button>`).join("")}
+    <div class="tabs">
+      ${tabs.map(([id,label])=>`<button onclick="setTab('${id}')" class="tab${S.tab===id?' tab--active':''}">${label}</button>`).join("")}
     </div>
   </div>`;
 }
@@ -328,9 +327,10 @@ function renderGrupos(){
     const pending=keys.length-withR;
     const isActive=gr===g;
     const isDone=withR===keys.length&&withR>0;
-    return`<button onclick="setGroup('${gr}')" style="padding:.4rem .2rem;border-radius:.5rem;font-weight:900;font-size:.85rem;border:none;cursor:pointer;background:${isActive?'#2563eb':isDone?'#dcfce7':'white'};color:${isActive?'white':isDone?'#166534':'#374151'}">
+    const cls='group-btn'+(isActive?' group-btn--active':isDone?' group-btn--done':'');
+    return`<button onclick="setGroup('${gr}')" class="${cls}">
       <div>${gr}</div>
-      <div style="font-size:.55rem;font-weight:600;color:${isActive?'rgba(255,255,255,.8)':isDone?'#16a34a':'#9ca3af'}">${isDone?'✅':pending+'⏳'}</div>
+      <div class="group-btn-sub">${isDone?'✅':pending+'⏳'}</div>
     </button>`;
   }).join("");
 
@@ -343,20 +343,27 @@ function renderGrupos(){
     const wrong=hasR&&pred&&pred!==S.groupResults[key];
     const locked=isLocked(key);
     const blocked=hasR||locked;
-    const bg=hasR?(correct?"background:#f0fdf4;border:1px solid #86efac":wrong?"background:#fef2f2;border:1px solid #fca5a5":"background:#f9fafb;border:1px solid #e5e7eb"):locked?"background:#fafafa;border:1px solid #e5e7eb":"background:#f9fafb;border:1px solid #e5e7eb";
+    const matchCls='match'+(hasR?(correct?' match--correct':wrong?' match--wrong':''):locked?' match--locked':'');
     const badge=hasR
-      ?`<span style="font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:999px;background:${correct?'#dcfce7':wrong?'#fee2e2':'#f3f4f6'};color:${correct?'#166534':wrong?'#991b1b':'#6b7280'}">${correct?'+1✓':wrong?'✗':'—'}</span>`
-      :locked?'<span style="font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:999px;background:#fef9c3;color:#854d0e">🔒</span>'
+      ?`<span class="badge ${correct?'badge--correct':wrong?'badge--wrong':'badge--neutral'}">${correct?'+1✓':wrong?'✗':'—'}</span>`
+      :locked?'<span class="badge badge--locked">🔒</span>'
       :'';
-    return`<div style="display:flex;flex-direction:column;gap:.3rem;border-radius:.5rem;padding:.6rem;${bg}">
-      <div style="text-align:center;font-size:.6rem;font-weight:700;color:#9ca3af">${fmtTime(key)} · ${tvChannel(key)}${score?' · 🔢 '+score:''}</div>
-      <div style="display:flex;align-items:center;gap:.4rem">
-        <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
-        <div style="display:flex;gap:3px;align-items:center">
-          ${["1","X","2"].map(v=>`<button onclick="${blocked?'':('setPred(\''+key+'\',\''+v+'\')')}" style="width:34px;height:34px;border-radius:.4rem;font-weight:900;font-size:.85rem;border:2px solid ${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'#e5e7eb'};cursor:${blocked?'default':'pointer'};background:${pred===v?(hasR?(correct?'#22c55e':'#f87171'):'#2563eb'):'white'};color:${pred===v?'white':'#9ca3af'};opacity:${locked&&!hasR?'0.4':'1'}">${v}</button>`).join("")}
+    return`<div class="${matchCls}">
+      <div class="match-meta">${fmtTime(key)} · ${tvChannel(key)}${score?' · 🔢 '+score:''}</div>
+      <div class="match-row">
+        <span class="team">${fl(m[0])} ${m[0]}</span>
+        <div class="picks">
+          ${["1","X","2"].map(v=>{
+            const sel=pred===v;
+            let pc="pick";
+            if(sel)pc+=hasR?(correct?" pick--correct":" pick--wrong"):" pick--sel";
+            if(locked&&!hasR)pc+=" pick--locked";
+            if(blocked)pc+=" pick--blocked";
+            return`<button onclick="${blocked?'':('setPred(\''+key+'\',\''+v+'\')')}" class="${pc}">${v}</button>`;
+          }).join("")}
           ${badge}
         </div>
-        <span style="font-size:.7rem;flex:1;text-align:right;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[1])} ${m[1]}</span>
+        <span class="team team--away">${fl(m[1])} ${m[1]}</span>
       </div>
     </div>`;
   }).join("");
@@ -366,18 +373,18 @@ function renderGrupos(){
   const editableSaved=editableKeys.length>0&&editableKeys.every(k=>(me?.group_predictions||{})[k]);
   const hasPendingInGroup=myGroupKeys.some(k=>S.pendingPreds[k]);
   const saveBtn=editableKeys.length===0
-    ?`<p style="text-align:center;font-size:.75rem;color:#6b7280;margin-top:.5rem">Todos los partidos están bloqueados o tienen resultado oficial</p>`
+    ?`<p class="save-note">Todos los partidos están bloqueados o tienen resultado oficial</p>`
     :(editableSaved&&!hasPendingInGroup)
-    ?`<p style="text-align:center;font-size:.75rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pronósticos guardados</p>`
-    :`<button onclick="doSavePreds()" style="width:100%;padding:.6rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingGroup?'#9ca3af':'#2563eb'};margin-top:.5rem">${S.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`;
+    ?`<p class="save-note save-note--ok">✓ Pronósticos guardados</p>`
+    :`<button onclick="doSavePreds()" class="btn-save${S.savingGroup?' btn-save--busy':''}">${S.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`;
 
   return`
-  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p style="font-size:.7rem;color:#6b7280;margin:0">1=Local · X=Empate · 2=Visitante · 1pt por acierto · 🔒=bloqueado 1h antes</p>`)}
-  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">${groupBtns}</div>
-  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem"><h3 style="font-weight:900;color:#111;margin:0">Grupo ${g}</h3></div>
-    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">${GROUPS[g].map(t=>`<span style="background:#f3f4f6;border-radius:.5rem;padding:.2rem .5rem;font-size:.7rem;font-weight:600">${fl(t)} ${t}</span>`).join("")}</div>
-    <div style="display:flex;flex-direction:column;gap:.4rem">${matchRows}</div>
-    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:#9ca3af;padding:.25rem .1rem;margin-top:.25rem"><span>${Object.keys(myPreds).filter(k=>k.startsWith(g)).length}/${matches.length} pronosticados</span><span>🟢=acierto · 🔴=fallo</span></div>
+  ${card(`<div class="section-head"><h2 class="title">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p class="hint">1=Local · X=Empate · 2=Visitante · 1pt por acierto · 🔒=bloqueado 1h antes</p>`)}
+  <div class="group-grid">${groupBtns}</div>
+  ${card(`<div class="section-head section-head--lg"><h3 class="title">Grupo ${g}</h3></div>
+    <div class="group-info">${GROUPS[g].map(t=>`<span class="chip">${fl(t)} ${t}</span>`).join("")}</div>
+    <div class="match-list">${matchRows}</div>
+    <div class="match-foot"><span>${Object.keys(myPreds).filter(k=>k.startsWith(g)).length}/${matches.length} pronosticados</span><span>🟢=acierto · 🔴=fallo</span></div>
     ${saveBtn}`)}`;
 }
 
@@ -388,33 +395,32 @@ function renderPodium(){
   const form=S.pendingPodium||(saved?[...saved]:["","",""]);
   const used=form.filter(Boolean);
   const isSaved=saved&&!S.pendingPodium;
-  const preview=isSaved?`<div style="background:#eff6ff;border-radius:.5rem;padding:.75rem;margin-bottom:1rem;display:flex;gap:.5rem">${saved.map((t,i)=>`<div style="text-align:center;flex:1"><p style="font-size:1.25rem;margin:0">${["🥇","🥈","🥉"][i]}</p><p style="font-size:.7rem;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis">${fl(t)} ${t}</p></div>`).join("")}</div>`:"";
-  const selStyle="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.5rem .75rem;font-size:.85rem;font-weight:500;outline:none";
+  const preview=isSaved?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${t}</p></div>`).join("")}</div>`:"";
   const podForm=[["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
     const avail=ALL_TEAMS.filter(t=>!used.includes(t)||t===form[idx]).sort((a,b)=>a.localeCompare(b,"es"));
-    return`<div><label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;margin-bottom:.25rem">${label}</label>
-      <select onchange="setPodiumPos(${idx},this.value)" style="${selStyle}">
+    return`<div><label class="podium-field-label">${label}</label>
+      <select onchange="setPodiumPos(${idx},this.value)" class="select">
         <option value="">— Selecciona —</option>
         ${avail.map(t=>`<option value="${t}" ${form[idx]===t?'selected':''}>${fl(t)} ${t}</option>`).join("")}
       </select></div>`;
   }).join("");
   const allSel=form[0]&&form[1]&&form[2];
   const saveBtn=allSel
-    ?`<button onclick="doSavePodium()" style="width:100%;margin-top:.75rem;padding:.65rem;border-radius:.5rem;font-weight:900;font-size:.85rem;color:white;border:none;cursor:pointer;background:${S.savingPodium?'#9ca3af':'#16a34a'}">${S.savingPodium?'Guardando...':'💾 GUARDAR PÓDIUM'}</button>`
-    :isSaved?'<p style="text-align:center;font-size:.8rem;color:#16a34a;font-weight:700;margin-top:.5rem">✓ Pódium guardado</p>'
-    :'<p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:.5rem">Selecciona los 3 equipos para guardar</p>';
+    ?`<button onclick="doSavePodium()" class="btn-podium${S.savingPodium?' btn-podium--busy':''}">${S.savingPodium?'Guardando...':'💾 GUARDAR PÓDIUM'}</button>`
+    :isSaved?'<p class="podium-saved">✓ Pódium guardado</p>'
+    :'<p class="podium-hint">Selecciona los 3 equipos para guardar</p>';
   const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
-    <div style="display:flex;align-items:center;gap:.75rem;background:#f9fafb;border-radius:.5rem;padding:.75rem">
-      <div style="width:32px;height:32px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-weight:900;color:#1d4ed8">${p.nombre[0].toUpperCase()}</div>
-      <div style="flex:1"><p style="font-weight:700;font-size:.85rem;margin:0">${p.nombre}</p>
-        ${p.podium?`<p style="font-size:.7rem;color:#6b7280;margin:0">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>`:`<p style="font-size:.7rem;color:#9ca3af;font-style:italic;margin:0">Sin pronóstico aún</p>`}
+    <div class="player-row">
+      <div class="avatar">${p.nombre[0].toUpperCase()}</div>
+      <div class="grow"><p class="player-name">${p.nombre}</p>
+        ${p.podium?`<p class="player-podium">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
       </div></div>`).join("");
   return`
-  ${card(`<h2 style="font-weight:900;color:#111;margin:0 0 .25rem">Mi Pronóstico de Pódium</h2>
-    <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
-    ${preview}<div style="display:flex;flex-direction:column;gap:.75rem">${podForm}</div>${saveBtn}`)}
-  ${card(`<h3 style="font-weight:900;color:#111;margin:0 0 .75rem">Pódiums del grupo (${S.players.length})</h3>
-    <div style="display:flex;flex-direction:column;gap:.4rem">${others||'<p style="text-align:center;font-size:.85rem;color:#9ca3af;padding:1rem 0;margin:0">Aún no hay otros participantes</p>'}</div>`)}`;
+  ${card(`<h2 class="podium-title">Mi Pronóstico de Pódium</h2>
+    <p class="podium-sub">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
+    ${preview}<div class="podium-form">${podForm}</div>${saveBtn}`)}
+  ${card(`<h3 class="card-title">Pódiums del grupo (${S.players.length})</h3>
+    <div class="list">${others||'<p class="list-empty">Aún no hay otros participantes</p>'}</div>`)}`;
 }
 
 // ─── RANKING ──────────────────────────────────────────────────────────────────
@@ -427,32 +433,32 @@ function renderRanking(){
   })).sort((a,b)=>b.total-a.total);
   const medals=["🥇","🥈","🥉"];
   const rows=scores.map((s,i)=>`
-    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;border-radius:.75rem;border:2px solid ${s.name===S.user?'#60a5fa':'transparent'};background:${s.name===S.user?'#eff6ff':'#f9fafb'}">
-      <span style="font-size:1.25rem;width:28px;text-align:center">${medals[i]||(i+1)+"."}</span>
-      <div style="flex:1">
-        <p style="font-weight:900;color:#111;margin:0">${s.name}${s.name===S.user?' <span style="color:#3b82f6;font-size:.65rem">(tú)</span>':''}</p>
-        <p style="font-size:.65rem;color:#9ca3af;margin:0">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
+    <div class="rank-row${s.name===S.user?' rank-row--me':''}">
+      <span class="rank-pos">${medals[i]||(i+1)+"."}</span>
+      <div class="grow">
+        <p class="rank-name">${s.name}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
+        <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
       </div>
-      <div style="text-align:right"><p style="font-size:1.5rem;font-weight:900;color:#111;margin:0">${s.total}</p><p style="font-size:.65rem;color:#9ca3af;margin:0">pts</p></div>
+      <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>
     </div>`).join("");
   const rules=[["⚽ Grupos (72 partidos)","1pt/acierto"],["🔟 Dieciseisavos","Base 2pts"],["8️⃣ Octavos","Base 4pts"],["4️⃣ Cuartos","Base 8pts"],["2️⃣ Semifinales","Base 16pts"],["🏅 3º/4º puesto","Base 24pts"],["🏆 Gran Final","Base 32pts"],["🎯 Bonus Pódium","+5+3+2pts"]];
   return`
-  ${card(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem"><h2 style="font-weight:900;color:#111;margin:0">Clasificación en vivo</h2>${pill(S.players.length+" jugadores","blue")}</div>
-    <p style="font-size:.7rem;color:#6b7280;margin:0 0 1rem">${Object.keys(S.groupResults).length} resultados aplicados</p>
-    <div style="display:flex;flex-direction:column;gap:.4rem">${rows||'<p style="text-align:center;color:#9ca3af;padding:2rem 0;margin:0">Aún no hay participantes</p>'}</div>`)}
-  ${card(`<h3 style="font-weight:900;color:#111;margin:0 0 .75rem">📋 Puntuación por fase</h3>
-    <div style="display:flex;flex-direction:column;gap:.4rem">${rules.map(([l,r],i)=>`<div style="display:flex;justify-content:space-between;font-size:.85rem;padding-bottom:.4rem;${i<rules.length-1?'border-bottom:1px solid #f3f4f6':''}"><span style="color:#6b7280">${l}</span><span style="font-weight:700">${r}</span></div>`).join("")}</div>`)}`;
+  ${card(`<div class="section-head"><h2 class="title">Clasificación en vivo</h2>${pill(S.players.length+" jugadores","blue")}</div>
+    <p class="hint--mb">${Object.keys(S.groupResults).length} resultados aplicados</p>
+    <div class="list">${rows||'<p class="rank-empty">Aún no hay participantes</p>'}</div>`)}
+  ${card(`<h3 class="card-title">📋 Puntuación por fase</h3>
+    <div class="rules">${rules.map(([l,r])=>`<div class="rule"><span class="rule-label">${l}</span><span class="rule-value">${r}</span></div>`).join("")}</div>`)}`;
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
 function render(){
   const app=document.getElementById("app");
   if(!app)return;
-  if(S.loading){app.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a2240"><div style="text-align:center;color:white"><div style="font-size:3rem;margin-bottom:.5rem">⚽</div><p style="font-weight:700;margin:0">Conectando...</p></div></div>`;return;}
+  if(S.loading){app.innerHTML=`<div class="loading"><div class="loading-inner"><div class="loading-logo">⚽</div><p class="loading-text">Conectando...</p></div></div>`;return;}
   if(S.linkingSession){app.innerHTML=renderLinking();return;}
   if(!S.user){app.innerHTML=renderLogin();return;}
   const content={grupos:renderGrupos,podium:renderPodium,marcador:renderRanking}[S.tab]?.();
-  app.innerHTML=`${renderHeader()}<div style="max-width:600px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:1rem">${content||""}</div>`;
+  app.innerHTML=`${renderHeader()}<div class="app-main">${content||""}</div>`;
 }
 
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────

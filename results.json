@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-15T11:49:43Z",
+  "updated": "2026-06-15T11:52:41Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -13,5 +13,19 @@
     "C_Brasil_Marruecos": "X",
     "F_Países Bajos_Japón": "X",
     "B_Canadá_Bosnia y Herc.": "X"
+  },
+  "scores": {
+    "D_Australia_Turquía": "2-0",
+    "B_Catar_Suiza": "1-1",
+    "C_Haití_Escocia": "0-1",
+    "A_Corea del Sur_Rep. Checa": "2-1",
+    "D_Estados Unidos_Paraguay": "4-1",
+    "E_Costa de Marfil_Ecuador": "1-0",
+    "E_Alemania_Curazao": "7-1",
+    "F_Suecia_Túnez": "5-1",
+    "A_México_Sudáfrica": "2-0",
+    "C_Brasil_Marruecos": "1-1",
+    "F_Países Bajos_Japón": "2-2",
+    "B_Canadá_Bosnia y Herc.": "1-1"
   }
 }

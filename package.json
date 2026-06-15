@@ -4,6 +4,7 @@
   "description": "Porra del Mundial 2026 (HTML/CSS/JS estático sobre Supabase)",
   "private": true,
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage test/*.test.js"
   }
 }

@@ -70,6 +70,7 @@ except Exception as e:
   sys.exit(1)
 
 results = {}
+scores = {}
 for g in data.get("games", []):
   if g.get("type") != "group":
     continue
@@ -92,10 +93,12 @@ for g in data.get("games", []):
     results[key] = "X"
   else:
     results[key] = "2"
+  scores[key] = f"{home_score}-{away_score}"
 
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "results": results,
+  "scores": scores,
 }
 
 out_path = "results.json"

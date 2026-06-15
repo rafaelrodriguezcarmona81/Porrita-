@@ -1,0 +1,496 @@
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+const SB_URL="https://qkxenqexxdvpjnagsudk.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFreGVucWV4eGR2cGpuYWdzdWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzI4ODksImV4cCI6MjA5Njc0ODg4OX0.hSo4lkK_-RjDWVPQKHbVfM0AfVlDPQxMZbTtvyLHiik";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let _token=null;
+function getHDR(){return{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+(_token||SB_KEY)};}
+async function sbGet(t,p){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+(p||""),{headers:getHDR()});return r.json();}
+async function sbPost(t,b){const r=await fetch(SB_URL+"/rest/v1/"+t,{method:"POST",headers:{...getHDR(),"Prefer":"return=representation"},body:JSON.stringify(b)});return r.json();}
+async function sbPatch(t,p,b){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+p,{method:"PATCH",headers:{...getHDR(),"Prefer":"return=representation"},body:JSON.stringify(b)});return r.json();}
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const GROUPS={
+  A:["México","Sudáfrica","Corea del Sur","Rep. Checa"],
+  B:["Canadá","Bosnia y Herc.","Catar","Suiza"],
+  C:["Brasil","Marruecos","Haití","Escocia"],
+  D:["Estados Unidos","Paraguay","Australia","Turquía"],
+  E:["Alemania","Curazao","Costa de Marfil","Ecuador"],
+  F:["Países Bajos","Japón","Suecia","Túnez"],
+  G:["Bélgica","Egipto","Irán","Nueva Zelanda"],
+  H:["España","Cabo Verde","Arabia Saudí","Uruguay"],
+  I:["Francia","Senegal","Irak","Noruega"],
+  J:["Argentina","Argelia","Austria","Jordania"],
+  K:["Portugal","RD Congo","Uzbekistán","Colombia"],
+  L:["Inglaterra","Croacia","Ghana","Panamá"]
+};
+const GM={
+  A:[["México","Sudáfrica"],["Corea del Sur","Rep. Checa"],["Rep. Checa","Sudáfrica"],["México","Corea del Sur"],["Rep. Checa","México"],["Sudáfrica","Corea del Sur"]],
+  B:[["Canadá","Bosnia y Herc."],["Catar","Suiza"],["Suiza","Bosnia y Herc."],["Canadá","Catar"],["Suiza","Canadá"],["Bosnia y Herc.","Catar"]],
+  C:[["Brasil","Marruecos"],["Haití","Escocia"],["Escocia","Marruecos"],["Brasil","Haití"],["Escocia","Brasil"],["Marruecos","Haití"]],
+  D:[["Estados Unidos","Paraguay"],["Australia","Turquía"],["Estados Unidos","Australia"],["Turquía","Paraguay"],["Turquía","Estados Unidos"],["Paraguay","Australia"]],
+  E:[["Alemania","Curazao"],["Costa de Marfil","Ecuador"],["Alemania","Costa de Marfil"],["Ecuador","Curazao"],["Curazao","Costa de Marfil"],["Ecuador","Alemania"]],
+  F:[["Países Bajos","Japón"],["Suecia","Túnez"],["Países Bajos","Suecia"],["Túnez","Japón"],["Japón","Suecia"],["Túnez","Países Bajos"]],
+  G:[["Bélgica","Egipto"],["Irán","Nueva Zelanda"],["Bélgica","Irán"],["Nueva Zelanda","Egipto"],["Egipto","Irán"],["Nueva Zelanda","Bélgica"]],
+  H:[["España","Cabo Verde"],["Arabia Saudí","Uruguay"],["España","Arabia Saudí"],["Uruguay","Cabo Verde"],["Cabo Verde","Arabia Saudí"],["Uruguay","España"]],
+  I:[["Francia","Senegal"],["Irak","Noruega"],["Francia","Irak"],["Noruega","Senegal"],["Noruega","Francia"],["Senegal","Irak"]],
+  J:[["Argentina","Argelia"],["Austria","Jordania"],["Argentina","Austria"],["Jordania","Argelia"],["Argelia","Austria"],["Jordania","Argentina"]],
+  K:[["Portugal","RD Congo"],["Uzbekistán","Colombia"],["Portugal","Uzbekistán"],["Colombia","RD Congo"],["Colombia","Portugal"],["RD Congo","Uzbekistán"]],
+  L:[["Inglaterra","Croacia"],["Ghana","Panamá"],["Inglaterra","Ghana"],["Panamá","Croacia"],["Panamá","Inglaterra"],["Croacia","Ghana"]]
+};
+const ALL_TEAMS=Object.values(GROUPS).flat();
+const TOTAL_MATCHES=Object.values(GM).flat().length;
+const FLAGS={"México":"🇲🇽","Sudáfrica":"🇿🇦","Corea del Sur":"🇰🇷","Rep. Checa":"🇨🇿","Canadá":"🇨🇦","Bosnia y Herc.":"🇧🇦","Catar":"🇶🇦","Suiza":"🇨🇭","Brasil":"🇧🇷","Marruecos":"🇲🇦","Haití":"🇭🇹","Escocia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Estados Unidos":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turquía":"🇹🇷","Alemania":"🇩🇪","Curazao":"🇨🇼","Costa de Marfil":"🇨🇮","Ecuador":"🇪🇨","Países Bajos":"🇳🇱","Japón":"🇯🇵","Suecia":"🇸🇪","Túnez":"🇹🇳","Bélgica":"🇧🇪","Egipto":"🇪🇬","Irán":"🇮🇷","Nueva Zelanda":"🇳🇿","España":"🇪🇸","Cabo Verde":"🇨🇻","Arabia Saudí":"🇸🇦","Uruguay":"🇺🇾","Francia":"🇫🇷","Senegal":"🇸🇳","Irak":"🇮🇶","Noruega":"🇳🇴","Argentina":"🇦🇷","Argelia":"🇩🇿","Austria":"🇦🇹","Jordania":"🇯🇴","Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbekistán":"🇺🇿","Colombia":"🇨🇴","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croacia":"🇭🇷","Ghana":"🇬🇭","Panamá":"🇵🇦"};
+const fl=t=>FLAGS[t]||"🏳️";
+
+// ─── HORARIOS CEST (UTC+2) — bloqueo 1h antes ─────────────────────────────────
+const MATCH_TIMES={
+  "A_México_Sudáfrica":"2026-06-11T21:00",
+  "A_Corea del Sur_Rep. Checa":"2026-06-12T04:00",
+  "A_México_Corea del Sur":"2026-06-19T03:00",
+  "A_Rep. Checa_Sudáfrica":"2026-06-18T18:00",
+  "A_Sudáfrica_Corea del Sur":"2026-06-25T03:00",
+  "A_Rep. Checa_México":"2026-06-25T03:00",
+  "B_Canadá_Bosnia y Herc.":"2026-06-12T21:00",
+  "B_Catar_Suiza":"2026-06-13T21:00",
+  "B_Suiza_Bosnia y Herc.":"2026-06-18T21:00",
+  "B_Canadá_Catar":"2026-06-19T00:00",
+  "B_Bosnia y Herc._Catar":"2026-06-24T21:00",
+  "B_Suiza_Canadá":"2026-06-24T21:00",
+  "C_Haití_Escocia":"2026-06-14T03:00",
+  "C_Brasil_Marruecos":"2026-06-14T00:00",
+  "C_Brasil_Haití":"2026-06-20T03:00",
+  "C_Escocia_Marruecos":"2026-06-20T00:00",
+  "C_Escocia_Brasil":"2026-06-25T00:00",
+  "C_Marruecos_Haití":"2026-06-25T00:00",
+  "D_Estados Unidos_Paraguay":"2026-06-13T03:00",
+  "D_Australia_Turquía":"2026-06-14T06:00",
+  "D_Estados Unidos_Australia":"2026-06-19T21:00",
+  "D_Turquía_Paraguay":"2026-06-20T05:00",
+  "D_Paraguay_Australia":"2026-06-26T04:00",
+  "D_Turquía_Estados Unidos":"2026-06-26T04:00",
+  "E_Costa de Marfil_Ecuador":"2026-06-15T01:00",
+  "E_Alemania_Curazao":"2026-06-14T19:00",
+  "E_Alemania_Costa de Marfil":"2026-06-20T22:00",
+  "E_Ecuador_Curazao":"2026-06-21T02:00",
+  "E_Curazao_Costa de Marfil":"2026-06-25T22:00",
+  "E_Ecuador_Alemania":"2026-06-25T22:00",
+  "F_Países Bajos_Japón":"2026-06-14T22:00",
+  "F_Suecia_Túnez":"2026-06-15T04:00",
+  "F_Países Bajos_Suecia":"2026-06-20T19:00",
+  "F_Túnez_Japón":"2026-06-21T06:00",
+  "F_Japón_Suecia":"2026-06-26T01:00",
+  "F_Túnez_Países Bajos":"2026-06-26T01:00",
+  "G_Irán_Nueva Zelanda":"2026-06-16T03:00",
+  "G_Bélgica_Egipto":"2026-06-15T21:00",
+  "G_Bélgica_Irán":"2026-06-21T21:00",
+  "G_Nueva Zelanda_Egipto":"2026-06-22T03:00",
+  "G_Egipto_Irán":"2026-06-27T05:00",
+  "G_Nueva Zelanda_Bélgica":"2026-06-27T05:00",
+  "H_España_Cabo Verde":"2026-06-15T18:00",
+  "H_Arabia Saudí_Uruguay":"2026-06-16T00:00",
+  "H_España_Arabia Saudí":"2026-06-21T18:00",
+  "H_Uruguay_Cabo Verde":"2026-06-22T00:00",
+  "H_Cabo Verde_Arabia Saudí":"2026-06-27T02:00",
+  "H_Uruguay_España":"2026-06-27T02:00",
+  "I_Francia_Senegal":"2026-06-16T21:00",
+  "I_Irak_Noruega":"2026-06-17T00:00",
+  "I_Francia_Irak":"2026-06-22T23:00",
+  "I_Noruega_Senegal":"2026-06-23T02:00",
+  "I_Senegal_Irak":"2026-06-26T21:00",
+  "I_Noruega_Francia":"2026-06-26T21:00",
+  "J_Argentina_Argelia":"2026-06-17T03:00",
+  "J_Austria_Jordania":"2026-06-17T06:00",
+  "J_Argentina_Austria":"2026-06-22T19:00",
+  "J_Jordania_Argelia":"2026-06-23T05:00",
+  "J_Argelia_Austria":"2026-06-28T04:00",
+  "J_Jordania_Argentina":"2026-06-28T04:00",
+  "K_Portugal_RD Congo":"2026-06-17T19:00",
+  "K_Uzbekistán_Colombia":"2026-06-18T04:00",
+  "K_Portugal_Uzbekistán":"2026-06-23T19:00",
+  "K_Colombia_RD Congo":"2026-06-24T04:00",
+  "K_Colombia_Portugal":"2026-06-28T01:30",
+  "K_RD Congo_Uzbekistán":"2026-06-28T01:30",
+  "L_Inglaterra_Croacia":"2026-06-17T22:00",
+  "L_Ghana_Panamá":"2026-06-18T01:00",
+  "L_Panamá_Croacia":"2026-06-24T01:00",
+  "L_Inglaterra_Ghana":"2026-06-23T22:00",
+  "L_Panamá_Inglaterra":"2026-06-27T23:00",
+  "L_Croacia_Ghana":"2026-06-27T23:00"
+};
+function fmtTime(key){
+  const t=MATCH_TIMES[key];
+  if(!t)return"";
+  const [date,time]=t.split("T");
+  const [y,m,d]=date.split("-");
+  const days=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const dt=new Date(t+":00+02:00");
+  return days[dt.getUTCDay()]+" "+d+"/"+m+" "+time;
+}
+
+// ─── CANAL TV (España) ─────────────────────────────────────────────────────
+const LA1_MATCHES = new Set([
+  "A_México_Sudáfrica",
+  "B_Canadá_Bosnia y Herc.",
+  "C_Brasil_Marruecos",
+  "E_Alemania_Curazao",
+  "H_España_Cabo Verde",
+  "I_Francia_Senegal",
+  "L_Inglaterra_Croacia",
+  "B_Suiza_Bosnia y Herc.",
+  "D_Estados Unidos_Australia",
+  "F_Países Bajos_Suecia",
+  "H_España_Arabia Saudí",
+  "J_Argentina_Austria",
+  "L_Inglaterra_Ghana",
+  "C_Escocia_Brasil",
+  "E_Ecuador_Alemania",
+  "H_Uruguay_España",
+  "K_Colombia_Portugal"
+]);
+function tvChannel(key){
+  return LA1_MATCHES.has(key) ? "📺 La 1" : "🟣 DAZN";
+}
+
+function isLocked(key){
+  const t=MATCH_TIMES[key];
+  if(!t)return false;
+  const kickoff=new Date(t+":00+02:00");
+  return Date.now()>=kickoff.getTime()-60*60*1000;
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let S={
+  user:null,userId:null,players:[],groupResults:{},groupScores:{},tab:"grupos",
+  activeGroup:"A",loading:true,loginBusy:false,
+  savingGroup:false,savingPodium:false,
+  pendingPreds:{},pendingPodium:null,
+  refreshing:false,rankChange:null,lastRank:null,
+  linkingSession:null,linkPlayers:[]
+};
+function ss(p){Object.assign(S,p);render();}
+
+// ─── SCORING ──────────────────────────────────────────────────────────────────
+function gPts(preds,results){let p=0;for(const k in results)if(preds[k]&&preds[k]===results[k])p++;return p;}
+function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])p+=5;if(pod[1]===fin[1])p+=3;if(pod[2]===fin[2])p+=2;return p;}
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+async function loadData(){
+  try{
+    const[pls,resJson]=await Promise.all([
+      sbGet("porra_jugadores","select=*"),
+      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{},scores:{}}))
+    ]);
+    const players=Array.isArray(pls)?pls:[];
+    const groupResults=resJson.results||{};
+    const groupScores=resJson.scores||{};
+    let rankChange=null,newRank=null;
+    if(S.user){
+      const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);
+      newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
+      if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
+    }
+    ss({players,groupResults,groupScores,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
+  }catch(e){console.error(e);ss({loading:false,refreshing:false});}
+}
+
+async function ensurePlayer(userId,googleName){
+  let res=await sbGet("porra_jugadores","user_id=eq."+userId+"&select=nombre");
+  if(Array.isArray(res)&&res.length>0)return res[0].nombre;
+  res=await sbGet("porra_jugadores","nombre=eq."+encodeURIComponent(googleName)+"&select=nombre,user_id");
+  if(Array.isArray(res)&&res.length>0&&!res[0].user_id){
+    await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(googleName),{user_id:userId});
+    return googleName;
+  }
+  return null; // necesita vinculación manual
+}
+
+async function linkAccount(nombreAntiguo){
+  const{userId,googleName}=S.linkingSession;
+  await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(nombreAntiguo),{user_id:userId});
+  await loadData();
+  ss({user:nombreAntiguo,userId,linkingSession:null,linkPlayers:[]});
+}
+
+async function createFreshAccount(){
+  const{userId,googleName}=S.linkingSession;
+  await sbPost("porra_jugadores",{nombre:googleName,user_id:userId,group_predictions:{},podium:null});
+  await loadData();
+  ss({user:googleName,userId,linkingSession:null,linkPlayers:[]});
+}
+
+async function saveGroupPreds(){
+  const me=S.players.find(p=>p.nombre===S.user);
+  const merged={...(me?.group_predictions||{}),...S.pendingPreds};
+  ss({savingGroup:true});
+  await sbPatch("porra_jugadores","user_id=eq."+S.userId,{group_predictions:merged,updated_at:new Date().toISOString()});
+  await loadData();
+  ss({savingGroup:false,pendingPreds:{}});
+}
+
+async function savePodium(podium){
+  ss({savingPodium:true});
+  await sbPatch("porra_jugadores","user_id=eq."+S.userId,{podium,updated_at:new Date().toISOString()});
+  await loadData();
+  ss({savingPodium:false,pendingPodium:null});
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function pill(text,color){
+  return`<span class="pill pill--${color||'blue'}">${text}</span>`;
+}
+function card(content){return`<div class="card">${content}</div>`;}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+function renderLogin(){
+  return`<div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-head">
+        <div class="auth-logo">⚽</div>
+        <h1 class="auth-title">PORRA MUNDIAL</h1>
+        <p class="auth-sub">EEUU · CANADÁ · MÉXICO 2026</p>
+      </div>
+      <button onclick="doGoogleLogin()" class="login-btn">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.4-.1-2.7-.5-4z"/></svg>
+        Entrar con Google
+      </button>
+      <p class="login-foot">Todos los participantes comparten los mismos datos en tiempo real</p>
+    </div>
+  </div>`;
+}
+
+// ─── VINCULACIÓN ──────────────────────────────────────────────────────────────
+function renderLinking(){
+  const{googleName}=S.linkingSession;
+  const opts=S.linkPlayers;
+  return`<div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-head">
+        <div class="auth-logo--sm">👋</div>
+        <h1 class="auth-title--sm">¡Hola, ${googleName}!</h1>
+        <p class="link-greet">¿Ya participabas con otro nombre?</p>
+      </div>
+      ${opts.length>0?`
+      <label class="link-label">Tu nombre anterior</label>
+      <select id="linkSelect" class="link-select">
+        <option value="">— Elige tu nombre —</option>
+        ${opts.map(n=>`<option value="${n}">${n}</option>`).join("")}
+      </select>
+      <button onclick="doLinkAccount()" class="link-btn-primary">VINCULAR MI CUENTA</button>
+      <p class="link-or">— o —</p>`:""}
+      <button onclick="doFreshAccount()" class="link-btn-secondary">Soy nuevo, empezar desde cero</button>
+    </div>
+  </div>`;
+}
+
+// ─── HEADER ───────────────────────────────────────────────────────────────────
+function renderHeader(){
+  const me=S.players.find(p=>p.nombre===S.user);
+  const myPts=gPts(me?.group_predictions||{},S.groupResults);
+  const rc=Object.keys(S.groupResults).length;
+  const tabs=[["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"]];
+  const rankBanner=S.rankChange!==null?`<div class="rank-banner ${S.rankChange>0?'rank-banner--up':'rank-banner--down'}">
+    ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
+  </div>`:"";
+  return`<div class="hdr">
+    <div class="hdr-inner">
+      <div class="hdr-brand">
+        <span class="hdr-logo">⚽</span>
+        <div>
+          <p class="hdr-title">PORRA MUNDIAL 2026</p>
+          <p class="hdr-meta">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <button onclick="doRefresh()" class="btn-refresh">${S.refreshing?'⏳ Actualizando...':'🔄 Actualizar datos'}</button>
+        <button onclick="doLogout()" class="btn-logout">Salir</button>
+      </div>
+    </div>
+    ${rankBanner}
+    <div class="tabs">
+      ${tabs.map(([id,label])=>`<button onclick="setTab('${id}')" class="tab${S.tab===id?' tab--active':''}">${label}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ─── GRUPOS ───────────────────────────────────────────────────────────────────
+function renderGrupos(){
+  const me=S.players.find(p=>p.nombre===S.user);
+  const myPreds={...(me?.group_predictions||{}),...S.pendingPreds};
+  const predCount=Object.keys(myPreds).length;
+  const g=S.activeGroup;
+  const matches=GM[g];
+
+  const groupBtns=Object.keys(GROUPS).map(gr=>{
+    const keys=GM[gr].map(m=>gr+"_"+m[0]+"_"+m[1]);
+    const withR=keys.filter(k=>S.groupResults[k]).length;
+    const pending=keys.length-withR;
+    const isActive=gr===g;
+    const isDone=withR===keys.length&&withR>0;
+    const cls='group-btn'+(isActive?' group-btn--active':isDone?' group-btn--done':'');
+    return`<button onclick="setGroup('${gr}')" class="${cls}">
+      <div>${gr}</div>
+      <div class="group-btn-sub">${isDone?'✅':pending+'⏳'}</div>
+    </button>`;
+  }).join("");
+
+  const matchRows=matches.map(m=>{
+    const key=g+"_"+m[0]+"_"+m[1];
+    const hasR=!!S.groupResults[key];
+    const score=S.groupScores[key];
+    const pred=myPreds[key];
+    const correct=hasR&&pred===S.groupResults[key];
+    const wrong=hasR&&pred&&pred!==S.groupResults[key];
+    const locked=isLocked(key);
+    const blocked=hasR||locked;
+    const matchCls='match'+(hasR?(correct?' match--correct':wrong?' match--wrong':''):locked?' match--locked':'');
+    const badge=hasR
+      ?`<span class="badge ${correct?'badge--correct':wrong?'badge--wrong':'badge--neutral'}">${correct?'+1✓':wrong?'✗':'—'}</span>`
+      :locked?'<span class="badge badge--locked">🔒</span>'
+      :'';
+    return`<div class="${matchCls}">
+      <div class="match-meta">${fmtTime(key)} · ${tvChannel(key)}${score?' · 🔢 '+score:''}</div>
+      <div class="match-row">
+        <span class="team">${fl(m[0])} ${m[0]}</span>
+        <div class="picks">
+          ${["1","X","2"].map(v=>{
+            const sel=pred===v;
+            let pc="pick";
+            if(sel)pc+=hasR?(correct?" pick--correct":" pick--wrong"):" pick--sel";
+            if(locked&&!hasR)pc+=" pick--locked";
+            if(blocked)pc+=" pick--blocked";
+            return`<button onclick="${blocked?'':('setPred(\''+key+'\',\''+v+'\')')}" class="${pc}">${v}</button>`;
+          }).join("")}
+          ${badge}
+        </div>
+        <span class="team team--away">${fl(m[1])} ${m[1]}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  const myGroupKeys=matches.map(m=>g+"_"+m[0]+"_"+m[1]);
+  const editableKeys=myGroupKeys.filter(k=>!S.groupResults[k]&&!isLocked(k));
+  const editableSaved=editableKeys.length>0&&editableKeys.every(k=>(me?.group_predictions||{})[k]);
+  const hasPendingInGroup=myGroupKeys.some(k=>S.pendingPreds[k]);
+  const saveBtn=editableKeys.length===0
+    ?`<p class="save-note">Todos los partidos están bloqueados o tienen resultado oficial</p>`
+    :(editableSaved&&!hasPendingInGroup)
+    ?`<p class="save-note save-note--ok">✓ Pronósticos guardados</p>`
+    :`<button onclick="doSavePreds()" class="btn-save${S.savingGroup?' btn-save--busy':''}">${S.savingGroup?'Guardando...':'GUARDAR PRONÓSTICOS'}</button>`;
+
+  return`
+  ${card(`<div class="section-head"><h2 class="title">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p class="hint">1=Local · X=Empate · 2=Visitante · 1pt por acierto · 🔒=bloqueado 1h antes</p>`)}
+  <div class="group-grid">${groupBtns}</div>
+  ${card(`<div class="section-head section-head--lg"><h3 class="title">Grupo ${g}</h3></div>
+    <div class="group-info">${GROUPS[g].map(t=>`<span class="chip">${fl(t)} ${t}</span>`).join("")}</div>
+    <div class="match-list">${matchRows}</div>
+    <div class="match-foot"><span>${Object.keys(myPreds).filter(k=>k.startsWith(g)).length}/${matches.length} pronosticados</span><span>🟢=acierto · 🔴=fallo</span></div>
+    ${saveBtn}`)}`;
+}
+
+// ─── PÓDIUM ───────────────────────────────────────────────────────────────────
+function renderPodium(){
+  const me=S.players.find(p=>p.nombre===S.user);
+  const saved=me?.podium||null;
+  const form=S.pendingPodium||(saved?[...saved]:["","",""]);
+  const used=form.filter(Boolean);
+  const isSaved=saved&&!S.pendingPodium;
+  const preview=isSaved?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${t}</p></div>`).join("")}</div>`:"";
+  const podForm=[["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
+    const avail=ALL_TEAMS.filter(t=>!used.includes(t)||t===form[idx]).sort((a,b)=>a.localeCompare(b,"es"));
+    return`<div><label class="podium-field-label">${label}</label>
+      <select onchange="setPodiumPos(${idx},this.value)" class="select">
+        <option value="">— Selecciona —</option>
+        ${avail.map(t=>`<option value="${t}" ${form[idx]===t?'selected':''}>${fl(t)} ${t}</option>`).join("")}
+      </select></div>`;
+  }).join("");
+  const allSel=form[0]&&form[1]&&form[2];
+  const saveBtn=allSel
+    ?`<button onclick="doSavePodium()" class="btn-podium${S.savingPodium?' btn-podium--busy':''}">${S.savingPodium?'Guardando...':'💾 GUARDAR PÓDIUM'}</button>`
+    :isSaved?'<p class="podium-saved">✓ Pódium guardado</p>'
+    :'<p class="podium-hint">Selecciona los 3 equipos para guardar</p>';
+  const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
+    <div class="player-row">
+      <div class="avatar">${p.nombre[0].toUpperCase()}</div>
+      <div class="grow"><p class="player-name">${p.nombre}</p>
+        ${p.podium?`<p class="player-podium">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
+      </div></div>`).join("");
+  return`
+  ${card(`<h2 class="podium-title">Mi Pronóstico de Pódium</h2>
+    <p class="podium-sub">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
+    ${preview}<div class="podium-form">${podForm}</div>${saveBtn}`)}
+  ${card(`<h3 class="card-title">Pódiums del grupo (${S.players.length})</h3>
+    <div class="list">${others||'<p class="list-empty">Aún no hay otros participantes</p>'}</div>`)}`;
+}
+
+// ─── RANKING ──────────────────────────────────────────────────────────────────
+function renderRanking(){
+  const scores=S.players.map(p=>({
+    name:p.nombre,
+    gpts:gPts(p.group_predictions||{},S.groupResults),
+    ppts:podiumBonus(p.podium,null),
+    get total(){return this.gpts+this.ppts;}
+  })).sort((a,b)=>b.total-a.total);
+  const medals=["🥇","🥈","🥉"];
+  const rows=scores.map((s,i)=>`
+    <div class="rank-row${s.name===S.user?' rank-row--me':''}">
+      <span class="rank-pos">${medals[i]||(i+1)+"."}</span>
+      <div class="grow">
+        <p class="rank-name">${s.name}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
+        <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
+      </div>
+      <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>
+    </div>`).join("");
+  const rules=[["⚽ Grupos (72 partidos)","1pt/acierto"],["🔟 Dieciseisavos","Base 2pts"],["8️⃣ Octavos","Base 4pts"],["4️⃣ Cuartos","Base 8pts"],["2️⃣ Semifinales","Base 16pts"],["🏅 3º/4º puesto","Base 24pts"],["🏆 Gran Final","Base 32pts"],["🎯 Bonus Pódium","+5+3+2pts"]];
+  return`
+  ${card(`<div class="section-head"><h2 class="title">Clasificación en vivo</h2>${pill(S.players.length+" jugadores","blue")}</div>
+    <p class="hint--mb">${Object.keys(S.groupResults).length} resultados aplicados</p>
+    <div class="list">${rows||'<p class="rank-empty">Aún no hay participantes</p>'}</div>`)}
+  ${card(`<h3 class="card-title">📋 Puntuación por fase</h3>
+    <div class="rules">${rules.map(([l,r])=>`<div class="rule"><span class="rule-label">${l}</span><span class="rule-value">${r}</span></div>`).join("")}</div>`)}`;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById("app");
+  if(!app)return;
+  if(S.loading){app.innerHTML=`<div class="loading"><div class="loading-inner"><div class="loading-logo">⚽</div><p class="loading-text">Conectando...</p></div></div>`;return;}
+  if(S.linkingSession){app.innerHTML=renderLinking();return;}
+  if(!S.user){app.innerHTML=renderLogin();return;}
+  const content={grupos:renderGrupos,podium:renderPodium,marcador:renderRanking}[S.tab]?.();
+  app.innerHTML=`${renderHeader()}<div class="app-main">${content||""}</div>`;
+}
+
+// ─── HANDLERS ─────────────────────────────────────────────────────────────────
+window.doGoogleLogin=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
+window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,linkingSession:null,linkPlayers:[]});};
+window.doLinkAccount=()=>{const v=document.getElementById("linkSelect")?.value;if(v)linkAccount(v);};
+window.doFreshAccount=()=>createFreshAccount();
+window.setTab=t=>ss({tab:t});
+window.setGroup=g=>ss({activeGroup:g,pendingPreds:{}});
+window.setPred=(key,val)=>ss({pendingPreds:{...S.pendingPreds,[key]:val}});
+window.doSavePreds=()=>{if(!S.savingGroup)saveGroupPreds();};
+window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);const base=S.pendingPodium||(me?.podium?[...me.podium]:["","",""]);const u=[...base];u[idx]=val;ss({pendingPodium:u});};
+window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
+window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+sb.auth.onAuthStateChange(async(event,session)=>{
+  _token=session?.access_token||null;
+  if(session){
+    const googleName=session.user.user_metadata.full_name||session.user.email.split('@')[0];
+    const linked=await ensurePlayer(session.user.id,googleName);
+    if(linked===null){
+      const unlinked=await sbGet("porra_jugadores","user_id=is.null&select=nombre&order=nombre");
+      await loadData();
+      ss({loading:false,linkingSession:{userId:session.user.id,googleName},linkPlayers:Array.isArray(unlinked)?unlinked.map(p=>p.nombre):[]});
+    }else{
+      await loadData();
+      ss({user:linked,userId:session.user.id,loading:false,linkingSession:null,linkPlayers:[]});
+    }
+  }else{
+    _token=null;
+    ss({user:null,userId:null,loading:false,linkingSession:null,linkPlayers:[]});
+  }
+});
+render();

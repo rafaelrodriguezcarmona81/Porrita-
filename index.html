@@ -142,9 +142,7 @@ function fmtTime(key){
   return days[dt.getUTCDay()]+" "+d+"/"+m+" "+time;
 }
 
-
 // ─── CANAL TV (España) ─────────────────────────────────────────────────────
-// Confirmados en La 1: inaugural + todos los partidos de España. Resto: DAZN.
 const LA1_MATCHES = new Set([
   "A_México_Sudáfrica",
   "B_Canadá_Bosnia y Herc.",
@@ -177,7 +175,7 @@ function isLocked(key){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
-  user:null,userId:null,players:[],groupResults:{},tab:"grupos",
+  user:null,userId:null,players:[],groupResults:{},groupScores:{},tab:"grupos",
   activeGroup:"A",loading:true,loginBusy:false,
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
@@ -195,17 +193,18 @@ async function loadData(){
   try{
     const[pls,resJson]=await Promise.all([
       sbGet("porra_jugadores","select=*"),
-      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{}}))
+      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{},scores:{}}))
     ]);
     const players=Array.isArray(pls)?pls:[];
     const groupResults=resJson.results||{};
+    const groupScores=resJson.scores||{};
     let rankChange=null,newRank=null;
     if(S.user){
       const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    ss({players,groupResults,groupScores,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -353,6 +352,7 @@ function renderGrupos(){
   const matchRows=matches.map(m=>{
     const key=g+"_"+m[0]+"_"+m[1];
     const hasR=!!S.groupResults[key];
+    const score=S.groupScores[key];
     const pred=myPreds[key];
     const correct=hasR&&pred===S.groupResults[key];
     const wrong=hasR&&pred&&pred!==S.groupResults[key];
@@ -364,7 +364,7 @@ function renderGrupos(){
       :locked?'<span style="font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:999px;background:#fef9c3;color:#854d0e">🔒</span>'
       :'';
     return`<div style="display:flex;flex-direction:column;gap:.3rem;border-radius:.5rem;padding:.6rem;${bg}">
-      <div style="text-align:center;font-size:.6rem;font-weight:700;color:#9ca3af">${fmtTime(key)} · ${tvChannel(key)}</div>
+      <div style="text-align:center;font-size:.6rem;font-weight:700;color:#9ca3af">${fmtTime(key)} · ${tvChannel(key)}${score?' · 🔢 '+score:''}</div>
       <div style="display:flex;align-items:center;gap:.4rem">
         <span style="font-size:.7rem;flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl(m[0])} ${m[0]}</span>
         <div style="display:flex;gap:3px;align-items:center">

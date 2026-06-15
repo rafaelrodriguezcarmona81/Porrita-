@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Porra Mundial 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;background:#f3f4f6}
@@ -15,15 +16,12 @@
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SB_URL="https://qkxenqexxdvpjnagsudk.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFreGVucWV4eGR2cGpuYWdzdWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzI4ODksImV4cCI6MjA5Njc0ODg4OX0.hSo4lkK_-RjDWVPQKHbVfM0AfVlDPQxMZbTtvyLHiik";
-const HDR={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY};
-async function sbGet(t,p){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+(p||""),{headers:HDR});return r.json();}
-async function sbUpsert(t,b){
-  const ex=await sbGet(t,"nombre=eq."+encodeURIComponent(b.nombre)+"&select=nombre");
-  if(Array.isArray(ex)&&ex.length>0)return sbPatch(t,"nombre=eq."+encodeURIComponent(b.nombre),{updated_at:new Date().toISOString()});
-  const r=await fetch(SB_URL+"/rest/v1/"+t,{method:"POST",headers:{...HDR,"Prefer":"return=representation"},body:JSON.stringify(b)});
-  return r.json();
-}
-async function sbPatch(t,p,b){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+p,{method:"PATCH",headers:{...HDR,"Prefer":"return=representation"},body:JSON.stringify(b)});return r.json();}
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let _token=null;
+function getHDR(){return{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+(_token||SB_KEY)};}
+async function sbGet(t,p){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+(p||""),{headers:getHDR()});return r.json();}
+async function sbPost(t,b){const r=await fetch(SB_URL+"/rest/v1/"+t,{method:"POST",headers:{...getHDR(),"Prefer":"return=representation"},body:JSON.stringify(b)});return r.json();}
+async function sbPatch(t,p,b){const r=await fetch(SB_URL+"/rest/v1/"+t+"?"+p,{method:"PATCH",headers:{...getHDR(),"Prefer":"return=representation"},body:JSON.stringify(b)});return r.json();}
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GROUPS={
@@ -143,11 +141,12 @@ function isLocked(key){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
-  user:null,players:[],groupResults:{},tab:"grupos",
+  user:null,userId:null,players:[],groupResults:{},tab:"grupos",
   activeGroup:"A",loading:true,loginBusy:false,
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
-  refreshing:false,rankChange:null,lastRank:null
+  refreshing:false,rankChange:null,lastRank:null,
+  linkingSession:null,linkPlayers:[]
 };
 function ss(p){Object.assign(S,p);render();}
 
@@ -175,27 +174,43 @@ async function loadData(){
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
 
-async function handleLogin(nombre){
-  ss({loginBusy:true});
-  try{
-    await sbUpsert("porra_jugadores",{nombre,group_predictions:{},podium:null});
-    await loadData();
-    ss({user:nombre,loginBusy:false,pendingPreds:{},pendingPodium:null});
-  }catch(e){console.error(e);ss({loginBusy:false});}
+async function ensurePlayer(userId,googleName){
+  let res=await sbGet("porra_jugadores","user_id=eq."+userId+"&select=nombre");
+  if(Array.isArray(res)&&res.length>0)return res[0].nombre;
+  res=await sbGet("porra_jugadores","nombre=eq."+encodeURIComponent(googleName)+"&select=nombre,user_id");
+  if(Array.isArray(res)&&res.length>0&&!res[0].user_id){
+    await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(googleName),{user_id:userId});
+    return googleName;
+  }
+  return null; // necesita vinculación manual
+}
+
+async function linkAccount(nombreAntiguo){
+  const{userId,googleName}=S.linkingSession;
+  await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(nombreAntiguo),{user_id:userId});
+  await loadData();
+  ss({user:nombreAntiguo,userId,linkingSession:null,linkPlayers:[]});
+}
+
+async function createFreshAccount(){
+  const{userId,googleName}=S.linkingSession;
+  await sbPost("porra_jugadores",{nombre:googleName,user_id:userId,group_predictions:{},podium:null});
+  await loadData();
+  ss({user:googleName,userId,linkingSession:null,linkPlayers:[]});
 }
 
 async function saveGroupPreds(){
   const me=S.players.find(p=>p.nombre===S.user);
   const merged={...(me?.group_predictions||{}),...S.pendingPreds};
   ss({savingGroup:true});
-  await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(S.user),{group_predictions:merged,updated_at:new Date().toISOString()});
+  await sbPatch("porra_jugadores","user_id=eq."+S.userId,{group_predictions:merged,updated_at:new Date().toISOString()});
   await loadData();
   ss({savingGroup:false,pendingPreds:{}});
 }
 
 async function savePodium(podium){
   ss({savingPodium:true});
-  await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(S.user),{podium,updated_at:new Date().toISOString()});
+  await sbPatch("porra_jugadores","user_id=eq."+S.userId,{podium,updated_at:new Date().toISOString()});
   await loadData();
   ss({savingPodium:false,pendingPodium:null});
 }
@@ -216,12 +231,35 @@ function renderLogin(){
         <h1 style="font-size:1.5rem;font-weight:900;color:#111;margin:0">PORRA MUNDIAL</h1>
         <p style="font-size:.75rem;color:#6b7280;font-weight:600;letter-spacing:.1em;margin:.25rem 0 0">EEUU · CANADÁ · MÉXICO 2026</p>
       </div>
-      <label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:.35rem">Tu nombre</label>
-      <input id="loginInput" style="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.75rem 1rem;font-size:1rem;font-weight:500;outline:none" placeholder="Ej: Carlos García"/>
-      <button onclick="doLogin()" style="width:100%;margin-top:1rem;padding:.75rem;border-radius:.5rem;font-weight:900;color:white;font-size:1rem;border:none;cursor:pointer;background:${S.loginBusy?'#9ca3af':'#c8102e'}">
-        ${S.loginBusy?"Entrando...":"ENTRAR A LA PORRA"}
+      <button onclick="doGoogleLogin()" style="width:100%;padding:.75rem;border-radius:.5rem;font-weight:900;font-size:1rem;border:none;cursor:pointer;background:#4285f4;color:white;display:flex;align-items:center;justify-content:center;gap:.6rem">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.4-.1-2.7-.5-4z"/></svg>
+        Entrar con Google
       </button>
       <p style="text-align:center;font-size:.7rem;color:#9ca3af;margin-top:1rem">Todos los participantes comparten los mismos datos en tiempo real</p>
+    </div>
+  </div>`;
+}
+
+// ─── VINCULACIÓN ──────────────────────────────────────────────────────────────
+function renderLinking(){
+  const{googleName}=S.linkingSession;
+  const opts=S.linkPlayers;
+  return`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(135deg,#0a2240 0%,#1a4a8a 60%,#c8102e 100%)">
+    <div style="background:white;border-radius:1rem;box-shadow:0 25px 50px rgba(0,0,0,.3);padding:2rem;width:100%;max-width:360px">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">👋</div>
+        <h1 style="font-size:1.25rem;font-weight:900;color:#111;margin:0">¡Hola, ${googleName}!</h1>
+        <p style="font-size:.8rem;color:#6b7280;margin:.5rem 0 0">¿Ya participabas con otro nombre?</p>
+      </div>
+      ${opts.length>0?`
+      <label style="display:block;font-size:.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:.35rem">Tu nombre anterior</label>
+      <select id="linkSelect" style="width:100%;border:2px solid #e5e7eb;border-radius:.5rem;padding:.75rem 1rem;font-size:1rem;font-weight:500;outline:none;background:white">
+        <option value="">— Elige tu nombre —</option>
+        ${opts.map(n=>`<option value="${n}">${n}</option>`).join("")}
+      </select>
+      <button onclick="doLinkAccount()" style="width:100%;margin-top:.75rem;padding:.75rem;border-radius:.5rem;font-weight:900;color:white;font-size:.9rem;border:none;cursor:pointer;background:#2563eb">VINCULAR MI CUENTA</button>
+      <p style="text-align:center;font-size:.75rem;color:#9ca3af;margin:.75rem 0">— o —</p>`:""}
+      <button onclick="doFreshAccount()" style="width:100%;padding:.75rem;border-radius:.5rem;font-weight:900;color:#374151;font-size:.9rem;border:2px solid #e5e7eb;cursor:pointer;background:white">Soy nuevo, empezar desde cero</button>
     </div>
   </div>`;
 }
@@ -387,14 +425,17 @@ function render(){
   const app=document.getElementById("app");
   if(!app)return;
   if(S.loading){app.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a2240"><div style="text-align:center;color:white"><div style="font-size:3rem;margin-bottom:.5rem">⚽</div><p style="font-weight:700;margin:0">Conectando...</p></div></div>`;return;}
+  if(S.linkingSession){app.innerHTML=renderLinking();return;}
   if(!S.user){app.innerHTML=renderLogin();return;}
   const content={grupos:renderGrupos,podium:renderPodium,marcador:renderRanking}[S.tab]?.();
   app.innerHTML=`${renderHeader()}<div style="max-width:600px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:1rem">${content||""}</div>`;
 }
 
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────
-window.doLogin=()=>{const v=document.getElementById("loginInput")?.value?.trim();if(v)handleLogin(v);};
-window.doLogout=()=>ss({user:null,pendingPreds:{},pendingPodium:null});
+window.doGoogleLogin=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
+window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,linkingSession:null,linkPlayers:[]});};
+window.doLinkAccount=()=>{const v=document.getElementById("linkSelect")?.value;if(v)linkAccount(v);};
+window.doFreshAccount=()=>createFreshAccount();
 window.setTab=t=>ss({tab:t});
 window.setGroup=g=>ss({activeGroup:g,pendingPreds:{}});
 window.setPred=(key,val)=>ss({pendingPreds:{...S.pendingPreds,[key]:val}});
@@ -403,13 +444,26 @@ window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);co
 window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
 window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
 
-document.addEventListener("keydown",e=>{
-  if(e.key==="Enter"&&!S.user)window.doLogin();
-});
-
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+sb.auth.onAuthStateChange(async(event,session)=>{
+  _token=session?.access_token||null;
+  if(session){
+    const googleName=session.user.user_metadata.full_name||session.user.email.split('@')[0];
+    const linked=await ensurePlayer(session.user.id,googleName);
+    if(linked===null){
+      const unlinked=await sbGet("porra_jugadores","user_id=is.null&select=nombre&order=nombre");
+      await loadData();
+      ss({loading:false,linkingSession:{userId:session.user.id,googleName},linkPlayers:Array.isArray(unlinked)?unlinked.map(p=>p.nombre):[]});
+    }else{
+      await loadData();
+      ss({user:linked,userId:session.user.id,loading:false,linkingSession:null,linkPlayers:[]});
+    }
+  }else{
+    _token=null;
+    ss({user:null,userId:null,loading:false,linkingSession:null,linkPlayers:[]});
+  }
+});
 render();
-loadData();
 </script>
 </body>
 </html>

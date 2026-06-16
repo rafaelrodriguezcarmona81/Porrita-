@@ -154,3 +154,50 @@ test("doRefresh: recarga datos y baja los flags de carga", async () => {
   assert.equal(app.S.refreshing, false);
   assert.equal(app.S.loading, false);
 });
+
+// ─── Trigger de actualización (admin) ────────────────────────────────────────
+test("triggerUpdate: hace POST a /api/trigger-update con la cabecera del secreto", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }) });
+  await app.triggerUpdate("mi-secreto");
+  const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
+  assert.ok(call, "debe llamar al endpoint del trigger");
+  assert.equal(call.options.method, "POST");
+  assert.equal(call.options.headers["X-Admin-Secret"], "mi-secreto");
+  assert.equal(app.S.adminTriggerOk, true);
+  assert.equal(app.S.adminTriggering, false);
+  assert.match(app.S.adminTriggerMsg, /✅/);
+});
+
+test("triggerUpdate: muestra error cuando el endpoint responde no-ok", async () => {
+  const app = loadApp({
+    fetch: () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({ error: "No autorizado" }) }),
+  });
+  await app.triggerUpdate("malo");
+  assert.equal(app.S.adminTriggerOk, false);
+  assert.match(app.S.adminTriggerMsg, /No autorizado/);
+});
+
+test("triggerUpdate: error de red muestra mensaje y baja el flag", async () => {
+  const app = loadApp({ fetch: () => Promise.reject(new Error("network down")) });
+  await app.triggerUpdate("x");
+  assert.equal(app.S.adminTriggerOk, false);
+  assert.equal(app.S.adminTriggering, false);
+  assert.match(app.S.adminTriggerMsg, /Error de red/);
+});
+
+test("doTriggerUpdate: sin clave no llama al endpoint", () => {
+  const app = loadApp({ fetch: dataFetch(), elements: { adminSecret: { value: "" } } });
+  app.window.doTriggerUpdate();
+  assert.ok(!app.fetchCalls.some((c) => c.url === "/api/trigger-update"));
+});
+
+test("doTriggerUpdate: con clave dispara el trigger", async () => {
+  const app = loadApp({
+    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }),
+    elements: { adminSecret: { value: "clave-admin" } },
+  });
+  app.window.doTriggerUpdate();
+  await flush();
+  const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
+  assert.equal(call.options.headers["X-Admin-Secret"], "clave-admin");
+});

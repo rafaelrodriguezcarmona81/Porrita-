@@ -3,6 +3,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Protección: solo quien conozca el secreto de admin puede disparar la Action.
+  const adminSecret = process.env.ADMIN_TRIGGER_SECRET;
+  if (!adminSecret) {
+    return res.status(500).json({ error: 'ADMIN_TRIGGER_SECRET no configurado' });
+  }
+  // El cliente envía la cabecera "X-Admin-Secret"; Node/Vercel normaliza las
+  // claves de las cabeceras entrantes a minúsculas, de ahí "x-admin-secret".
+  if (req.headers['x-admin-secret'] !== adminSecret) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     return res.status(500).json({ error: 'GITHUB_TOKEN no configurado' });

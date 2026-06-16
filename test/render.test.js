@@ -214,6 +214,43 @@ test("render: con sesión de vinculación pinta pantalla de linking", () => {
   assert.match(app.appEl.innerHTML, /¡Hola, Manu!/);
 });
 
+// ─── renderAdmin ──────────────────────────────────────────────────────────────
+test("renderAdmin: muestra input de clave y botón de forzar actualización", () => {
+  const { renderAdmin } = loadApp();
+  const html = renderAdmin();
+  assert.match(html, /Zona Admin/);
+  assert.match(html, /id="adminSecret"/);
+  assert.match(html, /doTriggerUpdate\(\)/);
+  assert.match(html, /Forzar actualización de resultados/);
+});
+
+test("renderAdmin: refleja mensaje de éxito o error", () => {
+  const ok = loadApp();
+  Object.assign(ok.S, { adminTriggerMsg: "✅ disparada", adminTriggerOk: true });
+  assert.match(ok.renderAdmin(), /admin-msg--ok/);
+
+  const err = loadApp();
+  Object.assign(err.S, { adminTriggerMsg: "❌ falló", adminTriggerOk: false });
+  assert.match(err.renderAdmin(), /admin-msg--err/);
+});
+
+test("renderHeader: incluye la pestaña de Admin", () => {
+  const app = loadApp();
+  Object.assign(app.S, { user: "Ana", players: [], groupResults: {} });
+  assert.match(app.renderHeader(), /setTab\('admin'\)/);
+});
+
+test("render: pestaña admin pinta el panel de administración", () => {
+  const app = loadApp();
+  Object.assign(app.S, {
+    loading: false, user: "Ana", tab: "admin",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {}, groupScores: {},
+  });
+  app.render();
+  assert.match(app.appEl.innerHTML, /Zona Admin/);
+});
+
 test("render: usuario logado pinta header + contenido de la pestaña", () => {
   const app = withState({
     loading: false,

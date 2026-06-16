@@ -357,8 +357,10 @@ function renderGrupos(){
         <div class="picks">
           ${["1","X","2"].map(v=>{
             const sel=pred===v;
+            const isResult=hasR&&S.groupResults[key]===v;
             let pc="pick";
             if(sel)pc+=hasR?(correct?" pick--correct":" pick--wrong"):" pick--sel";
+            if(wrong&&isResult)pc+=" pick--result";
             if(locked&&!hasR)pc+=" pick--locked";
             if(blocked)pc+=" pick--blocked";
             return`<button onclick="${blocked?'':('setPred(\''+key+'\',\''+v+'\')')}" class="${pc}">${v}</button>`;

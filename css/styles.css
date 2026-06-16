@@ -502,9 +502,17 @@ body {
 }
 
 .pick--wrong {
-  border-color: #f87171;
+  border-color: #ef4444;
   background: #f87171;
   color: #fff;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, .35);
+}
+
+/* The official 1/X/2 result, highlighted on the buttons when the user missed it */
+.pick--result {
+  border-color: #22c55e;
+  color: #166534;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .4);
 }
 
 .pick--locked {

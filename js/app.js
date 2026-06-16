@@ -166,6 +166,7 @@ let S={
   pendingPreds:{},pendingPodium:null,
   refreshing:false,rankChange:null,lastRank:null,
   linkingSession:null,linkPlayers:[],
+  adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
   adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false
 };
 function ss(p){Object.assign(S,p);render();}
@@ -453,13 +454,21 @@ function renderRanking(){
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 function renderAdmin(){
+  // Paso 1: formulario de acceso (la clave se valida contra el servidor).
+  if(!S.adminUnlocked){
+    return card(`<h2 class="title">Zona Admin</h2>
+      <p class="hint admin-hint">Introduce la clave de administración para acceder.</p>
+      <label class="admin-label">Clave de administración</label>
+      <input id="adminKeyInput" type="password" class="admin-input" placeholder="••••••••" autocomplete="off" />
+      <button onclick="doAdminLogin()" class="admin-btn${S.adminGateBusy?' admin-btn--busy':''}">${S.adminGateBusy?'⏳ Comprobando...':'ENTRAR'}</button>
+      ${S.adminGateError?'<p class="admin-msg admin-msg--err">❌ Clave incorrecta</p>':""}`);
+  }
+  // Paso 2: tareas administrativas (de momento, solo el trigger de la Action).
   const msg=S.adminTriggerMsg
     ?`<p class="admin-msg admin-msg--${S.adminTriggerOk?'ok':'err'}">${S.adminTriggerMsg}</p>`
     :"";
   return card(`<h2 class="title">Zona Admin</h2>
-    <p class="hint admin-hint">Fuerza la actualización oficial de resultados (dispara la GitHub Action). Requiere la clave de administración.</p>
-    <label class="admin-label">Clave de administración</label>
-    <input id="adminSecret" type="password" class="admin-input" placeholder="••••••••" autocomplete="off" />
+    <p class="hint admin-hint">Tareas administrativas.</p>
     <button onclick="doTriggerUpdate()" class="admin-btn${S.adminTriggering?' admin-btn--busy':''}">${S.adminTriggering?'⏳ Actualizando...':'🔄 Forzar actualización de resultados'}</button>
     ${msg}`);
 }
@@ -477,7 +486,7 @@ function render(){
 
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────
 window.doGoogleLogin=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
-window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,linkingSession:null,linkPlayers:[]});};
+window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,linkingSession:null,linkPlayers:[],adminUnlocked:false,adminKey:"",adminGateError:false,adminTriggerMsg:null});};
 window.doLinkAccount=()=>{const v=document.getElementById("linkSelect")?.value;if(v)linkAccount(v);};
 window.doFreshAccount=()=>createFreshAccount();
 window.setTab=t=>ss({tab:t});
@@ -487,6 +496,18 @@ window.doSavePreds=()=>{if(!S.savingGroup)saveGroupPreds();};
 window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);const base=S.pendingPodium||(me?.podium?[...me.podium]:["","",""]);const u=[...base];u[idx]=val;ss({pendingPodium:u});};
 window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
 window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
+
+async function verifyAdminKey(key){
+  ss({adminGateBusy:true,adminGateError:false});
+  try{
+    const r=await fetch("/api/trigger-update",{method:"POST",headers:{"X-Admin-Secret":key,"X-Verify-Only":"1"}});
+    if(r.ok)ss({adminGateBusy:false,adminUnlocked:true,adminKey:key,adminGateError:false});
+    else ss({adminGateBusy:false,adminGateError:true});
+  }catch(e){
+    ss({adminGateBusy:false,adminGateError:true});
+  }
+}
+window.doAdminLogin=()=>{if(S.adminGateBusy)return;const v=document.getElementById("adminKeyInput")?.value||"";if(v)verifyAdminKey(v);};
 
 async function triggerUpdate(secret){
   ss({adminTriggering:true,adminTriggerMsg:null});
@@ -502,7 +523,7 @@ async function triggerUpdate(secret){
     ss({adminTriggering:false,adminTriggerOk:false,adminTriggerMsg:"❌ Error de red"});
   }
 }
-window.doTriggerUpdate=()=>{if(S.adminTriggering)return;const v=document.getElementById("adminSecret")?.value||"";if(v)triggerUpdate(v);};
+window.doTriggerUpdate=()=>{if(S.adminTriggering)return;if(S.adminKey)triggerUpdate(S.adminKey);};
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 sb.auth.onAuthStateChange(async(event,session)=>{

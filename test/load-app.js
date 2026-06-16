@@ -20,7 +20,7 @@ const EXPOSED = [
   // capa de datos / red
   "getHDR", "sbGet", "sbPost", "sbPatch",
   "loadData", "ensurePlayer", "linkAccount", "createFreshAccount",
-  "saveGroupPreds", "savePodium", "triggerUpdate",
+  "saveGroupPreds", "savePodium", "triggerUpdate", "verifyAdminKey",
 ];
 
 /**

@@ -90,6 +90,28 @@ test("trigger-update: 500 si falta GITHUB_TOKEN aunque el secreto sea válido", 
   });
 });
 
+test("trigger-update: modo verify-only valida sin disparar la Action (200, sin fetch)", async () => {
+  const handler = await loadHandler();
+  await withEnv({ ADMIN_TRIGGER_SECRET: "s3cr3t", GITHUB_TOKEN: "ght" }, async () => {
+    let dispatched = false;
+    global.fetch = () => { dispatched = true; return Promise.resolve({ status: 204, text: () => Promise.resolve("") }); };
+    const res = mockRes();
+    await handler({ method: "POST", headers: { "x-admin-secret": "s3cr3t", "x-verify-only": "1" } }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.verified, true);
+    assert.equal(dispatched, false, "verify-only NO debe disparar la Action");
+  });
+});
+
+test("trigger-update: verify-only con secreto incorrecto sigue dando 401", async () => {
+  const handler = await loadHandler();
+  await withEnv({ ADMIN_TRIGGER_SECRET: "s3cr3t", GITHUB_TOKEN: "ght" }, async () => {
+    const res = mockRes();
+    await handler({ method: "POST", headers: { "x-admin-secret": "malo", "x-verify-only": "1" } }, res);
+    assert.equal(res.statusCode, 401);
+  });
+});
+
 test("trigger-update: propaga el error si la API de GitHub no devuelve 204", async () => {
   const handler = await loadHandler();
   await withEnv({ ADMIN_TRIGGER_SECRET: "s3cr3t", GITHUB_TOKEN: "ght" }, async () => {

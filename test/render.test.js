@@ -214,23 +214,41 @@ test("render: con sesión de vinculación pinta pantalla de linking", () => {
   assert.match(app.appEl.innerHTML, /¡Hola, Manu!/);
 });
 
-// ─── renderAdmin ──────────────────────────────────────────────────────────────
-test("renderAdmin: muestra input de clave y botón de forzar actualización", () => {
-  const { renderAdmin } = loadApp();
+// ─── renderAdmin (dos pasos: gate → tareas) ─────────────────────────────────
+test("renderAdmin: bloqueado muestra el formulario de acceso (clave + ENTRAR)", () => {
+  const { renderAdmin } = loadApp(); // adminUnlocked = false por defecto
   const html = renderAdmin();
   assert.match(html, /Zona Admin/);
-  assert.match(html, /id="adminSecret"/);
-  assert.match(html, /doTriggerUpdate\(\)/);
-  assert.match(html, /Forzar actualización de resultados/);
+  assert.match(html, /id="adminKeyInput"/);
+  assert.match(html, /doAdminLogin\(\)/);
+  assert.match(html, /ENTRAR/);
+  // todavía no se ve la tarea del trigger
+  assert.doesNotMatch(html, /doTriggerUpdate\(\)/);
 });
 
-test("renderAdmin: refleja mensaje de éxito o error", () => {
+test("renderAdmin: clave incorrecta muestra el error en el gate", () => {
+  const app = loadApp();
+  Object.assign(app.S, { adminGateError: true });
+  assert.match(app.renderAdmin(), /Clave incorrecta/);
+});
+
+test("renderAdmin: desbloqueado muestra las tareas administrativas (trigger)", () => {
+  const app = loadApp();
+  Object.assign(app.S, { adminUnlocked: true });
+  const html = app.renderAdmin();
+  assert.match(html, /doTriggerUpdate\(\)/);
+  assert.match(html, /Forzar actualización de resultados/);
+  // ya no se ve el formulario de acceso
+  assert.doesNotMatch(html, /id="adminKeyInput"/);
+});
+
+test("renderAdmin: desbloqueado refleja mensaje de éxito o error del trigger", () => {
   const ok = loadApp();
-  Object.assign(ok.S, { adminTriggerMsg: "✅ disparada", adminTriggerOk: true });
+  Object.assign(ok.S, { adminUnlocked: true, adminTriggerMsg: "✅ disparada", adminTriggerOk: true });
   assert.match(ok.renderAdmin(), /admin-msg--ok/);
 
   const err = loadApp();
-  Object.assign(err.S, { adminTriggerMsg: "❌ falló", adminTriggerOk: false });
+  Object.assign(err.S, { adminUnlocked: true, adminTriggerMsg: "❌ falló", adminTriggerOk: false });
   assert.match(err.renderAdmin(), /admin-msg--err/);
 });
 

@@ -24,6 +24,12 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'No autorizado' });
   }
 
+  // Modo "solo verificar": valida la clave (para desbloquear el panel) sin
+  // disparar la Action. La cabecera ya pasó la comprobación del secreto arriba.
+  if (req.headers['x-verify-only'] === '1') {
+    return res.status(200).json({ ok: true, verified: true });
+  }
+
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     return res.status(500).json({ error: 'GITHUB_TOKEN no configurado' });

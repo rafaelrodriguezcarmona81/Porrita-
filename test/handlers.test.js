@@ -185,19 +185,59 @@ test("triggerUpdate: error de red muestra mensaje y baja el flag", async () => {
   assert.match(app.S.adminTriggerMsg, /Error de red/);
 });
 
-test("doTriggerUpdate: sin clave no llama al endpoint", () => {
-  const app = loadApp({ fetch: dataFetch(), elements: { adminSecret: { value: "" } } });
+test("doTriggerUpdate: sin clave desbloqueada no llama al endpoint", () => {
+  const app = loadApp({ fetch: dataFetch() }); // S.adminKey = "" por defecto
   app.window.doTriggerUpdate();
   assert.ok(!app.fetchCalls.some((c) => c.url === "/api/trigger-update"));
 });
 
-test("doTriggerUpdate: con clave dispara el trigger", async () => {
-  const app = loadApp({
-    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }),
-    elements: { adminSecret: { value: "clave-admin" } },
-  });
+test("doTriggerUpdate: usa la clave guardada en el estado", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }) });
+  Object.assign(app.S, { adminUnlocked: true, adminKey: "clave-admin" });
   app.window.doTriggerUpdate();
   await flush();
   const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
   assert.equal(call.options.headers["X-Admin-Secret"], "clave-admin");
+});
+
+// ─── Gate de admin (verificación server-side) ────────────────────────────────
+test("verifyAdminKey: clave válida desbloquea y guarda la clave", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, verified: true }) }) });
+  await app.verifyAdminKey("buena");
+  const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
+  assert.equal(call.options.headers["X-Admin-Secret"], "buena");
+  assert.equal(call.options.headers["X-Verify-Only"], "1"); // modo verificación, no dispara
+  assert.equal(app.S.adminUnlocked, true);
+  assert.equal(app.S.adminKey, "buena");
+  assert.equal(app.S.adminGateError, false);
+});
+
+test("verifyAdminKey: clave inválida no desbloquea y marca error", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({ error: "No autorizado" }) }) });
+  await app.verifyAdminKey("mala");
+  assert.equal(app.S.adminUnlocked, false);
+  assert.equal(app.S.adminGateError, true);
+});
+
+test("verifyAdminKey: error de red marca error en el gate", async () => {
+  const app = loadApp({ fetch: () => Promise.reject(new Error("down")) });
+  await app.verifyAdminKey("x");
+  assert.equal(app.S.adminUnlocked, false);
+  assert.equal(app.S.adminGateError, true);
+});
+
+test("doAdminLogin: con clave en el input lanza la verificación", async () => {
+  const app = loadApp({
+    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }),
+    elements: { adminKeyInput: { value: "clave" } },
+  });
+  app.window.doAdminLogin();
+  await flush();
+  assert.equal(app.S.adminUnlocked, true);
+});
+
+test("doAdminLogin: sin clave no llama al endpoint", () => {
+  const app = loadApp({ fetch: dataFetch(), elements: { adminKeyInput: { value: "" } } });
+  app.window.doAdminLogin();
+  assert.ok(!app.fetchCalls.some((c) => c.url === "/api/trigger-update"));
 });

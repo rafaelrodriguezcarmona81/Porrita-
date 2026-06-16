@@ -828,3 +828,60 @@ body {
   font-weight: 700;
   margin: 0;
 }
+
+/* ─── ADMIN ─────────────────────────────────────────────────────────────── */
+.admin-hint {
+  margin: 0 0 1rem;
+}
+
+.admin-label {
+  display: block;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: .35rem;
+}
+
+.admin-input {
+  width: 100%;
+  border: 2px solid #e5e7eb;
+  border-radius: .5rem;
+  padding: .75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  outline: none;
+  background: #fff;
+}
+
+.admin-btn {
+  width: 100%;
+  margin-top: .75rem;
+  padding: .75rem;
+  border-radius: .5rem;
+  font-weight: 900;
+  font-size: .9rem;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  background: #dc2626;
+}
+
+.admin-btn--busy {
+  background: #9ca3af;
+}
+
+.admin-msg {
+  text-align: center;
+  font-size: .8rem;
+  font-weight: 700;
+  margin-top: .75rem;
+}
+
+.admin-msg--ok {
+  color: #16a34a;
+}
+
+.admin-msg--err {
+  color: #dc2626;
+}

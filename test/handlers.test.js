@@ -154,3 +154,90 @@ test("doRefresh: recarga datos y baja los flags de carga", async () => {
   assert.equal(app.S.refreshing, false);
   assert.equal(app.S.loading, false);
 });
+
+// ─── Trigger de actualización (admin) ────────────────────────────────────────
+test("triggerUpdate: hace POST a /api/trigger-update con la cabecera del secreto", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }) });
+  await app.triggerUpdate("mi-secreto");
+  const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
+  assert.ok(call, "debe llamar al endpoint del trigger");
+  assert.equal(call.options.method, "POST");
+  assert.equal(call.options.headers["X-Admin-Secret"], "mi-secreto");
+  assert.equal(app.S.adminTriggerOk, true);
+  assert.equal(app.S.adminTriggering, false);
+  assert.match(app.S.adminTriggerMsg, /✅/);
+});
+
+test("triggerUpdate: muestra error cuando el endpoint responde no-ok", async () => {
+  const app = loadApp({
+    fetch: () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({ error: "No autorizado" }) }),
+  });
+  await app.triggerUpdate("malo");
+  assert.equal(app.S.adminTriggerOk, false);
+  assert.match(app.S.adminTriggerMsg, /No autorizado/);
+});
+
+test("triggerUpdate: error de red muestra mensaje y baja el flag", async () => {
+  const app = loadApp({ fetch: () => Promise.reject(new Error("network down")) });
+  await app.triggerUpdate("x");
+  assert.equal(app.S.adminTriggerOk, false);
+  assert.equal(app.S.adminTriggering, false);
+  assert.match(app.S.adminTriggerMsg, /Error de red/);
+});
+
+test("doTriggerUpdate: sin clave desbloqueada no llama al endpoint", () => {
+  const app = loadApp({ fetch: dataFetch() }); // S.adminKey = "" por defecto
+  app.window.doTriggerUpdate();
+  assert.ok(!app.fetchCalls.some((c) => c.url === "/api/trigger-update"));
+});
+
+test("doTriggerUpdate: usa la clave guardada en el estado", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }) });
+  Object.assign(app.S, { adminUnlocked: true, adminKey: "clave-admin" });
+  app.window.doTriggerUpdate();
+  await flush();
+  const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
+  assert.equal(call.options.headers["X-Admin-Secret"], "clave-admin");
+});
+
+// ─── Gate de admin (verificación server-side) ────────────────────────────────
+test("verifyAdminKey: clave válida desbloquea y guarda la clave", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, verified: true }) }) });
+  await app.verifyAdminKey("buena");
+  const call = app.fetchCalls.find((c) => c.url === "/api/trigger-update");
+  assert.equal(call.options.headers["X-Admin-Secret"], "buena");
+  assert.equal(call.options.headers["X-Verify-Only"], "1"); // modo verificación, no dispara
+  assert.equal(app.S.adminUnlocked, true);
+  assert.equal(app.S.adminKey, "buena");
+  assert.equal(app.S.adminGateError, false);
+});
+
+test("verifyAdminKey: clave inválida no desbloquea y marca error", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({ error: "No autorizado" }) }) });
+  await app.verifyAdminKey("mala");
+  assert.equal(app.S.adminUnlocked, false);
+  assert.equal(app.S.adminGateError, true);
+});
+
+test("verifyAdminKey: error de red marca error en el gate", async () => {
+  const app = loadApp({ fetch: () => Promise.reject(new Error("down")) });
+  await app.verifyAdminKey("x");
+  assert.equal(app.S.adminUnlocked, false);
+  assert.equal(app.S.adminGateError, true);
+});
+
+test("doAdminLogin: con clave en el input lanza la verificación", async () => {
+  const app = loadApp({
+    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }),
+    elements: { adminKeyInput: { value: "clave" } },
+  });
+  app.window.doAdminLogin();
+  await flush();
+  assert.equal(app.S.adminUnlocked, true);
+});
+
+test("doAdminLogin: sin clave no llama al endpoint", () => {
+  const app = loadApp({ fetch: dataFetch(), elements: { adminKeyInput: { value: "" } } });
+  app.window.doAdminLogin();
+  assert.ok(!app.fetchCalls.some((c) => c.url === "/api/trigger-update"));
+});

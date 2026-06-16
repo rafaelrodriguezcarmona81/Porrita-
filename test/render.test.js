@@ -214,6 +214,61 @@ test("render: con sesión de vinculación pinta pantalla de linking", () => {
   assert.match(app.appEl.innerHTML, /¡Hola, Manu!/);
 });
 
+// ─── renderAdmin (dos pasos: gate → tareas) ─────────────────────────────────
+test("renderAdmin: bloqueado muestra el formulario de acceso (clave + ENTRAR)", () => {
+  const { renderAdmin } = loadApp(); // adminUnlocked = false por defecto
+  const html = renderAdmin();
+  assert.match(html, /Zona Admin/);
+  assert.match(html, /id="adminKeyInput"/);
+  assert.match(html, /doAdminLogin\(\)/);
+  assert.match(html, /ENTRAR/);
+  // todavía no se ve la tarea del trigger
+  assert.doesNotMatch(html, /doTriggerUpdate\(\)/);
+});
+
+test("renderAdmin: clave incorrecta muestra el error en el gate", () => {
+  const app = loadApp();
+  Object.assign(app.S, { adminGateError: true });
+  assert.match(app.renderAdmin(), /Clave incorrecta/);
+});
+
+test("renderAdmin: desbloqueado muestra las tareas administrativas (trigger)", () => {
+  const app = loadApp();
+  Object.assign(app.S, { adminUnlocked: true });
+  const html = app.renderAdmin();
+  assert.match(html, /doTriggerUpdate\(\)/);
+  assert.match(html, /Forzar actualización de resultados/);
+  // ya no se ve el formulario de acceso
+  assert.doesNotMatch(html, /id="adminKeyInput"/);
+});
+
+test("renderAdmin: desbloqueado refleja mensaje de éxito o error del trigger", () => {
+  const ok = loadApp();
+  Object.assign(ok.S, { adminUnlocked: true, adminTriggerMsg: "✅ disparada", adminTriggerOk: true });
+  assert.match(ok.renderAdmin(), /admin-msg--ok/);
+
+  const err = loadApp();
+  Object.assign(err.S, { adminUnlocked: true, adminTriggerMsg: "❌ falló", adminTriggerOk: false });
+  assert.match(err.renderAdmin(), /admin-msg--err/);
+});
+
+test("renderHeader: incluye la pestaña de Admin", () => {
+  const app = loadApp();
+  Object.assign(app.S, { user: "Ana", players: [], groupResults: {} });
+  assert.match(app.renderHeader(), /setTab\('admin'\)/);
+});
+
+test("render: pestaña admin pinta el panel de administración", () => {
+  const app = loadApp();
+  Object.assign(app.S, {
+    loading: false, user: "Ana", tab: "admin",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {}, groupScores: {},
+  });
+  app.render();
+  assert.match(app.appEl.innerHTML, /Zona Admin/);
+});
+
 test("render: usuario logado pinta header + contenido de la pestaña", () => {
   const app = withState({
     loading: false,

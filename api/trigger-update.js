@@ -1,3 +1,13 @@
+import { timingSafeEqual } from 'node:crypto';
+
+// Comparación en tiempo constante (evita fuga por timing). timingSafeEqual exige
+// buffers de la misma longitud, así que comprobamos longitud antes.
+function secretsMatch(a, b) {
+  const ba = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -10,7 +20,7 @@ export default async function handler(req, res) {
   }
   // El cliente envía la cabecera "X-Admin-Secret"; Node/Vercel normaliza las
   // claves de las cabeceras entrantes a minúsculas, de ahí "x-admin-secret".
-  if (req.headers['x-admin-secret'] !== adminSecret) {
+  if (!secretsMatch(req.headers['x-admin-secret'] || '', adminSecret)) {
     return res.status(401).json({ error: 'No autorizado' });
   }
 

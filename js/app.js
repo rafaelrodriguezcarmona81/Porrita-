@@ -491,7 +491,7 @@ window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
 async function triggerUpdate(secret){
   ss({adminTriggering:true,adminTriggerMsg:null});
   try{
-    const r=await fetch("/api/trigger-update",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Secret":secret}});
+    const r=await fetch("/api/trigger-update",{method:"POST",headers:{"X-Admin-Secret":secret}});
     if(r.ok){
       ss({adminTriggering:false,adminTriggerOk:true,adminTriggerMsg:"✅ Actualización disparada. Los resultados aparecerán en unos minutos."});
     }else{

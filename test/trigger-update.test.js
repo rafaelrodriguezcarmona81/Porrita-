@@ -22,13 +22,23 @@ function mockRes() {
   };
 }
 
-// Guarda/restaura el entorno y el fetch global alrededor de cada caso.
+// Guarda/restaura SOLO las claves de entorno tocadas (no reasigna process.env
+// entero, que es un objeto especial de Node) y el fetch global, alrededor de cada caso.
 function withEnv(env, fn) {
-  const savedEnv = { ...process.env };
+  const keys = Object.keys(env);
+  const had = {};
+  const prev = {};
+  for (const k of keys) {
+    had[k] = Object.prototype.hasOwnProperty.call(process.env, k);
+    prev[k] = process.env[k];
+  }
   const savedFetch = global.fetch;
   Object.assign(process.env, env);
   return Promise.resolve(fn()).finally(() => {
-    process.env = savedEnv;
+    for (const k of keys) {
+      if (had[k]) process.env[k] = prev[k];
+      else delete process.env[k];
+    }
     global.fetch = savedFetch;
   });
 }

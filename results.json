@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-15T21:58:13Z",
+  "updated": "2026-06-16T05:59:42Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -13,7 +13,9 @@
     "C_Brasil_Marruecos": "X",
     "F_Países Bajos_Japón": "X",
     "H_España_Cabo Verde": "X",
+    "H_Arabia Saudí_Uruguay": "X",
     "B_Canadá_Bosnia y Herc.": "X",
+    "G_Irán_Nueva Zelanda": "X",
     "G_Bélgica_Egipto": "X"
   },
   "scores": {
@@ -29,7 +31,9 @@
     "C_Brasil_Marruecos": "1-1",
     "F_Países Bajos_Japón": "2-2",
     "H_España_Cabo Verde": "0-0",
+    "H_Arabia Saudí_Uruguay": "1-1",
     "B_Canadá_Bosnia y Herc.": "1-1",
+    "G_Irán_Nueva Zelanda": "2-2",
     "G_Bélgica_Egipto": "1-1"
   }
 }

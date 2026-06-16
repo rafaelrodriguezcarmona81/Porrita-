@@ -422,6 +422,7 @@ body {
 }
 
 .match {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: .3rem;
@@ -526,8 +527,17 @@ body {
 .badge {
   font-size: .65rem;
   font-weight: 700;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 999px;
+}
+
+/* Chip de puntos (+1✓ / ✗ / — / 🔒) anclado en la esquina superior derecha de
+   la card del partido, para que los botones 1/X/2 queden centrados entre los
+   equipos en vez de desplazarse por el ancho del badge. */
+.match-badge {
+  position: absolute;
+  top: .4rem;
+  right: .4rem;
 }
 
 .badge--correct {

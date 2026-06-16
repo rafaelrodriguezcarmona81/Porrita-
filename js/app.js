@@ -347,10 +347,11 @@ function renderGrupos(){
     const blocked=hasR||locked;
     const matchCls='match'+(hasR?(correct?' match--correct':wrong?' match--wrong':''):locked?' match--locked':'');
     const badge=hasR
-      ?`<span class="badge ${correct?'badge--correct':wrong?'badge--wrong':'badge--neutral'}">${correct?'+1✓':wrong?'✗':'—'}</span>`
-      :locked?'<span class="badge badge--locked">🔒</span>'
+      ?`<span class="match-badge badge ${correct?'badge--correct':wrong?'badge--wrong':'badge--neutral'}">${correct?'+1✓':wrong?'✗':'—'}</span>`
+      :locked?'<span class="match-badge badge badge--locked">🔒</span>'
       :'';
     return`<div class="${matchCls}">
+      ${badge}
       <div class="match-meta">${fmtTime(key)} · ${tvChannel(key)}${score?' · 🔢 '+score:''}</div>
       <div class="match-row">
         <span class="team">${fl(m[0])} ${m[0]}</span>
@@ -365,7 +366,6 @@ function renderGrupos(){
             if(blocked)pc+=" pick--blocked";
             return`<button onclick="${blocked?'':('setPred(\''+key+'\',\''+v+'\')')}" class="${pc}">${v}</button>`;
           }).join("")}
-          ${badge}
         </div>
         <span class="team team--away">${fl(m[1])} ${m[1]}</span>
       </div>

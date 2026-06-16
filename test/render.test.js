@@ -107,6 +107,33 @@ test("renderGrupos: fallo pinta clases rojas y badge ✗", () => {
   assert.match(html, /pick pick--wrong/);
 });
 
+test("renderGrupos: en un fallo, el resultado oficial se resalta con pick--result", () => {
+  // pred "2" pero el resultado real es "1" → el botón "1" lleva pick--result
+  const app = withState({
+    user: "Ana",
+    activeGroup: "A",
+    players: [{ nombre: "Ana", group_predictions: { "A_México_Sudáfrica": "2" }, podium: null }],
+    groupResults: { "A_México_Sudáfrica": "1" },
+    groupScores: {},
+  }, { now: Date.parse("2026-01-01T00:00:00+02:00") });
+  const html = app.renderGrupos();
+  assert.match(html, /pick pick--result[^"]*">1</);
+  // el acierto (verde lleno) no debe aparecer en un fallo
+  assert.doesNotMatch(html, /pick--correct/);
+});
+
+test("renderGrupos: en un acierto no se pinta pick--result", () => {
+  const app = withState({
+    user: "Ana",
+    activeGroup: "A",
+    players: [{ nombre: "Ana", group_predictions: { "A_México_Sudáfrica": "1" }, podium: null }],
+    groupResults: { "A_México_Sudáfrica": "1" },
+    groupScores: {},
+  }, { now: Date.parse("2026-01-01T00:00:00+02:00") });
+  const html = app.renderGrupos();
+  assert.doesNotMatch(html, /pick--result/);
+});
+
 test("renderGrupos: partido bloqueado (sin resultado) muestra candado y pick--locked", () => {
   // 30 min antes del saque del primer partido del grupo A
   const kickoff = Date.parse("2026-06-11T21:00:00+02:00");

@@ -1,11 +1,12 @@
 {
-  "updated": "2026-06-16T20:00:00Z",
+  "updated": "2026-06-16T21:20:12Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
     "C_Haití_Escocia": "2",
     "A_Corea del Sur_Rep. Checa": "1",
     "D_Estados Unidos_Paraguay": "1",
+    "I_Francia_Senegal": "1",
     "E_Costa de Marfil_Ecuador": "1",
     "E_Alemania_Curazao": "1",
     "F_Suecia_Túnez": "1",
@@ -24,6 +25,7 @@
     "C_Haití_Escocia": "0-1",
     "A_Corea del Sur_Rep. Checa": "2-1",
     "D_Estados Unidos_Paraguay": "4-1",
+    "I_Francia_Senegal": "3-1",
     "E_Costa de Marfil_Ecuador": "1-0",
     "E_Alemania_Curazao": "7-1",
     "F_Suecia_Túnez": "5-1",

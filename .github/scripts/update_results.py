@@ -49,6 +49,7 @@ TEAM_MAP = {
   "Jordan": "Jordania",
   "Portugal": "Portugal",
   "DR Congo": "RD Congo",
+  "Democratic Republic of the Congo": "RD Congo",
   "Uzbekistan": "Uzbekistán",
   "Colombia": "Colombia",
   "England": "Inglaterra",

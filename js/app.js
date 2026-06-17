@@ -160,7 +160,7 @@ function isLocked(key){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
-  user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},tab:"grupos",
+  user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},changelog:[],tab:"grupos",
   activeGroup:"A",loading:true,loginBusy:false,
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
@@ -178,21 +178,23 @@ function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 async function loadData(){
   try{
-    const[pls,resJson]=await Promise.all([
+    const[pls,resJson,clJson]=await Promise.all([
       sbGet("porra_jugadores","select=*"),
-      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{},scores:{}}))
+      fetch("results.json?t="+Date.now()).then(r=>r.json()).catch(()=>({results:{},scores:{}})),
+      fetch("changelog.json?t="+Date.now()).then(r=>r.json()).catch(()=>[])
     ]);
     const players=Array.isArray(pls)?pls:[];
     const groupResults=resJson.results||{};
     const groupScores=resJson.scores||{};
     const groupStandings=resJson.standings||{};
+    const changelog=Array.isArray(clJson)?clJson:[];
     let rankChange=null,newRank=null;
     if(S.user){
       const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,groupScores,groupStandings,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    ss({players,groupResults,groupScores,groupStandings,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -243,6 +245,23 @@ function pill(text,color){
   return`<span class="pill pill--${color||'blue'}">${text}</span>`;
 }
 function card(content){return`<div class="card">${content}</div>`;}
+
+// ─── NOVEDADES (changelog) ────────────────────────────────────────────────────
+// El banner muestra la entrada más reciente de changelog.json. El "ya visto" se
+// guarda en localStorage (por dispositivo, sin escrituras a Supabase): al
+// descartarlo se recuerda el id, y solo reaparece si llega una entrada nueva.
+const CHANGELOG_SEEN_KEY="porra_changelog_seen";
+function changelogSeenId(){try{return window.localStorage.getItem(CHANGELOG_SEEN_KEY);}catch(e){return null;}}
+function renderChangelogBanner(){
+  const latest=Array.isArray(S.changelog)&&S.changelog[0];
+  if(!latest||!latest.id||changelogSeenId()===String(latest.id))return"";
+  const items=(latest.items||[]).map(i=>`<li>${i}</li>`).join("");
+  return`<div class="changelog-banner">
+    <button onclick="dismissChangelog()" class="changelog-close" aria-label="Descartar">✕</button>
+    <p class="changelog-title">✨ Novedades${latest.fecha?` · ${latest.fecha}`:""}</p>
+    <ul class="changelog-list">${items}</ul>
+  </div>`;
+}
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function renderLogin(){
@@ -530,7 +549,7 @@ function render(){
   if(S.linkingSession){app.innerHTML=renderLinking();return;}
   if(!S.user){app.innerHTML=renderLogin();return;}
   const content={grupos:renderGrupos,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
-  app.innerHTML=`${renderHeader()}<div class="app-main">${content||""}</div>`;
+  app.innerHTML=`${renderHeader()}<div class="app-main">${renderChangelogBanner()}${content||""}</div>`;
 }
 
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────
@@ -539,6 +558,7 @@ window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pend
 window.doLinkAccount=()=>{const v=document.getElementById("linkSelect")?.value;if(v)linkAccount(v);};
 window.doFreshAccount=()=>createFreshAccount();
 window.setTab=t=>ss({tab:t});
+window.dismissChangelog=()=>{const l=Array.isArray(S.changelog)&&S.changelog[0];if(l&&l.id){try{window.localStorage.setItem(CHANGELOG_SEEN_KEY,String(l.id));}catch(e){}}ss({});};
 window.setGroup=g=>ss({activeGroup:g,pendingPreds:{}});
 window.setPred=(key,val)=>ss({pendingPreds:{...S.pendingPreds,[key]:val}});
 window.doSavePreds=()=>{if(!S.savingGroup)saveGroupPreds();};

@@ -244,6 +244,39 @@ test("renderGrupos: incluye la clasificación del grupo activo", () => {
   assert.match(html, /<table class="standings">/);
 });
 
+// ─── renderChangelogBanner (novedades) ────────────────────────────────────────
+const CL = [{ id: "2026-06-17", fecha: "2026-06-17", items: ["Novedad A", "Novedad B"] }];
+
+test("renderChangelogBanner: muestra la última entrada si no se ha visto", () => {
+  const app = withState({ changelog: CL });
+  const html = app.renderChangelogBanner();
+  assert.match(html, /changelog-banner/);
+  assert.match(html, /Novedad A/);
+  assert.match(html, /dismissChangelog\(\)/);
+});
+
+test("renderChangelogBanner: vacío si ya se vio esa entrada (localStorage)", () => {
+  const app = loadApp({ localStorage: { porra_changelog_seen: "2026-06-17" } });
+  Object.assign(app.S, { changelog: CL });
+  assert.equal(app.renderChangelogBanner(), "");
+});
+
+test("renderChangelogBanner: vacío si no hay novedades", () => {
+  const app = withState({ changelog: [] });
+  assert.equal(app.renderChangelogBanner(), "");
+});
+
+test("dismissChangelog: marca como vista y oculta el banner", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    changelog: CL,
+  });
+  assert.match(app.renderChangelogBanner(), /changelog-banner/); // visible antes
+  app.window.dismissChangelog();
+  assert.equal(app.renderChangelogBanner(), "");                 // oculto después
+});
+
 // ─── renderPodium ─────────────────────────────────────────────────────────────
 test("renderPodium: muestra preview del pódium guardado y otros jugadores", () => {
   const app = withState({

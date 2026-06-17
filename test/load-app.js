@@ -16,7 +16,8 @@ const EXPOSED = [
   "S", "ss",
   // render (devuelven strings HTML)
   "render", "renderLogin", "renderLinking", "renderHeader",
-  "renderGrupos", "renderStandings", "bestThirdTeams", "renderPodium", "renderRanking", "renderAdmin",
+  "renderGrupos", "renderStandings", "bestThirdTeams", "renderChangelogBanner",
+  "renderPodium", "renderRanking", "renderAdmin",
   // capa de datos / red
   "getHDR", "sbGet", "sbPost", "sbPatch",
   "loadData", "ensurePlayer", "linkAccount", "createFreshAccount",
@@ -74,7 +75,15 @@ function loadApp(opts = {}) {
   const stubDocument = {
     getElementById: (id) => (id === "app" ? appEl : (opts.elements && opts.elements[id]) || null),
   };
-  const stubWindow = { location: { origin: "http://localhost" } };
+  const storage = new Map(Object.entries(opts.localStorage || {}));
+  const stubWindow = {
+    location: { origin: "http://localhost" },
+    localStorage: {
+      getItem: (k) => (storage.has(k) ? storage.get(k) : null),
+      setItem: (k, v) => storage.set(k, String(v)),
+      removeItem: (k) => storage.delete(k),
+    },
+  };
 
   // fetch instrumentado: registra cada llamada y delega en opts.fetch si se pasa.
   const fetchCalls = [];

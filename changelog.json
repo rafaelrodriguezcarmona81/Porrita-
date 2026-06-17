@@ -1,0 +1,21 @@
+[
+  {
+    "id": "2026-06-17",
+    "fecha": "2026-06-17",
+    "items": [
+      "Ahora verás este aviso con las novedades de cada día.",
+      "Cada grupo muestra su clasificación en vivo: partidos jugados, ganados, empatados, perdidos, goles y puntos.",
+      "Se resaltan los 8 mejores terceros, que también clasifican a la siguiente fase.",
+      "Corregido el recuento de resultados de RD Congo."
+    ]
+  },
+  {
+    "id": "2026-06-16",
+    "fecha": "2026-06-16",
+    "items": [
+      "Al fallar un pronóstico se resalta cuál era el resultado correcto (1, X o 2).",
+      "El indicador de puntos de cada partido se movió a la esquina, para que la quiniela quede centrada.",
+      "Nuevo panel de Admin (protegido con clave) para forzar la actualización de resultados."
+    ]
+  }
+]

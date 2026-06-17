@@ -1,0 +1,28 @@
+name: Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skipped by label
+        if: contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+        run: echo "PR etiquetada con 'skip-changelog' → no se exige entrada de changelog."
+
+      - name: Require changelog entry
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files="$(gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --name-only)"
+          echo "Archivos modificados en la PR:"
+          echo "$files"
+          if echo "$files" | grep -qx 'changelog.json'; then
+            echo "✓ La PR modifica changelog.json."
+          else
+            echo "::error::Esta PR no modifica changelog.json. Añade una entrada de novedades o etiqueta la PR con 'skip-changelog'."
+            exit 1
+          fi

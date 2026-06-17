@@ -14,6 +14,7 @@ se actualizan solos cada día.
   **tabla de clasificación en vivo** (PJ, G, E, P, GF, GC, DG, Pts).
 - **Pódium:** elige campeón, subcampeón y tercero. Bonus: 🥇 +5 · 🥈 +3 · 🥉 +2.
 - **Ranking:** clasificación en vivo de todos los participantes.
+- **Novedades:** al entrar se muestra un pequeño aviso con los cambios recientes, que puedes descartar (no vuelve a salir hasta que haya algo nuevo).
 
 ## Ejecutar en local
 
@@ -82,6 +83,18 @@ vercel dev
 npm test                  # ejecuta todos los tests
 npm run test:coverage     # tests + informe de cobertura
 ```
+
+## Contribuir
+
+Cada cambio que aporte una novedad visible para los usuarios **debe añadir una entrada al
+[`changelog.json`](changelog.json)**, que es lo que alimenta el banner de "Novedades".
+
+- `changelog.json` es una lista de `{ "id", "fecha", "items": [...] }`, la más reciente primero.
+- Añade tu cambio en `items` con texto **claro y en español, pensado para los participantes** (no
+  el mensaje técnico del commit). Si ya hay una entrada con la fecha de hoy, suma tu línea ahí.
+- El CI (`.github/workflows/changelog.yml`) **falla la PR** si no toca `changelog.json`.
+- Si tu PR no tiene impacto para el usuario (refactor, docs, tooling…), etiquétala con
+  **`skip-changelog`** y el check la dará por buena.
 
 ## Despliegue
 

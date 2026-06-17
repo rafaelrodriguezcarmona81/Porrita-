@@ -32,6 +32,46 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
 }
 
+/* ─── BANNER DE NOVEDADES (changelog) ───────────────────────────────────── */
+.changelog-banner {
+  position: relative;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: .75rem;
+  padding: .6rem 2rem .6rem .75rem;
+}
+
+.changelog-close {
+  position: absolute;
+  top: .35rem;
+  right: .45rem;
+  border: none;
+  background: transparent;
+  color: #6366f1;
+  font-size: .9rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: .2rem;
+}
+
+.changelog-title {
+  margin: 0 0 .25rem;
+  font-weight: 800;
+  font-size: .8rem;
+  color: #3730a3;
+}
+
+.changelog-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: .72rem;
+  color: #4338ca;
+}
+
+.changelog-list li {
+  margin: .1rem 0;
+}
+
 .title {
   font-weight: 900;
   color: #111;

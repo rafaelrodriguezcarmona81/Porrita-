@@ -112,6 +112,23 @@ and `fireAuth` (drives the captured `onAuthStateChange` callback).
 
 ## CI
 
-`.github/workflows/tests.yml` runs `npm test` on push to `main` and on PRs. Both workflows pin
-GitHub Actions to **full commit SHAs** (with the version as a trailing comment) rather than tags —
-keep new actions pinned the same way.
+`.github/workflows/tests.yml` runs `npm test` on push to `main` and on PRs.
+`.github/workflows/changelog.yml` runs on PRs and **fails** any PR that doesn't modify
+`changelog.json` unless it carries the `skip-changelog` label. Workflows pin GitHub Actions to **full
+commit SHAs** (with the version as a trailing comment) rather than tags — keep new actions pinned the
+same way.
+
+## Changelog (required on every PR)
+
+The app shows a small dismissible **"Novedades" banner** on entry (`renderChangelogBanner` in
+`js/app.js`), driven by a committed **`changelog.json`** (fetched in `loadData` like `results.json`).
+The banner shows the most recent entry; "already seen" is tracked **client-side in `localStorage`**
+(`porra_changelog_seen` = the entry `id`), so it reappears only when a newer entry lands. No writes
+to Supabase.
+
+`changelog.json` is an array of `{ id, fecha, items[] }`, newest first. **Every PR must add an
+entry** (or update today's) with **user-facing Spanish** text describing what changed — not commit
+jargon. The `changelog.yml` workflow enforces this and **fails the build** if a PR neither touches
+`changelog.json` nor is labeled `skip-changelog` (use that label for chore/docs/internal PRs with no
+user-visible change). Keep `id` unique per entry (e.g. the date, or date + suffix if several land the
+same day) so the banner re-shows when content changes.

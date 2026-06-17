@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-17T18:00:53Z",
+  "updated": "2026-06-17T19:27:24Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -20,7 +20,8 @@
     "I_Francia_Senegal": "1",
     "I_Irak_Noruega": "2",
     "J_Argentina_Argelia": "1",
-    "J_Austria_Jordania": "1"
+    "J_Austria_Jordania": "1",
+    "K_Portugal_RD Congo": "X"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -42,7 +43,8 @@
     "I_Francia_Senegal": "3-1",
     "I_Irak_Noruega": "1-4",
     "J_Argentina_Argelia": "3-0",
-    "J_Austria_Jordania": "3-1"
+    "J_Austria_Jordania": "3-1",
+    "K_Portugal_RD Congo": "1-1"
   },
   "standings": {
     "A": [
@@ -507,29 +509,29 @@
     ],
     "K": [
       {
-        "team": "Colombia",
-        "mp": 0,
-        "w": 0,
-        "d": 0,
-        "l": 0,
-        "gf": 0,
-        "ga": 0,
-        "gd": 0,
-        "pts": 0
-      },
-      {
         "team": "Portugal",
-        "mp": 0,
+        "mp": 1,
         "w": 0,
-        "d": 0,
+        "d": 1,
         "l": 0,
-        "gf": 0,
-        "ga": 0,
+        "gf": 1,
+        "ga": 1,
         "gd": 0,
-        "pts": 0
+        "pts": 1
       },
       {
         "team": "RD Congo",
+        "mp": 1,
+        "w": 0,
+        "d": 1,
+        "l": 0,
+        "gf": 1,
+        "ga": 1,
+        "gd": 0,
+        "pts": 1
+      },
+      {
+        "team": "Colombia",
         "mp": 0,
         "w": 0,
         "d": 0,

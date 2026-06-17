@@ -96,6 +96,17 @@ Cada cambio que aporte una novedad visible para los usuarios **debe añadir una 
 - Si tu PR no tiene impacto para el usuario (refactor, docs, tooling…), etiquétala con
   **`skip-changelog`** y el check la dará por buena.
 
+## Base de datos (migraciones)
+
+El esquema y las políticas viven en [`supabase/migrations/`](supabase/migrations) y se aplican
+**automáticamente al mergear a `main`** (workflow *DB migrations*), y **solo si pasan los tests**.
+
+- Son **forward-only**: no edites ni borres una migración ya mergeada (no se vuelve a ejecutar y
+  producción se desincronizaría). Para cambiar el esquema, **añade una migración nueva** con un
+  timestamp posterior.
+- Cada migración se aplica **una sola vez** (el CLI de Supabase lo controla).
+- Detalle de configuración (secrets, secuencia) en [`docs/ADMIN.md`](docs/ADMIN.md).
+
 ## Despliegue
 
 El despliegue se hace con [Vercel](https://vercel.com). Pero al ser todo estático

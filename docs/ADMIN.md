@@ -4,11 +4,16 @@ Operativa para quien administra la porra (un único admin por tenant).
 
 ## Puesta en marcha (una sola vez)
 
-1. **Base de datos** — Supabase → *SQL Editor*: ejecuta, en este orden:
-   - [`db/rls.sql`](../db/rls.sql) — cierra las escrituras de `porra_jugadores` (solo el dueño edita su fila; nada de `INSERT`/`DELETE` desde el cliente).
-   - [`db/invitaciones.sql`](../db/invitaciones.sql) — crea la tabla `invitaciones`, cerrada por RLS (solo `service_role`).
+1. **Base de datos (migraciones automáticas)** — las migraciones viven en
+   [`supabase/migrations/`](../supabase/migrations) y se aplican **solas al mergear a `main`**
+   (workflow *DB migrations*), pero **solo si el workflow *Tests* pasa**. No se ejecuta SQL a mano.
+   Configura en *GitHub → Settings → Secrets and variables → Actions*:
+   | Secret | Valor |
+   |--------|-------|
+   | `SUPABASE_ACCESS_TOKEN` | Supabase → *Account → Access Tokens* |
+   | `SUPABASE_DB_PASSWORD` | la contraseña de la base de datos del proyecto |
 
-2. **Variables de entorno** — Vercel → *Project Settings → Environment Variables*:
+2. **Variables de entorno (serverless)** — Vercel → *Project Settings → Environment Variables*:
    | Variable | Valor | Notas |
    |----------|-------|-------|
    | `SUPABASE_SERVICE_ROLE` | Supabase → *Project Settings → API → service_role key* | **Secreto.** Solo en servidor, nunca en el cliente ni en el repo. |
@@ -17,7 +22,7 @@ Operativa para quien administra la porra (un único admin por tenant).
 
 3. **Redeploy** en Vercel para que tomen las variables.
 
-> ⚠️ **Orden importa:** aplica `db/rls.sql` **solo cuando el backend de invitaciones esté desplegado**. Con RLS activa, el alta de jugadores deja de poder hacerse desde el cliente (es el objetivo); el alta legítima pasa a `/api/redeem-invite`. Si activas RLS antes, nadie nuevo podrá entrar.
+> ⚠️ **Secuencia:** la migración de RLS y el backend de invitaciones llegan a `main` en el **mismo merge**, así que RLS se activa a la vez que existe `/api/redeem-invite`. Con RLS activa, el alta de jugadores deja de poder hacerse desde el cliente (es el objetivo) y pasa al canje de invitación. No mergees la migración de RLS sin ese backend, o nadie nuevo podrá entrar.
 
 ## Generar una invitación
 

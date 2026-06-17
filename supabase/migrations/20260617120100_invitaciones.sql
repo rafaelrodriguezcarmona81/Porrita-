@@ -9,9 +9,9 @@
 -- service_role (que ignora RLS) la usa desde los endpoints serverless. Así nadie
 -- puede forjar ni listar invitaciones desde el cliente.
 --
--- CÓMO APLICAR (Supabase → SQL Editor): pega y ejecuta. Requiere también haber
--- aplicado db/rls.sql, y configurar SUPABASE_SERVICE_ROLE (y SUPABASE_URL) como
--- variables de entorno en Vercel.
+-- Migración forward-only: se aplica sola al mergear a main (workflow "DB
+-- migrations"). No la edites una vez aplicada; para cambios, añade otra migración.
+-- Requiere configurar SUPABASE_SERVICE_ROLE (y opcional SUPABASE_URL) en Vercel.
 
 create table if not exists public.invitaciones (
   token uuid primary key,

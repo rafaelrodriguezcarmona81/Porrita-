@@ -1,0 +1,4 @@
+# Configuración mínima para que el CLI de Supabase aplique migraciones en CI
+# (`supabase db push`). Para desarrollo local completo (`supabase start`),
+# `supabase init` genera un config.toml más extenso.
+project_id = "porrita"

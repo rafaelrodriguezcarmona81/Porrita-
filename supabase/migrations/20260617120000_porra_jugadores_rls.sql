@@ -6,13 +6,14 @@
 -- exigen sesión para leer. Las escrituras de la app ya viajan con el JWT del
 -- usuario (Authorization: Bearer <access_token>), así que `auth.uid()` funciona.
 --
--- CÓMO APLICAR (Supabase → SQL Editor): pega y ejecuta este fichero.
+-- Migración forward-only: se aplica sola al mergear a main (workflow "DB
+-- migrations"). No la edites una vez aplicada; para cambios, añade otra migración.
 --
--- ⚠️ SECUENCIA: aplícalo JUNTO con el backend de invitaciones (tarea #3). Con RLS
--- activa, el alta de jugadores y la vinculación dejan de poder hacerse desde el
--- cliente (es justo lo que queremos); el alta legítima pasa a hacerse server-side
--- con `service_role` al canjear una invitación. Si lo aplicas antes de tener eso,
--- nadie nuevo podrá darse de alta.
+-- ⚠️ SECUENCIA: debe llegar a main JUNTO con el backend de invitaciones (mismo
+-- merge). Con RLS activa, el alta de jugadores deja de poder hacerse desde el
+-- cliente (es el objetivo); el alta legítima pasa a server-side
+-- (/api/redeem-invite con service_role). Sin ese backend desplegado, nadie nuevo
+-- podría darse de alta.
 
 alter table public.porra_jugadores enable row level security;
 

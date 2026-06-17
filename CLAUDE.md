@@ -118,6 +118,19 @@ and `fireAuth` (drives the captured `onAuthStateChange` callback).
 commit SHAs** (with the version as a trailing comment) rather than tags — keep new actions pinned the
 same way.
 
+## Database migrations (Supabase)
+
+Schema/RLS changes live in **`supabase/migrations/<timestamp>_name.sql`** and are applied
+**automatically on merge to `main`** by the `migrations.yml` workflow — but only **after the `Tests`
+workflow passes** (chained via `workflow_run`); if tests fail, migrations don't run. The Supabase
+CLI tracks what's applied, so each migration runs exactly once.
+
+**Migrations are forward-only.** Never edit (or delete) a migration that has already been
+merged/applied — it won't re-run and prod will drift from the files. To change the schema, **add a
+new migration** with a later timestamp. Keep them idempotent where cheap (`if not exists`,
+`drop ... if exists`). Requires the repo Actions secrets `SUPABASE_ACCESS_TOKEN` and
+`SUPABASE_DB_PASSWORD`. Operator setup lives in `docs/ADMIN.md`.
+
 ## Changelog (required on every PR)
 
 The app shows a small dismissible **"Novedades" banner** on entry (`renderChangelogBanner` in

@@ -1,0 +1,33 @@
+name: DB migrations
+
+# Se ejecuta SOLO después de que el workflow "Tests" termine con éxito en main.
+# Si los tests fallan, este job no corre → las migraciones no se aplican.
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+
+# Aplica las migraciones forward-only de supabase/migrations. El CLI lleva su
+# propia tabla de control, así que cada migración se aplica una sola vez.
+# Requiere los secrets SUPABASE_ACCESS_TOKEN y SUPABASE_DB_PASSWORD.
+jobs:
+  migrate:
+    # Solo si los tests pasaron y la ejecución fue sobre main.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1
+        with:
+          version: latest
+
+      - name: Apply migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref qkxenqexxdvpjnagsudk
+          supabase db push

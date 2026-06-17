@@ -415,6 +415,79 @@ body {
   font-weight: 600;
 }
 
+.standings-cap {
+  font-size: .7rem;
+  font-weight: 700;
+  color: #6b7280;
+  margin: .75rem 0 .35rem;
+}
+
+.standings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .7rem;
+  margin-bottom: .25rem;
+}
+
+.standings th,
+.standings td {
+  padding: 6px 3px;
+  text-align: center;
+  color: #374151;
+}
+
+.standings thead th {
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: #9ca3af;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.standings tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.standings .st-pos {
+  width: 18px;
+  color: #9ca3af;
+}
+
+.standings .st-team {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+  width: 100%;
+}
+
+.standings .st-pts {
+  font-weight: 900;
+  color: #111;
+}
+
+/* Las dos primeras plazas (clasifican a la siguiente fase). */
+.standings .st-row--qual .st-pos {
+  color: #16a34a;
+  font-weight: 900;
+}
+
+.standings .st-row--qual .st-team {
+  box-shadow: inset 3px 0 0 #16a34a;
+  padding-left: 6px;
+}
+
+.standings-empty {
+  font-size: .75rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: .5rem 0;
+  margin: 0;
+}
+
 .match-list {
   display: flex;
   flex-direction: column;

@@ -160,7 +160,7 @@ function isLocked(key){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
-  user:null,userId:null,players:[],groupResults:{},groupScores:{},tab:"grupos",
+  user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},tab:"grupos",
   activeGroup:"A",loading:true,loginBusy:false,
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
@@ -185,13 +185,14 @@ async function loadData(){
     const players=Array.isArray(pls)?pls:[];
     const groupResults=resJson.results||{};
     const groupScores=resJson.scores||{};
+    const groupStandings=resJson.standings||{};
     let rankChange=null,newRank=null;
     if(S.user){
       const sorted=players.map(p=>({name:p.nombre,pts:gPts(p.group_predictions||{},groupResults)})).sort((a,b)=>b.pts-a.pts);
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,groupScores,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    ss({players,groupResults,groupScores,groupStandings,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -315,6 +316,34 @@ function renderHeader(){
   </div>`;
 }
 
+// ─── CLASIFICACIÓN DEL GRUPO ──────────────────────────────────────────────────
+// Tabla en vivo calculada en el updater (results.json → S.groupStandings), única
+// fuente de datos. Las dos primeras filas se marcan como puesto de clasificación.
+function renderStandings(g){
+  const rows=S.groupStandings[g]||[];
+  if(!rows.length)
+    return`<p class="standings-empty">Clasificación no disponible</p>`;
+  // Las plazas de clasificación solo se resaltan una vez empieza a jugarse;
+  // sin partidos, la tabla sale a cero y ordenada alfabéticamente (del updater).
+  const played=rows.some(t=>t.mp>0);
+  const body=rows.map((t,i)=>`<tr class="${played&&i<2?'st-row--qual':''}">
+    <td class="st-pos">${i+1}</td>
+    <td class="st-team">${fl(t.team)} ${t.team}</td>
+    <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+    <td>${t.gf}</td><td>${t.ga}</td>
+    <td class="st-gd">${t.gd>0?'+':''}${t.gd}</td>
+    <td class="st-pts">${t.pts}</td>
+  </tr>`).join("");
+  return`<table class="standings">
+    <thead><tr>
+      <th class="st-pos">#</th><th class="st-team">Equipo</th>
+      <th>PJ</th><th>G</th><th>E</th><th>P</th>
+      <th>GF</th><th>GC</th><th class="st-gd">DG</th><th class="st-pts">Pts</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
 // ─── GRUPOS ───────────────────────────────────────────────────────────────────
 function renderGrupos(){
   const me=S.players.find(p=>p.nombre===S.user);
@@ -386,7 +415,9 @@ function renderGrupos(){
   ${card(`<div class="section-head"><h2 class="title">Fase de Grupos</h2>${pill(predCount+"/"+TOTAL_MATCHES,predCount===TOTAL_MATCHES?"green":"yellow")}</div><p class="hint">1=Local · X=Empate · 2=Visitante · 1pt por acierto · 🔒=bloqueado 1h antes</p>`)}
   <div class="group-grid">${groupBtns}</div>
   ${card(`<div class="section-head section-head--lg"><h3 class="title">Grupo ${g}</h3></div>
-    <div class="group-info">${GROUPS[g].map(t=>`<span class="chip">${fl(t)} ${t}</span>`).join("")}</div>
+    <p class="standings-cap">Clasificación</p>
+    ${renderStandings(g)}
+    <p class="standings-cap">Partidos</p>
     <div class="match-list">${matchRows}</div>
     <div class="match-foot"><span>${Object.keys(myPreds).filter(k=>k.startsWith(g)).length}/${matches.length} pronosticados</span><span>🟢=acierto · 🔴=fallo</span></div>
     ${saveBtn}`)}`;

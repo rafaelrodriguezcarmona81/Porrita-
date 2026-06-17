@@ -49,6 +49,7 @@ TEAM_MAP = {
   "Jordan": "Jordania",
   "Portugal": "Portugal",
   "DR Congo": "RD Congo",
+  "Democratic Republic of the Congo": "RD Congo",
   "Uzbekistan": "Uzbekistán",
   "Colombia": "Colombia",
   "England": "Inglaterra",
@@ -71,6 +72,28 @@ except Exception as e:
 
 results = {}
 scores = {}
+# Clasificación por grupo: { grupo -> { equipo -> fila } }. Se siembran los 4
+# equipos de cada grupo desde el calendario completo (aunque no hayan jugado),
+# y luego se acumulan estadísticas solo con los partidos finalizados, para que
+# la tabla cuadre exactamente con los resultados publicados.
+standings = {}
+
+def row(group, team):
+  g = standings.setdefault(group, {})
+  return g.setdefault(team, {"team": team, "mp": 0, "w": 0, "d": 0, "l": 0,
+                             "gf": 0, "ga": 0, "gd": 0, "pts": 0})
+
+# 1ª pasada: sembrar el roster de cada grupo desde TODOS los partidos de grupo.
+for g in data.get("games", []):
+  if g.get("type") != "group":
+    continue
+  group = g.get("group", "")
+  if not group or len(group) != 1:
+    continue
+  row(group, translate(g.get("home_team_name_en", "")))
+  row(group, translate(g.get("away_team_name_en", "")))
+
+# 2ª pasada: resultados + estadísticas con los partidos finalizados.
 for g in data.get("games", []):
   if g.get("type") != "group":
     continue
@@ -95,10 +118,32 @@ for g in data.get("games", []):
     results[key] = "2"
   scores[key] = f"{home_score}-{away_score}"
 
+  h, a = row(group, home), row(group, away)
+  h["mp"] += 1; a["mp"] += 1
+  h["gf"] += home_score; h["ga"] += away_score
+  a["gf"] += away_score; a["ga"] += home_score
+  if home_score > away_score:
+    h["w"] += 1; h["pts"] += 3; a["l"] += 1
+  elif home_score == away_score:
+    h["d"] += 1; a["d"] += 1; h["pts"] += 1; a["pts"] += 1
+  else:
+    a["w"] += 1; a["pts"] += 3; h["l"] += 1
+
+# Ordenar cada grupo: pts ▸ diferencia de goles ▸ goles a favor ▸ nombre.
+standings_out = {}
+for group, teams in standings.items():
+  for t in teams.values():
+    t["gd"] = t["gf"] - t["ga"]
+  standings_out[group] = sorted(
+    teams.values(),
+    key=lambda t: (-t["pts"], -t["gd"], -t["gf"], t["team"]),
+  )
+
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "results": results,
   "scores": scores,
+  "standings": standings_out,
 }
 
 out_path = "results.json"

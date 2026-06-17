@@ -164,6 +164,58 @@ test("renderGrupos: pronóstico pendiente seleccionado usa pick--sel", () => {
   assert.match(html, /GUARDAR PRONÓSTICOS/); // hay cambios pendientes → botón guardar
 });
 
+// ─── renderStandings (clasificación del grupo) ────────────────────────────────
+const STANDINGS_A = [
+  { team: "México", mp: 1, w: 1, d: 0, l: 0, gf: 2, ga: 0, gd: 2, pts: 3 },
+  { team: "Corea del Sur", mp: 1, w: 1, d: 0, l: 0, gf: 2, ga: 1, gd: 1, pts: 3 },
+  { team: "Rep. Checa", mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 2, gd: -1, pts: 0 },
+  { team: "Sudáfrica", mp: 1, w: 0, d: 0, l: 1, gf: 0, ga: 2, gd: -2, pts: 0 },
+];
+
+test("renderStandings: pinta la tabla con filas, puntos y diferencia de goles", () => {
+  const app = withState({ activeGroup: "A", groupStandings: { A: STANDINGS_A } });
+  const html = app.renderStandings("A");
+  assert.match(html, /<table class="standings">/);
+  assert.match(html, /México/);
+  assert.match(html, /<th>GF<\/th><th>GC<\/th>/); // columnas goles a favor/contra
+  assert.match(html, /\+2</);   // DG con signo para positivos
+  assert.match(html, /-2</);    // DG negativo
+});
+
+test("renderStandings: marca las dos primeras plazas como clasificación", () => {
+  const app = withState({ activeGroup: "A", groupStandings: { A: STANDINGS_A } });
+  const html = app.renderStandings("A");
+  // exactamente dos filas con el modificador de clasificado
+  assert.equal((html.match(/st-row--qual/g) || []).length, 2);
+});
+
+test("renderStandings: sin partidos muestra la tabla a cero y sin marcar clasificados", () => {
+  const empty = STANDINGS_A.map(t => ({ ...t, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 }));
+  const app = withState({ activeGroup: "A", groupStandings: { A: empty } });
+  const html = app.renderStandings("A");
+  assert.match(html, /<table class="standings">/);          // sí hay tabla
+  assert.doesNotMatch(html, /st-row--qual/);                // pero sin resaltar plazas
+});
+
+test("renderStandings: sin datos de clasificación muestra aviso", () => {
+  const app = withState({ activeGroup: "A", groupStandings: {} });
+  const html = app.renderStandings("A");
+  assert.doesNotMatch(html, /<table/);
+  assert.match(html, /Clasificación no disponible/);
+});
+
+test("renderGrupos: incluye la clasificación del grupo activo", () => {
+  const app = withState({
+    user: "Ana",
+    activeGroup: "A",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupStandings: { A: STANDINGS_A },
+  }, { now: Date.parse("2026-01-01T00:00:00+02:00") });
+  const html = app.renderGrupos();
+  assert.match(html, /Clasificación/);
+  assert.match(html, /<table class="standings">/);
+});
+
 // ─── renderPodium ─────────────────────────────────────────────────────────────
 test("renderPodium: muestra preview del pódium guardado y otros jugadores", () => {
   const app = withState({

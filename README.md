@@ -10,7 +10,8 @@ se actualizan solos cada día.
 ## Cómo funciona
 
 - **Grupos:** acierta el resultado (1 = local, X = empate, 2 = visitante). 1 punto por acierto.
-  Los pronósticos se bloquean 1 hora antes de cada partido.
+  Los pronósticos se bloquean 1 hora antes de cada partido. Cada grupo muestra además su
+  **tabla de clasificación en vivo** (PJ, G, E, P, GF, GC, DG, Pts).
 - **Pódium:** elige campeón, subcampeón y tercero. Bonus: 🥇 +5 · 🥈 +3 · 🥉 +2.
 - **Ranking:** clasificación en vivo de todos los participantes.
 
@@ -94,7 +95,7 @@ El despliegue se hace con [Vercel](https://vercel.com). Pero al ser todo estáti
 | `index.html` | Página principal (login con Google) |
 | `css/styles.css` | Todos los estilos |
 | `js/app.js` | Toda la lógica de la app |
-| `results.json` | Resultados oficiales (se actualizan solos a diario) |
+| `results.json` | Resultados y clasificación oficiales (se actualizan solos a diario) |
 | `test/` | Tests unitarios |
 
 Para más detalle técnico, ver [`CLAUDE.md`](CLAUDE.md).

@@ -68,20 +68,26 @@ split when editing: compute a class string in `app.js`, define the look in `styl
 - Players: read/written via Supabase REST (`sbGet/sbPost/sbPatch`) using the public anon key in
   `app.js` (client-side by design).
 - Results: fetched from the static `results.json` (cache-busted), regenerated daily — the app
-  never writes results.
+  never writes results. `results.json` holds three maps: `results` and `scores` (keyed by
+  match-key) plus `standings` (keyed by **group letter**, an ordered array of team rows with
+  `mp/w/d/l/gf/ga/gd/pts`).
 - Auth: Google OAuth via Supabase. `ensurePlayer` links the auth user to a `porra_jugadores` row
   by `user_id`, then by name; if neither matches it shows a **manual linking screen** so people who
   played before auth existed can claim their old name.
 - Scoring is computed in the browser: `gPts` (1 pt per correct 1/X/2) + `podiumBonus` (5/3/2 for
-  champion/runner-up/third).
+  champion/runner-up/third). The **group standings table**, by contrast, is precomputed in the
+  updater and read straight from `results.json` (`renderStandings` does no calculation).
 
 **Prediction locking.** `isLocked(key)` blocks editing a prediction starting 1h before kickoff.
 Kickoff times in `MATCH_TIMES` are **CEST (UTC+2)**.
 
 **Results updater (`.github/scripts/update_results.py`).** Scrapes `worldcup26.ir`, keeps only
-finished group-stage games, maps each to `"1"/"X"/"2"` plus a score string, and writes
-`results.json`. The `update-results.yml` workflow runs it on a daily cron (with `contents: write`)
-and commits any change as the `bot:` commits seen in history.
+finished group-stage games, maps each to `"1"/"X"/"2"` plus a score string, and **computes the
+per-group standings** from those same finished games (seeding all 4 teams of each group from the
+full fixture list, sorted by `pts ▸ gd ▸ gf ▸ name`) — writing `results`, `scores` and `standings`
+to `results.json`. Standings are computed here, not pulled from the API's `/get/groups` table,
+which proved unreliable (stale/inconsistent rows). The `update-results.yml` workflow runs it on a
+daily cron (with `contents: write`) and commits any change as the `bot:` commits seen in history.
 
 ## Testing architecture (read before touching tests)
 

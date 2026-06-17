@@ -16,7 +16,7 @@ const EXPOSED = [
   "S", "ss",
   // render (devuelven strings HTML)
   "render", "renderLogin", "renderLinking", "renderHeader",
-  "renderGrupos", "renderStandings", "renderPodium", "renderRanking", "renderAdmin",
+  "renderGrupos", "renderStandings", "bestThirdTeams", "renderPodium", "renderRanking", "renderAdmin",
   // capa de datos / red
   "getHDR", "sbGet", "sbPost", "sbPatch",
   "loadData", "ensurePlayer", "linkAccount", "createFreshAccount",

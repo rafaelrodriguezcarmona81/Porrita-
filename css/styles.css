@@ -480,6 +480,17 @@ body {
   padding-left: 6px;
 }
 
+/* 3ª plaza que entra como uno de los 8 mejores terceros (acento ámbar). */
+.standings .st-row--third .st-pos {
+  color: #d97706;
+  font-weight: 900;
+}
+
+.standings .st-row--third .st-team {
+  box-shadow: inset 3px 0 0 #d97706;
+  padding-left: 6px;
+}
+
 .standings-empty {
   font-size: .75rem;
   color: #9ca3af;

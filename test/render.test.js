@@ -182,11 +182,39 @@ test("renderStandings: pinta la tabla con filas, puntos y diferencia de goles", 
   assert.match(html, /-2</);    // DG negativo
 });
 
-test("renderStandings: marca las dos primeras plazas como clasificación", () => {
-  const app = withState({ activeGroup: "A", groupStandings: { A: STANDINGS_A } });
-  const html = app.renderStandings("A");
-  // exactamente dos filas con el modificador de clasificado
-  assert.equal((html.match(/st-row--qual/g) || []).length, 2);
+// 12 grupos para probar clasificados directos + mejores terceros.
+// Terceros: A-D con 5pts, E-H con 4pts, I-L con 3pts → top-8 = A3..H3.
+const LETTERS_12 = "ABCDEFGHIJKL".split("");
+const STANDINGS_12 = Object.fromEntries(LETTERS_12.map((L, i) => {
+  const third = i < 4
+    ? { w: 1, d: 2, l: 0, gf: 5, ga: 4, gd: 1, pts: 5 }
+    : i < 8
+    ? { w: 1, d: 1, l: 1, gf: 4, ga: 4, gd: 0, pts: 4 }
+    : { w: 1, d: 0, l: 2, gf: 3, ga: 5, gd: -2, pts: 3 };
+  return [L, [
+    { team: `${L}1`, mp: 3, w: 3, d: 0, l: 0, gf: 9, ga: 1, gd: 8, pts: 9 },
+    { team: `${L}2`, mp: 3, w: 2, d: 0, l: 1, gf: 6, ga: 4, gd: 2, pts: 6 },
+    { team: `${L}3`, mp: 3, ...third },
+    { team: `${L}4`, mp: 3, w: 0, d: 0, l: 3, gf: 0, ga: 9, gd: -9, pts: 0 },
+  ]];
+}));
+
+test("bestThirdTeams: clasifican exactamente los 8 mejores terceros", () => {
+  const app = withState({ groupStandings: STANDINGS_12 });
+  const set = app.bestThirdTeams();
+  assert.equal(set.size, 8);
+  assert.ok(set.has("A3") && set.has("H3")); // 5pts y 4pts entran
+  assert.ok(!set.has("I3"));                 // 3pts queda fuera
+});
+
+test("renderStandings: top-2 en verde y 3º en ámbar solo si es mejor tercero", () => {
+  const app = withState({ groupStandings: STANDINGS_12 });
+  const a = app.renderStandings("A");
+  assert.equal((a.match(/st-row--qual/g) || []).length, 2);  // 2 clasificados directos (verde)
+  assert.equal((a.match(/st-row--third/g) || []).length, 1); // mejor tercero (ámbar)
+  const i = app.renderStandings("I");
+  assert.equal((i.match(/st-row--qual/g) || []).length, 2);
+  assert.equal((i.match(/st-row--third/g) || []).length, 0); // su 3º no clasifica
 });
 
 test("renderStandings: sin partidos muestra la tabla a cero y sin marcar clasificados", () => {

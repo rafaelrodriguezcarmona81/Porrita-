@@ -317,8 +317,22 @@ function renderHeader(){
 }
 
 // ─── CLASIFICACIÓN DEL GRUPO ──────────────────────────────────────────────────
+// Conjunto de equipos terceros que clasifican: los 8 mejores terceros de los 12
+// grupos (formato Mundial 2026), con el mismo criterio que la clasificación
+// (pts ▸ DG ▸ GF ▸ nombre). Se calcula desde S.groupStandings (fuente única).
+function bestThirdTeams(){
+  const thirds=[];
+  for(const g in S.groupStandings){
+    const rows=S.groupStandings[g];
+    if(rows&&rows.length>=3&&rows.some(t=>t.mp>0))thirds.push(rows[2]);
+  }
+  thirds.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf||a.team.localeCompare(b.team,"es"));
+  return new Set(thirds.slice(0,8).map(t=>t.team));
+}
+
 // Tabla en vivo calculada en el updater (results.json → S.groupStandings), única
-// fuente de datos. Las dos primeras filas se marcan como puesto de clasificación.
+// fuente de datos. Se marcan en verde los 2 primeros de cada grupo (clasificados
+// directos) y en ámbar el 3º si está entre los 8 mejores terceros.
 function renderStandings(g){
   const rows=S.groupStandings[g]||[];
   if(!rows.length)
@@ -326,7 +340,9 @@ function renderStandings(g){
   // Las plazas de clasificación solo se resaltan una vez empieza a jugarse;
   // sin partidos, la tabla sale a cero y ordenada alfabéticamente (del updater).
   const played=rows.some(t=>t.mp>0);
-  const body=rows.map((t,i)=>`<tr class="${played&&i<2?'st-row--qual':''}">
+  const thirds=bestThirdTeams();
+  const rowCls=(t,i)=>!played?'':i<2?'st-row--qual':(i===2&&thirds.has(t.team))?'st-row--third':'';
+  const body=rows.map((t,i)=>`<tr class="${rowCls(t,i)}">
     <td class="st-pos">${i+1}</td>
     <td class="st-team">${fl(t.team)} ${t.team}</td>
     <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>

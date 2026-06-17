@@ -245,6 +245,9 @@ function pill(text,color){
   return`<span class="pill pill--${color||'blue'}">${text}</span>`;
 }
 function card(content){return`<div class="card">${content}</div>`;}
+// Escapa datos controlados por el usuario antes de interpolarlos en innerHTML
+// (los nombres, pódiums, etc. vienen de la BD y no son de confianza).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
 // ─── NOVEDADES (changelog) ────────────────────────────────────────────────────
 // El banner muestra la entrada más reciente de changelog.json. El "ya visto" se
@@ -255,10 +258,10 @@ function changelogSeenId(){try{return window.localStorage.getItem(CHANGELOG_SEEN
 function renderChangelogBanner(){
   const latest=Array.isArray(S.changelog)&&S.changelog[0];
   if(!latest||!latest.id||changelogSeenId()===String(latest.id))return"";
-  const items=(latest.items||[]).map(i=>`<li>${i}</li>`).join("");
+  const items=(latest.items||[]).map(i=>`<li>${esc(i)}</li>`).join("");
   return`<div class="changelog-banner">
     <button onclick="dismissChangelog()" class="changelog-close" aria-label="Descartar">✕</button>
-    <p class="changelog-title">✨ Novedades${latest.fecha?` · ${latest.fecha}`:""}</p>
+    <p class="changelog-title">✨ Novedades${latest.fecha?` · ${esc(latest.fecha)}`:""}</p>
     <ul class="changelog-list">${items}</ul>
   </div>`;
 }
@@ -289,14 +292,14 @@ function renderLinking(){
     <div class="auth-card">
       <div class="auth-head">
         <div class="auth-logo--sm">👋</div>
-        <h1 class="auth-title--sm">¡Hola, ${googleName}!</h1>
+        <h1 class="auth-title--sm">¡Hola, ${esc(googleName)}!</h1>
         <p class="link-greet">¿Ya participabas con otro nombre?</p>
       </div>
       ${opts.length>0?`
       <label class="link-label">Tu nombre anterior</label>
       <select id="linkSelect" class="link-select">
         <option value="">— Elige tu nombre —</option>
-        ${opts.map(n=>`<option value="${n}">${n}</option>`).join("")}
+        ${opts.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}
       </select>
       <button onclick="doLinkAccount()" class="link-btn-primary">VINCULAR MI CUENTA</button>
       <p class="link-or">— o —</p>`:""}
@@ -320,7 +323,7 @@ function renderHeader(){
         <span class="hdr-logo">⚽</span>
         <div>
           <p class="hdr-title">PORRA MUNDIAL 2026</p>
-          <p class="hdr-meta">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
+          <p class="hdr-meta">${esc(S.user)} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
         </div>
       </div>
       <div class="hdr-actions">
@@ -363,7 +366,7 @@ function renderStandings(g){
   const rowCls=(t,i)=>!played?'':i<2?'st-row--qual':(i===2&&thirds.has(t.team))?'st-row--third':'';
   const body=rows.map((t,i)=>`<tr class="${rowCls(t,i)}">
     <td class="st-pos">${i+1}</td>
-    <td class="st-team">${fl(t.team)} ${t.team}</td>
+    <td class="st-team">${fl(t.team)} ${esc(t.team)}</td>
     <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
     <td>${t.gf}</td><td>${t.ga}</td>
     <td class="st-gd">${t.gd>0?'+':''}${t.gd}</td>
@@ -465,7 +468,7 @@ function renderPodium(){
   const form=S.pendingPodium||(saved?[...saved]:["","",""]);
   const used=form.filter(Boolean);
   const isSaved=saved&&!S.pendingPodium;
-  const preview=isSaved?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${t}</p></div>`).join("")}</div>`:"";
+  const preview=isSaved?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${esc(t)}</p></div>`).join("")}</div>`:"";
   const podForm=[["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
     const avail=ALL_TEAMS.filter(t=>!used.includes(t)||t===form[idx]).sort((a,b)=>a.localeCompare(b,"es"));
     return`<div><label class="podium-field-label">${label}</label>
@@ -481,9 +484,9 @@ function renderPodium(){
     :'<p class="podium-hint">Selecciona los 3 equipos para guardar</p>';
   const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
     <div class="player-row">
-      <div class="avatar">${p.nombre[0].toUpperCase()}</div>
-      <div class="grow"><p class="player-name">${p.nombre}</p>
-        ${p.podium?`<p class="player-podium">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
+      <div class="avatar">${esc(p.nombre[0].toUpperCase())}</div>
+      <div class="grow"><p class="player-name">${esc(p.nombre)}</p>
+        ${p.podium?`<p class="player-podium">🥇${esc(p.podium[0])} · 🥈${esc(p.podium[1])} · 🥉${esc(p.podium[2])}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
       </div></div>`).join("");
   return`
   ${card(`<h2 class="podium-title">Mi Pronóstico de Pódium</h2>
@@ -506,7 +509,7 @@ function renderRanking(){
     <div class="rank-row${s.name===S.user?' rank-row--me':''}">
       <span class="rank-pos">${medals[i]||(i+1)+"."}</span>
       <div class="grow">
-        <p class="rank-name">${s.name}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
+        <p class="rank-name">${esc(s.name)}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
         <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
       </div>
       <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>

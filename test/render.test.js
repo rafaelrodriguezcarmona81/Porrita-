@@ -244,6 +244,41 @@ test("renderGrupos: incluye la clasificación del grupo activo", () => {
   assert.match(html, /<table class="standings">/);
 });
 
+// ─── esc / XSS ────────────────────────────────────────────────────────────────
+test("esc: escapa caracteres peligrosos de HTML", () => {
+  const { esc } = loadApp();
+  assert.equal(esc(`<img src=x onerror="alert(1)">`), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+  assert.equal(esc("a & b"), "a &amp; b");
+  assert.equal(esc(null), "");
+});
+
+test("renderRanking: escapa el nombre del jugador (no inyecta HTML)", () => {
+  const evil = '<script>alert(1)</script>';
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: evil, group_predictions: {}, podium: null }],
+    groupResults: {},
+  });
+  const html = app.renderRanking();
+  assert.doesNotMatch(html, /<script>alert/);
+  assert.match(html, /&lt;script&gt;/);
+});
+
+test("renderPodium: escapa nombre y pódium de otros jugadores", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: {}, podium: null },
+      { nombre: "<b>x</b>", group_predictions: {}, podium: ['<i>A</i>', 'B', 'C'] },
+    ],
+    groupResults: {},
+  });
+  const html = app.renderPodium();
+  assert.doesNotMatch(html, /<b>x<\/b>/);
+  assert.doesNotMatch(html, /<i>A<\/i>/);
+  assert.match(html, /&lt;b&gt;x&lt;\/b&gt;/);
+});
+
 // ─── renderChangelogBanner (novedades) ────────────────────────────────────────
 const CL = [{ id: "2026-06-17", fecha: "2026-06-17", items: ["Novedad A", "Novedad B"] }];
 

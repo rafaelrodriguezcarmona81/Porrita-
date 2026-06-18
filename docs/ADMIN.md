@@ -22,7 +22,7 @@ Operativa para quien administra la porra (un único admin por tenant).
 
 3. **Redeploy** en Vercel para que tomen las variables.
 
-> ⚠️ **Secuencia:** la migración de RLS y el backend de invitaciones llegan a `main` en el **mismo merge**, así que RLS se activa a la vez que existe `/api/redeem-invite`. Con RLS activa, el alta de jugadores deja de poder hacerse desde el cliente (es el objetivo) y pasa al canje de invitación. No mergees la migración de RLS sin ese backend, o nadie nuevo podrá entrar.
+> ⚠️ **Una vez activa la RLS**, el alta de jugadores ya no se puede hacer desde el cliente (es el objetivo): pasa por el canje de invitación server-side (`/api/redeem-invite`). Por eso la migración de RLS y el backend de invitaciones viajan en el **mismo PR** — al mergear, las migraciones se aplican solas (workflow *DB migrations*) y el backend se despliega en Vercel a la vez. Regla general: una migración que endurezca el acceso debe ir con el código que la sustituye.
 
 ## Generar una invitación
 

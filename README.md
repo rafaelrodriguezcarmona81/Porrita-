@@ -81,9 +81,64 @@ vercel dev
 ## Tests
 
 ```bash
-npm test                  # ejecuta todos los tests
-npm run test:coverage     # tests + informe de cobertura
+npm test                  # tests unitarios (sin infraestructura)
+npm run test:integration  # integración contra Supabase local (testcontainers; necesita Docker)
+npm run test:coverage     # unitarios + integración + cobertura (necesita Docker)
 ```
+
+### Tests de integración (Supabase local real)
+
+Prueban contra un **Supabase local real** (Postgres + PostgREST + GoTrue + gateway), levantado con
+[**testcontainers**](https://node.testcontainers.org/) desde el propio test — solo necesitas **Docker**
+(sin instalar el CLI de Supabase ni levantar nada a mano):
+
+```bash
+npm run test:integration
+```
+
+Cubren:
+- **RLS por el camino real** (HTTP → PostgREST → `auth.uid()`): anon no lee ni escribe, el dueño solo
+  edita su fila, `invitaciones` está cerrada.
+- **Flujo de invitaciones**: `create-invite`/`redeem-invite` de verdad (alta de jugador, idempotencia,
+  invitación caducada/ inválida), con un usuario creado en el GoTrue local.
+
+Tienen un **guard anti-producción** (abortan si `SUPABASE_URL` no es local) y son un job **obligatorio**
+del workflow de CI. Viven en `test/integration/*.itest.mjs`, fuera de `npm test` (que es solo unitario).
+
+### Opción 3: Stack completo con Supabase local (auth, invitaciones, RLS)
+
+Para probar lo que toca base de datos (RLS, alta de jugadores, invitaciones) necesitas el stack de
+Supabase, que corre **en Docker**. Requisitos: Docker + [Supabase CLI](https://supabase.com/docs/guides/cli).
+
+```bash
+supabase start          # levanta Postgres + Auth + REST + Studio y aplica supabase/migrations/
+supabase status         # imprime API URL, anon key, service_role key y la DB URL
+# Studio (UI): http://127.0.0.1:54323
+```
+
+1. **Funciones serverless** → `vercel dev` (sirve `/api/*` en :3000). En tu `.env`, apunta al stack local:
+   ```env
+   SUPABASE_URL=http://127.0.0.1:54321
+   SUPABASE_SERVICE_ROLE=<service_role que imprime `supabase status`>
+   ADMIN_TRIGGER_SECRET=una_clave_local
+   ```
+2. **El cliente** (`js/app.js`) tiene `SB_URL`/`SB_KEY` de producción **hardcoded**; para abrir la web
+   contra el stack local, edítalos temporalmente a los valores locales (anon key de `supabase status`)
+   y **no lo commitees**.
+3. **Probar invitaciones de punta a punta:**
+   ```bash
+   # generar un enlace (caduca a los 30 min)
+   curl -X POST localhost:3000/api/create-invite -H "X-Admin-Secret: una_clave_local"
+   # canjear (necesita el JWT de un usuario; créalo en Studio con email/contraseña y saca su access_token)
+   curl -X POST localhost:3000/api/redeem-invite -H "Authorization: Bearer <token>" \
+        -H "Content-Type: application/json" -d '{"token":"<token-de-invitacion>"}'
+   ```
+4. **Verificar RLS:** con la anon key local, un `PATCH`/`POST` directo a `porra_jugadores` debe **fallar**.
+5. `supabase db reset` re-aplica las migraciones desde cero (útil para validar que siguen sanas);
+   `supabase stop` apaga el stack.
+
+> Google OAuth no completa en local; por eso el `config.toml` habilita alta por email/contraseña para
+> poder crear un usuario de prueba y obtener su JWT.
 
 ## Contribuir
 
@@ -120,7 +175,10 @@ El despliegue se hace con [Vercel](https://vercel.com). Pero al ser todo estáti
 | `index.html` | Página principal (login con Google) |
 | `css/styles.css` | Todos los estilos |
 | `js/app.js` | Toda la lógica de la app |
-| `results.json` | Resultados y clasificación oficiales (se actualizan solos a diario) |
-| `test/` | Tests unitarios |
+| `api/` | Funciones serverless (admin + invitaciones): `create-invite`, `redeem-invite`, `trigger-update` |
+| `supabase/migrations/` | Esquema y políticas RLS (migraciones forward-only) |
+| `results.json` · `changelog.json` | Datos: resultados/clasificación oficiales · novedades |
+| `test/` | Tests unitarios (`*.test.js`) e integración (`integration/*.itest.mjs`) |
+| `docs/ADMIN.md` | Guía de administración (invitaciones, secrets, puesta en marcha) |
 
 Para más detalle técnico, ver [`CLAUDE.md`](CLAUDE.md).

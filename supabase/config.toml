@@ -1,4 +1,45 @@
-# Configuración mínima para que el CLI de Supabase aplique migraciones en CI
-# (`supabase db push`). Para desarrollo local completo (`supabase start`),
-# `supabase init` genera un config.toml más extenso.
+# Config del stack local de Supabase (`supabase start`) y del CLI (`supabase db push`).
+# Si tu versión del CLI se queja de algún campo, regenera con `supabase init` y
+# vuelve a pegar el bloque [auth.email] (signup local sin confirmación de email).
 project_id = "porrita"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1:54321"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+# Para pruebas locales: alta por email/contraseña sin confirmación, así puedes
+# crear un usuario y obtener su JWT para canjear invitaciones (Google OAuth no
+# completa en local).
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[realtime]
+enabled = true

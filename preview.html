@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Preview · Porra Mundial (datos reales, sin login)</title>
+  <!-- cache-busting: el preview siempre carga la última versión de css/js -->
+  <script>document.write('<link rel="stylesheet" href="css/styles.css?t=' + Date.now() + '">');</script>
+
+  <!-- Stub de Supabase: SOLO auth (para saltar el login). Los datos NO se mockean:
+       la app hace su fetch real de results.json y de la tabla pública de jugadores. -->
+  <script>
+    window.supabase = {
+      createClient: () => ({
+        auth: {
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+          signInWithOAuth: async () => { alert("(preview) Login deshabilitado. Usa «Ver como» arriba."); },
+          signOut: async () => {}
+        }
+      })
+    };
+
+    // Preview de SOLO LECTURA: deja pasar los GET (results.json + lectura de
+    // jugadores) pero BLOQUEA cualquier escritura a Supabase (POST/PATCH/PUT/
+    // DELETE) para no tocar NUNCA producción.
+    const __realFetch = window.fetch.bind(window);
+    window.fetch = (url, opts = {}) => {
+      const method = (opts.method || "GET").toUpperCase();
+      if (method !== "GET") {
+        console.warn("[preview] escritura BLOQUEADA (solo lectura):", method, String(url));
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      }
+      return __realFetch(url, opts);
+    };
+  </script>
+
+  <style>
+    body { background: #1e293b; margin: 0; }
+    .pv-top { color: #e2e8f0; font-family: system-ui, sans-serif; padding: 16px 20px 0; max-width: 900px; margin: 0 auto; }
+    .pv-top h1 { font-size: 16px; margin: 0 0 4px; }
+    .pv-top p { font-size: 12px; margin: 0; color: #94a3b8; }
+    .pv-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 20px; max-width: 900px; margin: 0 auto; }
+    .pv-bar label { font: 600 12px/1 system-ui; color: #cbd5e1; }
+    .pv-bar select, .pv-btn {
+      font: 600 12px/1 system-ui; color: #e2e8f0; background: #334155;
+      border: 1px solid #475569; border-radius: 8px; padding: 7px 10px; cursor: pointer;
+    }
+    .pv-note { font: 500 11px/1.3 system-ui; color: #94a3b8; }
+    .pv-stage { display: flex; justify-content: center; padding: 8px 16px 40px; }
+    #app {
+      width: 430px; height: 820px; overflow: auto;
+      background: #f3f4f6; border-radius: 28px;
+      border: 8px solid #0f172a; box-shadow: 0 20px 50px rgba(0,0,0,.45);
+    }
+    #app .auth-wrap, #app .loading { min-height: 100%; }
+  </style>
+</head>
+<body>
+  <div class="pv-top">
+    <h1>⚽ Porra Mundial — preview con datos reales</h1>
+    <p>Carga el <b>js/app.js</b> real y ejecuta su flujo de datos real (<b>results.json</b> + jugadores de Supabase, solo lectura). Sin login.</p>
+  </div>
+
+  <div class="pv-bar">
+    <label for="pvUser">Ver como:</label>
+    <select id="pvUser" onchange="pvViewAs(this.value)"><option>cargando…</option></select>
+    <button class="pv-btn" onclick="pvReload()">↻ Recargar datos</button>
+    <button class="pv-btn" onclick="pvLogin()">Pantalla de login</button>
+    <span class="pv-note" id="pvStatus"></span>
+  </div>
+
+  <div class="pv-stage"><div id="app"></div></div>
+
+  <script>document.write('<scr' + 'ipt src="js/app.js?t=' + Date.now() + '"></scr' + 'ipt>');</script>
+
+  <script>
+    const status = (m) => { document.getElementById("pvStatus").textContent = m; };
+
+    function buildUserSelect() {
+      const sel = document.getElementById("pvUser");
+      const names = S.players.map(p => p.nombre).sort((a, b) => a.localeCompare(b, "es"));
+      sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join("")
+        || "<option value=''>(sin jugadores)</option>";
+    }
+
+    async function pvReload() {
+      status("cargando datos reales…");
+      if (!S.loading) ss({ loading: true }); else render();
+      try {
+        await loadData();                       // fetch real: jugadores + results.json
+        buildUserSelect();
+        const first = S.players[0];
+        ss({ user: first?.nombre || null, userId: first?.user_id || null });
+        status(`${S.players.length} jugadores · ${Object.keys(S.groupResults).length} resultados · ${Object.keys(S.groupStandings).length} grupos con tabla`);
+      } catch (e) {
+        ss({ loading: false });
+        status("⚠️ Error cargando datos: " + e.message);
+      }
+    }
+
+    window.pvViewAs = (name) => {
+      const p = S.players.find(x => x.nombre === name);
+      ss({ user: name, userId: p?.user_id || null });
+      document.getElementById("app").scrollTop = 0;
+    };
+    window.pvLogin = () => ss({ user: null });
+    window.pvReload = pvReload;
+
+    pvReload();
+  </script>
+</body>
+</html>

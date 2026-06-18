@@ -16,16 +16,18 @@ static host (Netlify, GitHub Pages, etc.) serves it as-is.
 ## Commands
 
 ```bash
-npm test                              # run the whole suite (node:test, no deps)
-npm run test:coverage                 # same + V8 coverage report
-node --test test/render.test.js       # run a single test file
+npm test                              # unit tests (node:test, no infra)
+npm run test:integration              # integration vs a real local Supabase (testcontainers; needs Docker)
+npm run test:coverage                 # unit + integration with V8 coverage
+node --test test/render.test.js       # run a single unit test file
 node --test --test-name-pattern="isLocked"   # run tests whose name matches
 
 python3 .github/scripts/update_results.py    # regenerate results.json from the live API
 ```
 
-There is no install/build/lint step — the app has zero runtime dependencies and tests use Node's
-built-in runner (Node 22 in CI).
+No build/lint step. The **app** has zero runtime dependencies; unit tests use Node's built-in runner
+(Node 22 in CI). The only dev dependency is **testcontainers**, used by the integration tests
+(`npm run test:integration`) to spin a local Supabase stack in Docker — `npm ci` to install it.
 
 ### Running locally
 
@@ -136,9 +138,24 @@ and `fireAuth` (drives the captured `onAuthStateChange` callback).
   `render*` output (`render.test.js`), Supabase/data layer (`data.test.js`), the auth callback
   (`auth.test.js`), and `window.*` handlers (`handlers.test.js`).
 
+**Integration tests (`test/integration/*.itest.mjs`, run with `npm run test:integration`).** The unit
+tests mock the network, so they can't prove RLS or the serverless invite flow actually work.
+`test/integration/security.itest.mjs` boots a **real local Supabase stack** with **testcontainers**
+(`supabase/postgres` + PostgREST + GoTrue + an nginx gateway routing `/rest/v1` and `/auth/v1`) and
+asserts, against it: **RLS by the real path** (HTTP → PostgREST → `auth.uid()`: anon can't read/write,
+owner-only updates, `invitaciones` closed) and the **invite flow** (`api/create-invite` /
+`api/redeem-invite`: provisioning, idempotency, expired/invalid invites, with a user signed up in the
+local GoTrue to get a real JWT). Needs only Docker (no Supabase CLI). It lives outside `test/*.test.js`
+so `npm test` skips it, and **hard-aborts unless `SUPABASE_URL` is localhost** so it can never hit
+production. PostgREST runs with `PGRST_DB_USE_LEGACY_GUCS=true` so `auth.uid()` (which reads
+`request.jwt.claim.sub` in this `supabase/postgres` version) resolves.
+
 ## CI
 
-`.github/workflows/tests.yml` runs `npm test` on push to `main` and on PRs.
+`.github/workflows/tests.yml` (workflow **Tests**) has two jobs: `test` runs `npm test` (unit), and
+`integration` runs `npm run test:integration` — the **integration suite against a real local Supabase**
+(Postgres + PostgREST + GoTrue), orchestrated with **testcontainers** (needs only Docker, no Supabase
+CLI). Both must pass — migrations (gated on the Tests workflow) won't apply otherwise.
 `.github/workflows/changelog.yml` runs on PRs and **fails** any PR that doesn't modify
 `changelog.json` unless it carries the `skip-changelog` label. Workflows pin GitHub Actions to **full
 commit SHAs** (with the version as a trailing comment) rather than tags — keep new actions pinned the

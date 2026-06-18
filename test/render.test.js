@@ -265,6 +265,78 @@ test("renderPodium: escapa nombre y pódium de otros jugadores", () => {
   assert.match(html, /&lt;b&gt;x&lt;\/b&gt;/);
 });
 
+// ─── renderToday (pestaña "Hoy") ───────────────────────────────────────────────
+// El 15/06/2026 (CEST) tienen partido: E_Costa de Marfil_Ecuador (01:00, DAZN),
+// F_Suecia_Túnez (04:00, DAZN), H_España_Cabo Verde (18:00, La 1) y
+// G_Bélgica_Egipto (21:00, DAZN).
+test("renderToday: lista los partidos de hoy con canal de TV", () => {
+  const app = withState({ user: "Ana", players: [] },
+    { now: Date.parse("2026-06-15T12:00:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /Partidos de hoy/);
+  // equipos del día (con su bandera)
+  assert.match(html, /España/);
+  assert.match(html, /Cabo Verde/);
+  assert.match(html, /Bélgica/);
+  assert.match(html, /Egipto/);
+  // canal: España va por La 1; los demás por DAZN
+  assert.match(html, /📺 La 1/);
+  assert.match(html, /🟣 DAZN/);
+  // un partido de otro día NO debe aparecer
+  assert.doesNotMatch(html, /Inglaterra/); // L_Inglaterra_Croacia es 17/06
+});
+
+test("renderToday: es solo informativa (sin botones de apuesta)", () => {
+  const app = withState({ user: "Ana", players: [] },
+    { now: Date.parse("2026-06-15T12:00:00+02:00") });
+  const html = app.renderToday();
+  assert.doesNotMatch(html, /class="pick/);   // sin botones 1/X/2
+  assert.doesNotMatch(html, /setPred\(/);      // sin handler de apuesta
+});
+
+// Caso de borde: partido a primera hora (L_Ghana_Panamá a las 01:00 CEST del 18/06)
+// debe asignarse al 18, no al día anterior por la zona horaria.
+test("renderToday: asigna correctamente partidos de madrugada al día CEST", () => {
+  const app = withState({ user: "Ana", players: [] },
+    { now: Date.parse("2026-06-18T12:00:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /Ghana/);
+  assert.match(html, /Panamá/);
+});
+
+test("renderToday: muestra el marcador si el partido ya tiene resultado", () => {
+  const app = withState(
+    { user: "Ana", players: [], groupScores: { "L_Ghana_Panamá": "2-0" } },
+    { now: Date.parse("2026-06-18T12:00:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /today-score">2-0</);   // marcador en el centro
+});
+
+test("renderToday: sin resultado muestra 'vs' en vez de marcador", () => {
+  const app = withState({ user: "Ana", players: [], groupScores: {} },
+    { now: Date.parse("2026-06-18T12:00:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /today-vs">vs</);
+  assert.doesNotMatch(html, /today-score/);
+});
+
+test("renderToday: estado vacío cuando no hay partidos hoy", () => {
+  const app = withState({ user: "Ana", players: [] },
+    { now: Date.parse("2026-07-01T12:00:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /No hay partidos hoy/);
+  assert.doesNotMatch(html, /today-match/);
+});
+
+test("renderHeader: incluye la pestaña Hoy como primera", () => {
+  const app = withState({ user: "Ana", players: [], groupResults: {} });
+  const html = app.renderHeader();
+  assert.match(html, /setTab\('hoy'\)/);
+  assert.match(html, /📅 Hoy/);
+  // "hoy" debe ir antes que "grupos" en la barra de pestañas
+  assert.ok(html.indexOf("setTab('hoy')") < html.indexOf("setTab('grupos')"));
+});
+
 // ─── renderChangelogBanner (novedades) ────────────────────────────────────────
 const CL = [{ id: "2026-06-17", fecha: "2026-06-17", items: ["Novedad A", "Novedad B"] }];
 

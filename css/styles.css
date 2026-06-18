@@ -539,6 +539,52 @@ body {
   margin: 0;
 }
 
+/* ─── HOY (pestaña informativa) ─────────────────────────────────────────── */
+.today-list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.today-match {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  border-radius: .5rem;
+  padding: .6rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.today-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.today-vs {
+  font-size: .65rem;
+  font-weight: 900;
+  color: #9ca3af;
+  flex: 0 0 auto;
+}
+
+.today-score {
+  font-size: .9rem;
+  font-weight: 900;
+  color: #111;
+  flex: 0 0 auto;
+  padding: 0 .3rem;
+}
+
+.today-empty {
+  font-size: .8rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 1rem 0;
+  margin: 0;
+}
+
 .match-list {
   display: flex;
   flex-direction: column;

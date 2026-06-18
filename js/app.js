@@ -303,7 +303,7 @@ function renderHeader(){
   const me=S.players.find(p=>p.nombre===S.user);
   const myPts=gPts(me?.group_predictions||{},S.groupResults);
   const rc=Object.keys(S.groupResults).length;
-  const tabs=[["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
+  const tabs=[["hoy","📅 Hoy"],["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
   const rankBanner=S.rankChange!==null?`<div class="rank-banner ${S.rankChange>0?'rank-banner--up':'rank-banner--down'}">
     ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
   </div>`:"";
@@ -451,6 +451,58 @@ function renderGrupos(){
     ${saveBtn}`)}`;
 }
 
+// ─── HOY ────────────────────────────────────────────────────────────────────
+// Pestaña informativa (no se apuesta): lista los partidos cuya fecha de
+// calendario en CEST (UTC+2) coincide con "hoy". Derivamos "hoy" de Date.now()
+// desplazado +02:00 y leído con getters UTC, para que sea determinista en tests
+// (opts.now) y para no dejar que la zona horaria local de Node/navegador falsee
+// el día (mismo cuidado que el bug de fechas ya conocido en este repo).
+function todayKeysCEST(){
+  const n=new Date(Date.now()+2*3600*1000);
+  const today=n.getUTCFullYear()+"-"+
+    String(n.getUTCMonth()+1).padStart(2,"0")+"-"+
+    String(n.getUTCDate()).padStart(2,"0");
+  const keys=[];
+  for(const g in GM){
+    for(const m of GM[g]){
+      const key=g+"_"+m[0]+"_"+m[1];
+      const t=MATCH_TIMES[key];
+      if(t&&t.split("T")[0]===today)keys.push(key);
+    }
+  }
+  // Ordenadas por hora de inicio (el valor ISO ordena lexicográficamente).
+  keys.sort((a,b)=>MATCH_TIMES[a].localeCompare(MATCH_TIMES[b]));
+  return keys;
+}
+function renderToday(){
+  const keys=todayKeysCEST();
+  if(!keys.length)
+    return card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2></div>
+      <p class="today-empty">No hay partidos hoy 🌙</p>`);
+  const rows=keys.map(key=>{
+    // key = "{GRUPO}_{LOCAL}_{VISITANTE}". Recuperamos local/visitante de GM por la
+    // letra de grupo (los nombres pueden contener "_", así que no hacemos split).
+    const [home,away]=GM[key[0]].find(m=>(key[0]+"_"+m[0]+"_"+m[1])===key)||["",""];
+    // Si el partido ya tiene resultado oficial, mostramos el marcador en el
+    // centro (p. ej. los de madrugada ya jugados); si no, un "vs".
+    const score=S.groupScores[key];
+    const center=score
+      ?`<span class="today-score">${score}</span>`
+      :`<span class="today-vs">vs</span>`;
+    return`<div class="today-match">
+      <div class="match-meta">${fmtTime(key)} · ${tvChannel(key)}</div>
+      <div class="today-row">
+        <span class="team">${fl(home)} ${home}</span>
+        ${center}
+        <span class="team team--away">${fl(away)} ${away}</span>
+      </div>
+    </div>`;
+  }).join("");
+  return card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2>${pill(keys.length,"blue")}</div>
+    <p class="hint">Solo informativo · horarios CEST · dónde verlo por TV</p>
+    <div class="today-list">${rows}</div>`);
+}
+
 // ─── PÓDIUM ───────────────────────────────────────────────────────────────────
 function renderPodium(){
   const me=S.players.find(p=>p.nombre===S.user);
@@ -545,7 +597,7 @@ function render(){
   if(!app)return;
   if(S.loading){app.innerHTML=`<div class="loading"><div class="loading-inner"><div class="loading-logo">⚽</div><p class="loading-text">Conectando...</p></div></div>`;return;}
   if(!S.user){app.innerHTML=S.accessDenied?renderAccessDenied():renderLogin();return;}
-  const content={grupos:renderGrupos,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
+  const content={hoy:renderToday,grupos:renderGrupos,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
   app.innerHTML=`${renderHeader()}<div class="app-main">${renderChangelogBanner()}${content||""}</div>`;
 }
 

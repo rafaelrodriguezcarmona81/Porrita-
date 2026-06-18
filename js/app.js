@@ -123,7 +123,7 @@ function fmtTime(key){
   const [date,time]=t.split("T");
   const [y,m,d]=date.split("-");
   const days=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-  const dt=new Date(t+":00+02:00");
+  const dt=new Date(Date.UTC(+y,+m-1,+d));
   return days[dt.getUTCDay()]+" "+d+"/"+m+" "+time;
 }
 

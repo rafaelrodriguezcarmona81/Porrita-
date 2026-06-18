@@ -1,5 +1,12 @@
 [
   {
+    "id": "2026-06-18",
+    "fecha": "2026-06-18",
+    "items": [
+      "Corregido el día de la semana mostrado en los partidos de medianoche."
+    ]
+  },
+  {
     "id": "2026-06-17",
     "fecha": "2026-06-17",
     "items": [

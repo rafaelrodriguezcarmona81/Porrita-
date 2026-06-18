@@ -103,6 +103,13 @@ test("fmtTime: respeta minutos no enteros", () => {
   assert.match(out, /28\/06 01:30$/);
 });
 
+test("fmtTime: el día de la semana corresponde a la fecha mostrada (medianoche)", () => {
+  // 2026-06-19T00:00 CEST = viernes. El bug calculaba el día en UTC
+  // (2026-06-18T22:00Z = jueves), desfasado respecto a la fecha 19/06.
+  const out = fmtTime("B_Canadá_Catar");
+  assert.equal(out, "Vie 19/06 00:00");
+});
+
 // ─── pill / card (helpers de markup) ────────────────────────────────────────
 test("pill: genera span con clase de color", () => {
   assert.equal(pill("3/5", "green"), '<span class="pill pill--green">3/5</span>');

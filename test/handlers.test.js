@@ -74,31 +74,18 @@ test("doLogout: cierra sesión y limpia el estado", async () => {
   assert.equal(app.S.userId, null);
 });
 
-test("doLinkAccount: vincula con el nombre elegido en el <select>", async () => {
-  const app = loadApp({
-    fetch: dataFetch(),
-    elements: { linkSelect: { value: "Viejo" } },
-  });
-  Object.assign(app.S, { linkingSession: { userId: "U1", googleName: "Manu" } });
-  app.window.doLinkAccount();
+test("doCreateInvite: con clave admin genera el link de invitación", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, token: "tk" }) }) });
+  Object.assign(app.S, { adminUnlocked: true, adminKey: "clave-admin" });
+  app.window.doCreateInvite();
   await flush();
-  assert.equal(app.S.user, "Viejo");
-  assert.equal(app.S.linkingSession, null);
+  assert.match(app.S.adminInviteUrl, /\/\?invite=tk$/);
 });
 
-test("doLinkAccount: sin selección no hace nada", () => {
-  const app = loadApp({ elements: { linkSelect: { value: "" } } });
-  Object.assign(app.S, { linkingSession: { userId: "U1", googleName: "Manu" } });
-  app.window.doLinkAccount();
-  assert.ok(app.S.linkingSession, "no debe limpiar la sesión de vinculación");
-});
-
-test("doFreshAccount: crea cuenta nueva desde la sesión de vinculación", async () => {
-  const app = loadApp({ fetch: dataFetch() });
-  Object.assign(app.S, { linkingSession: { userId: "U9", googleName: "Nuevo" } });
-  app.window.doFreshAccount();
-  await flush();
-  assert.equal(app.S.user, "Nuevo");
+test("doCreateInvite: sin clave no llama al endpoint", () => {
+  const app = loadApp({ fetch: dataFetch() }); // adminKey = "" por defecto
+  app.window.doCreateInvite();
+  assert.ok(!app.fetchCalls.some((c) => c.url === "/api/create-invite"));
 });
 
 // ─── Handlers de guardado / refresco ─────────────────────────────────────────

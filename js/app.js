@@ -165,9 +165,10 @@ let S={
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
   refreshing:false,rankChange:null,lastRank:null,
-  linkingSession:null,linkPlayers:[],
+  inviteToken:null,accessDenied:false,accessError:null,
   adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
-  adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false
+  adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false,
+  adminInviteBusy:false,adminInviteUrl:null
 };
 function ss(p){Object.assign(S,p);render();}
 
@@ -199,29 +200,25 @@ async function loadData(){
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
 
-async function ensurePlayer(userId,googleName){
-  let res=await sbGet("porra_jugadores","user_id=eq."+userId+"&select=nombre");
-  if(Array.isArray(res)&&res.length>0)return res[0].nombre;
-  res=await sbGet("porra_jugadores","nombre=eq."+encodeURIComponent(googleName)+"&select=nombre,user_id");
-  if(Array.isArray(res)&&res.length>0&&!res[0].user_id){
-    await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(googleName),{user_id:userId});
-    return googleName;
-  }
-  return null; // necesita vinculación manual
+// Lee el token de invitación de la URL (?invite=...), si lo hay.
+function getInviteToken(){
+  const q=(window.location&&window.location.search)||"";
+  const m=/[?&]invite=([^&]+)/.exec(q);
+  return m?decodeURIComponent(m[1]):null;
 }
 
-async function linkAccount(nombreAntiguo){
-  const{userId,googleName}=S.linkingSession;
-  await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(nombreAntiguo),{user_id:userId});
-  await loadData();
-  ss({user:nombreAntiguo,userId,linkingSession:null,linkPlayers:[]});
-}
-
-async function createFreshAccount(){
-  const{userId,googleName}=S.linkingSession;
-  await sbPost("porra_jugadores",{nombre:googleName,user_id:userId,group_predictions:{},podium:null});
-  await loadData();
-  ss({user:googleName,userId,linkingSession:null,linkPlayers:[]});
+// Canjea una invitación contra el backend: el servidor valida token+caducidad y
+// da de alta al jugador (el alta directa desde el cliente está bloqueada por RLS).
+async function redeemInvite(token){
+  try{
+    const r=await fetch("/api/redeem-invite",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+(_token||"")},
+      body:JSON.stringify({token}),
+    });
+    if(r.ok)return await r.json();
+  }catch(e){console.error(e);}
+  return null;
 }
 
 async function saveGroupPreds(){
@@ -284,26 +281,19 @@ function renderLogin(){
   </div>`;
 }
 
-// ─── VINCULACIÓN ──────────────────────────────────────────────────────────────
-function renderLinking(){
-  const{googleName}=S.linkingSession;
-  const opts=S.linkPlayers;
+// ─── ACCESO POR INVITACIÓN ─────────────────────────────────────────────────────
+// Si el usuario se loguea pero no es miembro y no trae una invitación válida,
+// no entra: se le pide un enlace de invitación al admin.
+function renderAccessDenied(){
+  const msg=S.accessError?esc(S.accessError):"Esta porra es solo por invitación.";
   return`<div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-head">
-        <div class="auth-logo--sm">👋</div>
-        <h1 class="auth-title--sm">¡Hola, ${esc(googleName)}!</h1>
-        <p class="link-greet">¿Ya participabas con otro nombre?</p>
+        <div class="auth-logo--sm">🔒</div>
+        <h1 class="auth-title--sm">Necesitas invitación</h1>
+        <p class="link-greet">${msg} Pídele al admin un enlace de acceso.</p>
       </div>
-      ${opts.length>0?`
-      <label class="link-label">Tu nombre anterior</label>
-      <select id="linkSelect" class="link-select">
-        <option value="">— Elige tu nombre —</option>
-        ${opts.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}
-      </select>
-      <button onclick="doLinkAccount()" class="link-btn-primary">VINCULAR MI CUENTA</button>
-      <p class="link-or">— o —</p>`:""}
-      <button onclick="doFreshAccount()" class="link-btn-secondary">Soy nuevo, empezar desde cero</button>
+      <button onclick="doLogout()" class="link-btn-secondary">Cerrar sesión</button>
     </div>
   </div>`;
 }
@@ -538,9 +528,14 @@ function renderAdmin(){
   const msg=S.adminTriggerMsg
     ?`<p class="admin-msg admin-msg--${S.adminTriggerOk?'ok':'err'}">${S.adminTriggerMsg}</p>`
     :"";
+  const invite=S.adminInviteUrl
+    ?`<input class="admin-input admin-invite" type="text" readonly value="${esc(S.adminInviteUrl)}" onclick="this.select()" />`
+    :"";
   return card(`<h2 class="title">Zona Admin</h2>
     <p class="hint admin-hint">Tareas administrativas.</p>
     <button onclick="doTriggerUpdate()" class="admin-btn${S.adminTriggering?' admin-btn--busy':''}">${S.adminTriggering?'⏳ Actualizando...':'🔄 Forzar actualización de resultados'}</button>
+    <button onclick="doCreateInvite()" class="admin-btn${S.adminInviteBusy?' admin-btn--busy':''}">${S.adminInviteBusy?'⏳ Generando...':'🔗 Generar invitación (30 min)'}</button>
+    ${invite}
     ${msg}`);
 }
 
@@ -549,17 +544,14 @@ function render(){
   const app=document.getElementById("app");
   if(!app)return;
   if(S.loading){app.innerHTML=`<div class="loading"><div class="loading-inner"><div class="loading-logo">⚽</div><p class="loading-text">Conectando...</p></div></div>`;return;}
-  if(S.linkingSession){app.innerHTML=renderLinking();return;}
-  if(!S.user){app.innerHTML=renderLogin();return;}
+  if(!S.user){app.innerHTML=S.accessDenied?renderAccessDenied():renderLogin();return;}
   const content={grupos:renderGrupos,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
   app.innerHTML=`${renderHeader()}<div class="app-main">${renderChangelogBanner()}${content||""}</div>`;
 }
 
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────
 window.doGoogleLogin=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
-window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,linkingSession:null,linkPlayers:[],adminUnlocked:false,adminKey:"",adminGateError:false,adminTriggerMsg:null});};
-window.doLinkAccount=()=>{const v=document.getElementById("linkSelect")?.value;if(v)linkAccount(v);};
-window.doFreshAccount=()=>createFreshAccount();
+window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,accessDenied:false,accessError:null,adminUnlocked:false,adminKey:"",adminGateError:false,adminTriggerMsg:null,adminInviteUrl:null});};
 window.setTab=t=>ss({tab:t});
 window.dismissChangelog=()=>{const l=Array.isArray(S.changelog)&&S.changelog[0];if(l&&l.id){try{window.localStorage.setItem(CHANGELOG_SEEN_KEY,String(l.id));}catch(e){}}ss({});};
 window.setGroup=g=>ss({activeGroup:g,pendingPreds:{}});
@@ -597,23 +589,47 @@ async function triggerUpdate(secret){
 }
 window.doTriggerUpdate=()=>{if(S.adminTriggering)return;if(S.adminKey)triggerUpdate(S.adminKey);};
 
+async function createInvite(secret){
+  ss({adminInviteBusy:true,adminInviteUrl:null});
+  try{
+    const r=await fetch("/api/create-invite",{method:"POST",headers:{"X-Admin-Secret":secret}});
+    if(r.ok){
+      const d=await r.json();
+      const origin=(window.location&&window.location.origin)||"";
+      ss({adminInviteBusy:false,adminInviteUrl:origin+"/?invite="+d.token});
+    }else{
+      ss({adminInviteBusy:false,adminTriggerOk:false,adminTriggerMsg:"❌ No se pudo generar la invitación"});
+    }
+  }catch(e){
+    ss({adminInviteBusy:false,adminTriggerOk:false,adminTriggerMsg:"❌ Error de red"});
+  }
+}
+window.doCreateInvite=()=>{if(S.adminInviteBusy)return;if(S.adminKey)createInvite(S.adminKey);};
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 sb.auth.onAuthStateChange(async(event,session)=>{
   _token=session?.access_token||null;
-  if(session){
-    const googleName=session.user.user_metadata.full_name||session.user.email.split('@')[0];
-    const linked=await ensurePlayer(session.user.id,googleName);
-    if(linked===null){
-      const unlinked=await sbGet("porra_jugadores","user_id=is.null&select=nombre&order=nombre");
-      await loadData();
-      ss({loading:false,linkingSession:{userId:session.user.id,googleName},linkPlayers:Array.isArray(unlinked)?unlinked.map(p=>p.nombre):[]});
-    }else{
-      await loadData();
-      ss({user:linked,userId:session.user.id,loading:false,linkingSession:null,linkPlayers:[]});
-    }
-  }else{
+  if(!session){
     _token=null;
-    ss({user:null,userId:null,loading:false,linkingSession:null,linkPlayers:[]});
+    ss({user:null,userId:null,loading:false,accessDenied:false,accessError:null});
+    return;
   }
+  const userId=session.user.id;
+  // ¿Ya es miembro? (su fila la creó un canje de invitación previo)
+  const rows=await sbGet("porra_jugadores","user_id=eq."+userId+"&select=nombre");
+  let nombre=Array.isArray(rows)&&rows[0]&&rows[0].nombre;
+  if(!nombre){
+    // No es miembro: solo entra si trae una invitación válida.
+    if(S.inviteToken){
+      const res=await redeemInvite(S.inviteToken);
+      if(res&&res.ok)nombre=res.nombre;
+      else{ss({user:null,userId:null,loading:false,accessDenied:true,accessError:"Tu invitación no es válida o ha caducado.",inviteToken:null});return;}
+    }else{
+      ss({user:null,userId:null,loading:false,accessDenied:true,accessError:null});return;
+    }
+  }
+  await loadData();
+  ss({user:nombre,userId,loading:false,accessDenied:false,accessError:null,inviteToken:null});
 });
+S.inviteToken=getInviteToken();
 render();

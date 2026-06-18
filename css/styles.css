@@ -996,6 +996,13 @@ body {
   background: #fff;
 }
 
+.admin-invite {
+  margin-top: .75rem;
+  font-size: .8rem;
+  font-weight: 500;
+  color: #374151;
+}
+
 .admin-btn {
   width: 100%;
   margin-top: .75rem;

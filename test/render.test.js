@@ -21,27 +21,13 @@ test("renderLogin: pantalla de login con botón de Google", () => {
   assert.match(html, /doGoogleLogin\(\)/);
 });
 
-// ─── renderLinking ───────────────────────────────────────────────────────────
-test("renderLinking: muestra nombre y opciones de vinculación", () => {
-  const app = withState({
-    linkingSession: { userId: "U1", googleName: "Manu" },
-    linkPlayers: ["Pepe", "Lucía"],
-  });
-  const html = app.renderLinking();
-  assert.match(html, /¡Hola, Manu!/);
-  assert.match(html, /class="link-select"/);
-  assert.match(html, /<option value="Pepe">Pepe<\/option>/);
-  assert.match(html, /class="link-btn-primary"/);
-});
-
-test("renderLinking: sin jugadores antiguos no muestra el selector", () => {
-  const app = withState({
-    linkingSession: { userId: "U1", googleName: "Manu" },
-    linkPlayers: [],
-  });
-  const html = app.renderLinking();
-  assert.doesNotMatch(html, /class="link-select"/);
-  assert.match(html, /class="link-btn-secondary"/); // sí el botón "empezar desde cero"
+// ─── renderAccessDenied / routing de acceso ──────────────────────────────────
+test("renderAccessDenied: pantalla de invitación requerida con el mensaje de error", () => {
+  const app = withState({ accessDenied: true, accessError: "Tu invitación no es válida o ha caducado." });
+  const html = app.renderAccessDenied();
+  assert.match(html, /Necesitas invitación/);
+  assert.match(html, /caducado/);
+  assert.match(html, /doLogout\(\)/);
 });
 
 // ─── renderHeader ─────────────────────────────────────────────────────────────
@@ -374,19 +360,15 @@ test("render: estado loading pinta 'Conectando'", () => {
 });
 
 test("render: sin usuario pinta login", () => {
-  const app = withState({ loading: false, user: null, linkingSession: null });
+  const app = withState({ loading: false, user: null, accessDenied: false });
   app.render();
   assert.match(app.appEl.innerHTML, /class="login-btn"/);
 });
 
-test("render: con sesión de vinculación pinta pantalla de linking", () => {
-  const app = withState({
-    loading: false,
-    linkingSession: { userId: "U1", googleName: "Manu" },
-    linkPlayers: [],
-  });
+test("render: sin usuario y con accessDenied pinta la pantalla de invitación", () => {
+  const app = withState({ loading: false, user: null, accessDenied: true });
   app.render();
-  assert.match(app.appEl.innerHTML, /¡Hola, Manu!/);
+  assert.match(app.appEl.innerHTML, /Necesitas invitación/);
 });
 
 // ─── renderAdmin (dos pasos: gate → tareas) ─────────────────────────────────

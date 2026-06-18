@@ -15,6 +15,7 @@ se actualizan solos cada día.
 - **Pódium:** elige campeón, subcampeón y tercero. Bonus: 🥇 +5 · 🥈 +3 · 🥉 +2.
 - **Ranking:** clasificación en vivo de todos los participantes.
 - **Novedades:** al entrar se muestra un pequeño aviso con los cambios recientes, que puedes descartar (no vuelve a salir hasta que haya algo nuevo).
+- **Acceso solo por invitación:** se entra con un enlace que genera el admin (caduca a los 30 min). La puesta en marcha y la generación de invitaciones se describen en [`docs/ADMIN.md`](docs/ADMIN.md).
 
 ## Ejecutar en local
 

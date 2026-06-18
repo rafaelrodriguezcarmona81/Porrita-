@@ -65,18 +65,44 @@ JS. Dynamic/state-dependent styling is expressed with **modifier classes** (`pic
 split when editing: compute a class string in `app.js`, define the look in `styles.css`.
 
 **Data flow.**
-- Players: read/written via Supabase REST (`sbGet/sbPost/sbPatch`) using the public anon key in
-  `app.js` (client-side by design).
+- Players: read/written via Supabase REST (`sbGet/sbPost/sbPatch`). Reads use the public anon key;
+  **writes carry the logged-in user's JWT** (`getHDR` → `Bearer (_token||SB_KEY)`), so RLS can scope
+  them to `auth.uid() = user_id`. See **Security model** below — the anon key alone must not be able
+  to write.
 - Results: fetched from the static `results.json` (cache-busted), regenerated daily — the app
   never writes results. `results.json` holds three maps: `results` and `scores` (keyed by
   match-key) plus `standings` (keyed by **group letter**, an ordered array of team rows with
   `mp/w/d/l/gf/ga/gd/pts`).
-- Auth: Google OAuth via Supabase. `ensurePlayer` links the auth user to a `porra_jugadores` row
-  by `user_id`, then by name; if neither matches it shows a **manual linking screen** so people who
-  played before auth existed can claim their old name.
+- Auth: Google OAuth via Supabase, **invite-only**. On login the callback checks for a
+  `porra_jugadores` row by `user_id`: if it exists, you enter; if not, you only get in by presenting
+  a valid invite (`?invite=<token>` in the URL), redeemed **server-side** via `/api/redeem-invite`
+  (which provisions the row). No valid invite → `renderAccessDenied`. There is **no client-side
+  provisioning or name-linking** (RLS blocks it); the admin generates invite links from the Admin
+  tab (`/api/create-invite`).
 - Scoring is computed in the browser: `gPts` (1 pt per correct 1/X/2) + `podiumBonus` (5/3/2 for
   champion/runner-up/third). The **group standings table**, by contrast, is precomputed in the
   updater and read straight from `results.json` (`renderStandings` does no calculation).
+
+## Security model
+
+The app is a **static client with a public `anon` key** (it ships in `app.js`). So **any control
+that lives only in the client is bypassable** — an attacker can hit the Supabase REST API directly.
+Security is enforced in two places only, and new code must respect this:
+
+- **RLS (database)** — `supabase/migrations/*` lock `porra_jugadores`: writes only for the owner
+  (`auth.uid() = user_id`), no client `INSERT`/`DELETE`, `invitaciones` table closed to everyone but
+  `service_role`. The client's write requests already carry the user JWT, so RLS can scope them.
+- **Serverless (`service_role`)** — `api/redeem-invite.js` (provisions a player only after
+  validating an unexpired invite + the user's session) and `api/create-invite.js` (admin-only, via
+  `ADMIN_TRIGGER_SECRET`). The `service_role` key is server-only (`SUPABASE_SERVICE_ROLE`), never in
+  the client.
+
+Rules of thumb when editing:
+- **Never trust the client for authorization.** Don't add a client-side gate as the only check.
+- **Escape every user-controlled value** before putting it in `innerHTML` with `esc()` (names,
+  podium, etc. are attacker-writable via the API → stored XSS otherwise).
+- **No client-side provisioning/linking** — onboarding is invite-only and happens server-side.
+- The `anon` key being public is fine; the `service_role` key never is.
 
 **Prediction locking.** `isLocked(key)` blocks editing a prediction starting 1h before kickoff.
 Kickoff times in `MATCH_TIMES` are **CEST (UTC+2)**.

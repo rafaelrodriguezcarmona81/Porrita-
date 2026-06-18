@@ -4,7 +4,8 @@
     "fecha": "2026-06-18",
     "items": [
       "La porra pasa a ser privada: se entra con un enlace de invitación que genera el admin (caduca a los 30 minutos).",
-      "Mejoras de seguridad internas para proteger tus datos y pronósticos."
+      "Mejoras de seguridad internas para proteger tus datos y pronósticos.",
+      "Corregido el día de la semana mostrado en los partidos de medianoche."
     ]
   },
   {

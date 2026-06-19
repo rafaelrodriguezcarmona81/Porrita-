@@ -265,6 +265,19 @@ test("renderPodium: escapa nombre y pódium de otros jugadores", () => {
   assert.match(html, /&lt;b&gt;x&lt;\/b&gt;/);
 });
 
+test("renderPodium: un nombre vacío no rompe el render (inicial de respaldo)", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: {}, podium: null },
+      { nombre: "", group_predictions: {}, podium: null },
+    ],
+    groupResults: {},
+  });
+  assert.doesNotThrow(() => app.renderPodium());
+  assert.match(app.renderPodium(), /class="avatar">\?</); // inicial de respaldo
+});
+
 // ─── renderToday (pestaña "Hoy") ───────────────────────────────────────────────
 // El 15/06/2026 (CEST) tienen partido: E_Costa de Marfil_Ecuador (01:00, DAZN),
 // F_Suecia_Túnez (04:00, DAZN), H_España_Cabo Verde (18:00, La 1) y

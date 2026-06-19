@@ -526,7 +526,7 @@ function renderPodium(){
     :'<p class="podium-hint">Selecciona los 3 equipos para guardar</p>';
   const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
     <div class="player-row">
-      <div class="avatar">${esc(p.nombre[0].toUpperCase())}</div>
+      <div class="avatar">${esc((p.nombre[0]||"?").toUpperCase())}</div>
       <div class="grow"><p class="player-name">${esc(p.nombre)}</p>
         ${p.podium?`<p class="player-podium">🥇${esc(p.podium[0])} · 🥈${esc(p.podium[1])} · 🥉${esc(p.podium[2])}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
       </div></div>`).join("");

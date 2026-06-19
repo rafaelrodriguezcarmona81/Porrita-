@@ -91,7 +91,9 @@ The app is a **static client with a public `anon` key** (it ships in `app.js`). 
 that lives only in the client is bypassable** — an attacker can hit the Supabase REST API directly.
 Security is enforced in two places only, and new code must respect this:
 
-- **RLS (database)** — `supabase/migrations/*` lock `porra_jugadores`: writes only for the owner
+- **RLS (database)** — `supabase/migrations/*` lock `porra_jugadores`: **reads only for members**
+  (`using (public.es_miembro())` — a `security definer` helper; merely being authenticated, e.g. via
+  open Google login, is NOT enough → reads are invite-only too), writes only for the owner
   (`auth.uid() = user_id`), no client `INSERT`/`DELETE`, `invitaciones` table closed to everyone but
   `service_role`. The client's write requests already carry the user JWT, so RLS can scope them.
 - **Serverless (`service_role`)** — `api/redeem-invite.js` (provisions a player only after
@@ -143,7 +145,7 @@ tests mock the network, so they can't prove RLS or the serverless invite flow ac
 `test/integration/security.itest.mjs` boots a **real local Supabase stack** with **testcontainers**
 (`supabase/postgres` + PostgREST + GoTrue + an nginx gateway routing `/rest/v1` and `/auth/v1`) and
 asserts, against it: **RLS by the real path** (HTTP → PostgREST → `auth.uid()`: anon can't read/write,
-owner-only updates, `invitaciones` closed) and the **invite flow** (`api/create-invite` /
+**reads only for members** (a logged-in non-member sees nothing), owner-only updates, `invitaciones` closed) and the **invite flow** (`api/create-invite` /
 `api/redeem-invite`: provisioning, idempotency, expired/invalid invites, with a user signed up in the
 local GoTrue to get a real JWT). Needs only Docker (no Supabase CLI). It lives outside `test/*.test.js`
 so `npm test` skips it, and **hard-aborts unless `SUPABASE_URL` is localhost** so it can never hit

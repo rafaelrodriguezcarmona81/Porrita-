@@ -17,21 +17,34 @@
 
 alter table public.porra_jugadores enable row level security;
 
+-- ¿El usuario actual ya es miembro (tiene fila)? Se usa en la policy de SELECT.
+-- Es SECURITY DEFINER (corre como el owner, que ignora RLS) para que la consulta
+-- a porra_jugadores NO recursione contra su propia policy. `search_path=''` →
+-- todo cualificado. La membresía solo la crea /api/redeem-invite (service_role).
+create or replace function public.es_miembro()
+  returns boolean
+  language sql
+  stable
+  security definer
+  set search_path = ''
+as $$
+  select exists (
+    select 1 from public.porra_jugadores where user_id = auth.uid()
+  );
+$$;
+grant execute on function public.es_miembro() to authenticated;
+
 -- Limpieza idempotente (por si se re-ejecuta).
 drop policy if exists jugadores_select on public.porra_jugadores;
 drop policy if exists jugadores_update_own on public.porra_jugadores;
 
--- ── LECTURA ──────────────────────────────────────────────────────────────────
--- Por defecto: cualquier usuario autenticado ve la clasificación completa.
+-- ── LECTURA: solo miembros (invite-only de verdad) ──────────────────────────────
+-- Un usuario solo ve la clasificación si ya es miembro (fue dado de alta por una
+-- invitación). Estar meramente autenticado (p. ej. login Google abierto) NO basta.
 create policy jugadores_select
   on public.porra_jugadores for select
   to authenticated
-  using (true);
-
--- Alternativa A (lectura pública, también sin login): cambia el `to authenticated`
---   de arriba por `to anon, authenticated`.
--- Alternativa B (solo invitados ven algo): cuando exista la autorización (tarea #3),
---   usar `using (autorizado = true)` o un EXISTS contra `usuarios_autorizados`.
+  using (public.es_miembro());
 
 -- ── ESCRITURA: solo el dueño edita su propia fila ───────────────────────────────
 create policy jugadores_update_own

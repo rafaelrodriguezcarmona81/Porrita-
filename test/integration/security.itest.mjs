@@ -202,6 +202,20 @@ describe("RLS vía REST real", () => {
     const j = await res.json().catch(() => null);
     assert.ok(res.status >= 400 || (Array.isArray(j) && j.length === 0));
   });
+  test("un autenticado NO-miembro tampoco puede leer (invite-only real)", async () => {
+    const u = await signup();   // logueado pero sin alta → no es miembro
+    const res = await rest_("porra_jugadores?select=user_id", { token: u.token });
+    const j = await res.json().catch(() => null);
+    assert.ok(Array.isArray(j) && j.length === 0, "un no-miembro no debe ver ninguna fila");
+  });
+  test("un miembro sí lee la clasificación completa", async () => {
+    const a = await signup(); const b = await signup();
+    await provision(a.id, "MemberA"); await provision(b.id, "MemberB");
+    const res = await rest_("porra_jugadores?select=user_id", { token: a.token });
+    const j = await res.json();
+    assert.equal(res.status, 200);
+    assert.ok(j.length >= 2, "un miembro ve a todos los jugadores");
+  });
   test("anon no puede insertar jugadores", async () => {
     const res = await rest_("porra_jugadores", { token: ANON, method: "POST", prefer: "return=minimal", body: { nombre: "Hacker", user_id: "33333333-3333-3333-3333-333333333333" } });
     assert.ok(res.status >= 400);

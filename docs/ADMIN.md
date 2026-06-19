@@ -40,6 +40,7 @@ Cada link es un token que **caduca a los 30 minutos** y es **multi-uso**: cualqu
 ## Cómo se impone la seguridad (resumen)
 
 - La `anon key` del cliente es **pública por diseño**: la seguridad la imponen **RLS** (base de datos) y los **endpoints serverless** con `service_role`, nunca el cliente.
+- **Lecturas**: solo **miembros** (quien ya fue dado de alta por una invitación); estar solo logueado (login Google abierto) no basta.
 - **Escrituras**: solo el dueño de su propia fila (`auth.uid() = user_id`). Sin `DELETE`.
 - **Altas**: solo server-side, al canjear una invitación válida y no caducada.
 - **Invitaciones**: tabla cerrada por RLS; solo el admin (con `ADMIN_TRIGGER_SECRET`) puede crearlas.

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-20T00:29:25Z",
+  "updated": "2026-06-20T06:50:46Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -29,8 +29,10 @@
     "B_Suiza_Bosnia y Herc.": "1",
     "B_Canadá_Catar": "1",
     "A_Rep. Checa_Sudáfrica": "X",
+    "C_Brasil_Haití": "1",
     "C_Escocia_Marruecos": "2",
-    "D_Estados Unidos_Australia": "1"
+    "D_Estados Unidos_Australia": "1",
+    "D_Turquía_Paraguay": "2"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -61,8 +63,10 @@
     "B_Suiza_Bosnia y Herc.": "4-1",
     "B_Canadá_Catar": "6-0",
     "A_Rep. Checa_Sudáfrica": "1-1",
+    "C_Brasil_Haití": "3-0",
     "C_Escocia_Marruecos": "0-1",
-    "D_Estados Unidos_Australia": "2-0"
+    "D_Estados Unidos_Australia": "2-0",
+    "D_Turquía_Paraguay": "0-1"
   },
   "standings": {
     "A": [
@@ -181,29 +185,40 @@
         "pts": 3
       },
       {
-        "team": "Turquía",
-        "mp": 1,
-        "w": 0,
+        "team": "Paraguay",
+        "mp": 2,
+        "w": 1,
         "d": 0,
         "l": 1,
-        "gf": 0,
-        "ga": 2,
+        "gf": 2,
+        "ga": 4,
         "gd": -2,
-        "pts": 0
+        "pts": 3
       },
       {
-        "team": "Paraguay",
-        "mp": 1,
+        "team": "Turquía",
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
-        "gf": 1,
-        "ga": 4,
+        "l": 2,
+        "gf": 0,
+        "ga": 3,
         "gd": -3,
         "pts": 0
       }
     ],
     "C": [
+      {
+        "team": "Brasil",
+        "mp": 2,
+        "w": 1,
+        "d": 1,
+        "l": 0,
+        "gf": 4,
+        "ga": 1,
+        "gd": 3,
+        "pts": 4
+      },
       {
         "team": "Marruecos",
         "mp": 2,
@@ -227,25 +242,14 @@
         "pts": 3
       },
       {
-        "team": "Brasil",
-        "mp": 1,
-        "w": 0,
-        "d": 1,
-        "l": 0,
-        "gf": 1,
-        "ga": 1,
-        "gd": 0,
-        "pts": 1
-      },
-      {
         "team": "Haití",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
+        "l": 2,
         "gf": 0,
-        "ga": 1,
-        "gd": -1,
+        "ga": 4,
+        "gd": -4,
         "pts": 0
       }
     ],

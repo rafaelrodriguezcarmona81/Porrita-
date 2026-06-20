@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-20T13:16:28Z",
+  "updated": "2026-06-20T20:03:48Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -32,7 +32,8 @@
     "C_Brasil_Haití": "1",
     "C_Escocia_Marruecos": "2",
     "D_Estados Unidos_Australia": "1",
-    "D_Turquía_Paraguay": "2"
+    "D_Turquía_Paraguay": "2",
+    "F_Países Bajos_Suecia": "1"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -66,7 +67,8 @@
     "C_Brasil_Haití": "3-0",
     "C_Escocia_Marruecos": "0-1",
     "D_Estados Unidos_Australia": "2-0",
-    "D_Turquía_Paraguay": "0-1"
+    "D_Turquía_Paraguay": "0-1",
+    "F_Países Bajos_Suecia": "5-1"
   },
   "standings": {
     "A": [
@@ -301,29 +303,29 @@
     ],
     "F": [
       {
+        "team": "Países Bajos",
+        "mp": 2,
+        "w": 1,
+        "d": 1,
+        "l": 0,
+        "gf": 7,
+        "ga": 3,
+        "gd": 4,
+        "pts": 4
+      },
+      {
         "team": "Suecia",
-        "mp": 1,
+        "mp": 2,
         "w": 1,
         "d": 0,
-        "l": 0,
-        "gf": 5,
-        "ga": 1,
-        "gd": 4,
+        "l": 1,
+        "gf": 6,
+        "ga": 6,
+        "gd": 0,
         "pts": 3
       },
       {
         "team": "Japón",
-        "mp": 1,
-        "w": 0,
-        "d": 1,
-        "l": 0,
-        "gf": 2,
-        "ga": 2,
-        "gd": 0,
-        "pts": 1
-      },
-      {
-        "team": "Países Bajos",
         "mp": 1,
         "w": 0,
         "d": 1,

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-20T20:03:48Z",
+  "updated": "2026-06-21T02:35:04Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -33,6 +33,8 @@
     "C_Escocia_Marruecos": "2",
     "D_Estados Unidos_Australia": "1",
     "D_Turquía_Paraguay": "2",
+    "E_Alemania_Costa de Marfil": "1",
+    "E_Ecuador_Curazao": "X",
     "F_Países Bajos_Suecia": "1"
   },
   "scores": {
@@ -68,6 +70,8 @@
     "C_Escocia_Marruecos": "0-1",
     "D_Estados Unidos_Australia": "2-0",
     "D_Turquía_Paraguay": "0-1",
+    "E_Alemania_Costa de Marfil": "2-1",
+    "E_Ecuador_Curazao": "0-0",
     "F_Países Bajos_Suecia": "5-1"
   },
   "standings": {
@@ -258,47 +262,47 @@
     "E": [
       {
         "team": "Alemania",
-        "mp": 1,
-        "w": 1,
+        "mp": 2,
+        "w": 2,
         "d": 0,
         "l": 0,
-        "gf": 7,
-        "ga": 1,
-        "gd": 6,
-        "pts": 3
+        "gf": 9,
+        "ga": 2,
+        "gd": 7,
+        "pts": 6
       },
       {
         "team": "Costa de Marfil",
-        "mp": 1,
+        "mp": 2,
         "w": 1,
         "d": 0,
-        "l": 0,
-        "gf": 1,
-        "ga": 0,
-        "gd": 1,
+        "l": 1,
+        "gf": 2,
+        "ga": 2,
+        "gd": 0,
         "pts": 3
       },
       {
         "team": "Ecuador",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
-        "d": 0,
+        "d": 1,
         "l": 1,
         "gf": 0,
         "ga": 1,
         "gd": -1,
-        "pts": 0
+        "pts": 1
       },
       {
         "team": "Curazao",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
-        "d": 0,
+        "d": 1,
         "l": 1,
         "gf": 1,
         "ga": 7,
         "gd": -6,
-        "pts": 0
+        "pts": 1
       }
     ],
     "F": [

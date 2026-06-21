@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-21T15:19:53Z",
+  "updated": "2026-06-21T22:05:23Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -36,7 +36,9 @@
     "E_Alemania_Costa de Marfil": "1",
     "E_Ecuador_Curazao": "X",
     "F_Países Bajos_Suecia": "1",
-    "F_Túnez_Japón": "2"
+    "F_Túnez_Japón": "2",
+    "G_Bélgica_Irán": "X",
+    "H_España_Arabia Saudí": "1"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -74,7 +76,9 @@
     "E_Alemania_Costa de Marfil": "2-1",
     "E_Ecuador_Curazao": "0-0",
     "F_Países Bajos_Suecia": "5-1",
-    "F_Túnez_Japón": "0-4"
+    "F_Túnez_Japón": "0-4",
+    "G_Bélgica_Irán": "0-0",
+    "H_España_Arabia Saudí": "4-0"
   },
   "standings": {
     "A": [
@@ -356,14 +360,25 @@
     "G": [
       {
         "team": "Irán",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
-        "d": 1,
+        "d": 2,
         "l": 0,
         "gf": 2,
         "ga": 2,
         "gd": 0,
-        "pts": 1
+        "pts": 2
+      },
+      {
+        "team": "Bélgica",
+        "mp": 2,
+        "w": 0,
+        "d": 2,
+        "l": 0,
+        "gf": 1,
+        "ga": 1,
+        "gd": 0,
+        "pts": 2
       },
       {
         "team": "Nueva Zelanda",
@@ -373,17 +388,6 @@
         "l": 0,
         "gf": 2,
         "ga": 2,
-        "gd": 0,
-        "pts": 1
-      },
-      {
-        "team": "Bélgica",
-        "mp": 1,
-        "w": 0,
-        "d": 1,
-        "l": 0,
-        "gf": 1,
-        "ga": 1,
         "gd": 0,
         "pts": 1
       },
@@ -401,15 +405,15 @@
     ],
     "H": [
       {
-        "team": "Arabia Saudí",
-        "mp": 1,
-        "w": 0,
+        "team": "España",
+        "mp": 2,
+        "w": 1,
         "d": 1,
         "l": 0,
-        "gf": 1,
-        "ga": 1,
-        "gd": 0,
-        "pts": 1
+        "gf": 4,
+        "ga": 0,
+        "gd": 4,
+        "pts": 4
       },
       {
         "team": "Uruguay",
@@ -434,14 +438,14 @@
         "pts": 1
       },
       {
-        "team": "España",
-        "mp": 1,
+        "team": "Arabia Saudí",
+        "mp": 2,
         "w": 0,
         "d": 1,
-        "l": 0,
-        "gf": 0,
-        "ga": 0,
-        "gd": 0,
+        "l": 1,
+        "gf": 1,
+        "ga": 5,
+        "gd": -4,
         "pts": 1
       }
     ],

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-22T07:09:58Z",
+  "updated": "2026-06-22T19:58:15Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -40,7 +40,8 @@
     "G_Bélgica_Irán": "X",
     "G_Nueva Zelanda_Egipto": "2",
     "H_España_Arabia Saudí": "1",
-    "H_Uruguay_Cabo Verde": "X"
+    "H_Uruguay_Cabo Verde": "X",
+    "J_Argentina_Austria": "1"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -82,7 +83,8 @@
     "G_Bélgica_Irán": "0-0",
     "G_Nueva Zelanda_Egipto": "1-3",
     "H_España_Arabia Saudí": "4-0",
-    "H_Uruguay_Cabo Verde": "2-2"
+    "H_Uruguay_Cabo Verde": "2-2",
+    "J_Argentina_Austria": "2-0"
   },
   "standings": {
     "A": [
@@ -502,24 +504,24 @@
     "J": [
       {
         "team": "Argentina",
-        "mp": 1,
-        "w": 1,
+        "mp": 2,
+        "w": 2,
         "d": 0,
         "l": 0,
-        "gf": 3,
+        "gf": 5,
         "ga": 0,
-        "gd": 3,
-        "pts": 3
+        "gd": 5,
+        "pts": 6
       },
       {
         "team": "Austria",
-        "mp": 1,
+        "mp": 2,
         "w": 1,
         "d": 0,
-        "l": 0,
+        "l": 1,
         "gf": 3,
-        "ga": 1,
-        "gd": 2,
+        "ga": 3,
+        "gd": 0,
         "pts": 3
       },
       {

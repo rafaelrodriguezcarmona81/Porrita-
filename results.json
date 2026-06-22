@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-21T22:05:23Z",
+  "updated": "2026-06-22T07:09:58Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -38,7 +38,9 @@
     "F_Países Bajos_Suecia": "1",
     "F_Túnez_Japón": "2",
     "G_Bélgica_Irán": "X",
-    "H_España_Arabia Saudí": "1"
+    "G_Nueva Zelanda_Egipto": "2",
+    "H_España_Arabia Saudí": "1",
+    "H_Uruguay_Cabo Verde": "X"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -78,7 +80,9 @@
     "F_Países Bajos_Suecia": "5-1",
     "F_Túnez_Japón": "0-4",
     "G_Bélgica_Irán": "0-0",
-    "H_España_Arabia Saudí": "4-0"
+    "G_Nueva Zelanda_Egipto": "1-3",
+    "H_España_Arabia Saudí": "4-0",
+    "H_Uruguay_Cabo Verde": "2-2"
   },
   "standings": {
     "A": [
@@ -359,6 +363,17 @@
     ],
     "G": [
       {
+        "team": "Egipto",
+        "mp": 2,
+        "w": 1,
+        "d": 1,
+        "l": 0,
+        "gf": 4,
+        "ga": 2,
+        "gd": 2,
+        "pts": 4
+      },
+      {
         "team": "Irán",
         "mp": 2,
         "w": 0,
@@ -382,24 +397,13 @@
       },
       {
         "team": "Nueva Zelanda",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 1,
-        "l": 0,
-        "gf": 2,
-        "ga": 2,
-        "gd": 0,
-        "pts": 1
-      },
-      {
-        "team": "Egipto",
-        "mp": 1,
-        "w": 0,
-        "d": 1,
-        "l": 0,
-        "gf": 1,
-        "ga": 1,
-        "gd": 0,
+        "l": 1,
+        "gf": 3,
+        "ga": 5,
+        "gd": -2,
         "pts": 1
       }
     ],
@@ -417,25 +421,25 @@
       },
       {
         "team": "Uruguay",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
-        "d": 1,
+        "d": 2,
         "l": 0,
-        "gf": 1,
-        "ga": 1,
+        "gf": 3,
+        "ga": 3,
         "gd": 0,
-        "pts": 1
+        "pts": 2
       },
       {
         "team": "Cabo Verde",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
-        "d": 1,
+        "d": 2,
         "l": 0,
-        "gf": 0,
-        "ga": 0,
+        "gf": 2,
+        "ga": 2,
         "gd": 0,
-        "pts": 1
+        "pts": 2
       },
       {
         "team": "Arabia Saudí",

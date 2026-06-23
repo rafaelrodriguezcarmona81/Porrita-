@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-23T04:45:10Z",
+  "updated": "2026-06-23T07:11:04Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -43,7 +43,8 @@
     "H_Uruguay_Cabo Verde": "X",
     "I_Francia_Irak": "1",
     "I_Noruega_Senegal": "1",
-    "J_Argentina_Austria": "1"
+    "J_Argentina_Austria": "1",
+    "J_Jordania_Argelia": "2"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -88,7 +89,8 @@
     "H_Uruguay_Cabo Verde": "2-2",
     "I_Francia_Irak": "3-0",
     "I_Noruega_Senegal": "3-2",
-    "J_Argentina_Austria": "2-0"
+    "J_Argentina_Austria": "2-0",
+    "J_Jordania_Argelia": "1-2"
   },
   "standings": {
     "A": [
@@ -529,24 +531,24 @@
         "pts": 3
       },
       {
-        "team": "Jordania",
-        "mp": 1,
-        "w": 0,
+        "team": "Argelia",
+        "mp": 2,
+        "w": 1,
         "d": 0,
         "l": 1,
-        "gf": 1,
-        "ga": 3,
+        "gf": 2,
+        "ga": 4,
         "gd": -2,
-        "pts": 0
+        "pts": 3
       },
       {
-        "team": "Argelia",
-        "mp": 1,
+        "team": "Jordania",
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
-        "gf": 0,
-        "ga": 3,
+        "l": 2,
+        "gf": 2,
+        "ga": 5,
         "gd": -3,
         "pts": 0
       }

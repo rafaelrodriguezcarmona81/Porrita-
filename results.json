@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-22T19:58:15Z",
+  "updated": "2026-06-23T04:45:10Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -41,6 +41,8 @@
     "G_Nueva Zelanda_Egipto": "2",
     "H_España_Arabia Saudí": "1",
     "H_Uruguay_Cabo Verde": "X",
+    "I_Francia_Irak": "1",
+    "I_Noruega_Senegal": "1",
     "J_Argentina_Austria": "1"
   },
   "scores": {
@@ -84,6 +86,8 @@
     "G_Nueva Zelanda_Egipto": "1-3",
     "H_España_Arabia Saudí": "4-0",
     "H_Uruguay_Cabo Verde": "2-2",
+    "I_Francia_Irak": "3-0",
+    "I_Noruega_Senegal": "3-2",
     "J_Argentina_Austria": "2-0"
   },
   "standings": {
@@ -457,47 +461,47 @@
     ],
     "I": [
       {
-        "team": "Noruega",
-        "mp": 1,
-        "w": 1,
+        "team": "Francia",
+        "mp": 2,
+        "w": 2,
         "d": 0,
         "l": 0,
-        "gf": 4,
+        "gf": 6,
         "ga": 1,
-        "gd": 3,
-        "pts": 3
+        "gd": 5,
+        "pts": 6
       },
       {
-        "team": "Francia",
-        "mp": 1,
-        "w": 1,
+        "team": "Noruega",
+        "mp": 2,
+        "w": 2,
         "d": 0,
         "l": 0,
-        "gf": 3,
-        "ga": 1,
-        "gd": 2,
-        "pts": 3
+        "gf": 7,
+        "ga": 3,
+        "gd": 4,
+        "pts": 6
       },
       {
         "team": "Senegal",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
-        "gf": 1,
-        "ga": 3,
-        "gd": -2,
+        "l": 2,
+        "gf": 3,
+        "ga": 6,
+        "gd": -3,
         "pts": 0
       },
       {
         "team": "Irak",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
+        "l": 2,
         "gf": 1,
-        "ga": 4,
-        "gd": -3,
+        "ga": 7,
+        "gd": -6,
         "pts": 0
       }
     ],

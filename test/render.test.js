@@ -21,27 +21,13 @@ test("renderLogin: pantalla de login con botón de Google", () => {
   assert.match(html, /doGoogleLogin\(\)/);
 });
 
-// ─── renderLinking ───────────────────────────────────────────────────────────
-test("renderLinking: muestra nombre y opciones de vinculación", () => {
-  const app = withState({
-    linkingSession: { userId: "U1", googleName: "Manu" },
-    linkPlayers: ["Pepe", "Lucía"],
-  });
-  const html = app.renderLinking();
-  assert.match(html, /¡Hola, Manu!/);
-  assert.match(html, /class="link-select"/);
-  assert.match(html, /<option value="Pepe">Pepe<\/option>/);
-  assert.match(html, /class="link-btn-primary"/);
-});
-
-test("renderLinking: sin jugadores antiguos no muestra el selector", () => {
-  const app = withState({
-    linkingSession: { userId: "U1", googleName: "Manu" },
-    linkPlayers: [],
-  });
-  const html = app.renderLinking();
-  assert.doesNotMatch(html, /class="link-select"/);
-  assert.match(html, /class="link-btn-secondary"/); // sí el botón "empezar desde cero"
+// ─── renderAccessDenied / routing de acceso ──────────────────────────────────
+test("renderAccessDenied: pantalla de invitación requerida con el mensaje de error", () => {
+  const app = withState({ accessDenied: true, accessError: "Tu invitación no es válida o ha caducado." });
+  const html = app.renderAccessDenied();
+  assert.match(html, /Necesitas invitación/);
+  assert.match(html, /caducado/);
+  assert.match(html, /doLogout\(\)/);
 });
 
 // ─── renderHeader ─────────────────────────────────────────────────────────────
@@ -244,6 +230,54 @@ test("renderGrupos: incluye la clasificación del grupo activo", () => {
   assert.match(html, /<table class="standings">/);
 });
 
+// ─── esc / XSS ────────────────────────────────────────────────────────────────
+test("esc: escapa caracteres peligrosos de HTML", () => {
+  const { esc } = loadApp();
+  assert.equal(esc(`<img src=x onerror="alert(1)">`), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+  assert.equal(esc("a & b"), "a &amp; b");
+  assert.equal(esc(null), "");
+});
+
+test("renderRanking: escapa el nombre del jugador (no inyecta HTML)", () => {
+  const evil = '<script>alert(1)</script>';
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: evil, group_predictions: {}, podium: null }],
+    groupResults: {},
+  });
+  const html = app.renderRanking();
+  assert.doesNotMatch(html, /<script>alert/);
+  assert.match(html, /&lt;script&gt;/);
+});
+
+test("renderPodium: escapa nombre y pódium de otros jugadores", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: {}, podium: null },
+      { nombre: "<b>x</b>", group_predictions: {}, podium: ['<i>A</i>', 'B', 'C'] },
+    ],
+    groupResults: {},
+  });
+  const html = app.renderPodium();
+  assert.doesNotMatch(html, /<b>x<\/b>/);
+  assert.doesNotMatch(html, /<i>A<\/i>/);
+  assert.match(html, /&lt;b&gt;x&lt;\/b&gt;/);
+});
+
+test("renderPodium: un nombre vacío no rompe el render (inicial de respaldo)", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: {}, podium: null },
+      { nombre: "", group_predictions: {}, podium: null },
+    ],
+    groupResults: {},
+  });
+  assert.doesNotThrow(() => app.renderPodium());
+  assert.match(app.renderPodium(), /class="avatar">\?</); // inicial de respaldo
+});
+
 // ─── renderToday (pestaña "Hoy") ───────────────────────────────────────────────
 // El 15/06/2026 (CEST) tienen partido: E_Costa de Marfil_Ecuador (01:00, DAZN),
 // F_Suecia_Túnez (04:00, DAZN), H_España_Cabo Verde (18:00, La 1) y
@@ -411,19 +445,15 @@ test("render: estado loading pinta 'Conectando'", () => {
 });
 
 test("render: sin usuario pinta login", () => {
-  const app = withState({ loading: false, user: null, linkingSession: null });
+  const app = withState({ loading: false, user: null, accessDenied: false });
   app.render();
   assert.match(app.appEl.innerHTML, /class="login-btn"/);
 });
 
-test("render: con sesión de vinculación pinta pantalla de linking", () => {
-  const app = withState({
-    loading: false,
-    linkingSession: { userId: "U1", googleName: "Manu" },
-    linkPlayers: [],
-  });
+test("render: sin usuario y con accessDenied pinta la pantalla de invitación", () => {
+  const app = withState({ loading: false, user: null, accessDenied: true });
   app.render();
-  assert.match(app.appEl.innerHTML, /¡Hola, Manu!/);
+  assert.match(app.appEl.innerHTML, /Necesitas invitación/);
 });
 
 // ─── renderAdmin (dos pasos: gate → tareas) ─────────────────────────────────

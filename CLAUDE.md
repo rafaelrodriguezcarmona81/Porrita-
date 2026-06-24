@@ -16,16 +16,18 @@ static host (Netlify, GitHub Pages, etc.) serves it as-is.
 ## Commands
 
 ```bash
-npm test                              # run the whole suite (node:test, no deps)
-npm run test:coverage                 # same + V8 coverage report
-node --test test/render.test.js       # run a single test file
+npm test                              # unit tests (node:test, no infra)
+npm run test:integration              # integration vs a real local Supabase (testcontainers; needs Docker)
+npm run test:coverage                 # unit + integration with V8 coverage
+node --test test/render.test.js       # run a single unit test file
 node --test --test-name-pattern="isLocked"   # run tests whose name matches
 
 python3 .github/scripts/update_results.py    # regenerate results.json from the live API
 ```
 
-There is no install/build/lint step — the app has zero runtime dependencies and tests use Node's
-built-in runner (Node 22 in CI).
+No build/lint step. The **app** has zero runtime dependencies; unit tests use Node's built-in runner
+(Node 22 in CI). The only dev dependency is **testcontainers**, used by the integration tests
+(`npm run test:integration`) to spin a local Supabase stack in Docker — `npm ci` to install it.
 
 ### Running locally
 
@@ -65,18 +67,46 @@ JS. Dynamic/state-dependent styling is expressed with **modifier classes** (`pic
 split when editing: compute a class string in `app.js`, define the look in `styles.css`.
 
 **Data flow.**
-- Players: read/written via Supabase REST (`sbGet/sbPost/sbPatch`) using the public anon key in
-  `app.js` (client-side by design).
+- Players: read/written via Supabase REST (`sbGet/sbPost/sbPatch`). Reads use the public anon key;
+  **writes carry the logged-in user's JWT** (`getHDR` → `Bearer (_token||SB_KEY)`), so RLS can scope
+  them to `auth.uid() = user_id`. See **Security model** below — the anon key alone must not be able
+  to write.
 - Results: fetched from the static `results.json` (cache-busted), regenerated daily — the app
   never writes results. `results.json` holds three maps: `results` and `scores` (keyed by
   match-key) plus `standings` (keyed by **group letter**, an ordered array of team rows with
   `mp/w/d/l/gf/ga/gd/pts`).
-- Auth: Google OAuth via Supabase. `ensurePlayer` links the auth user to a `porra_jugadores` row
-  by `user_id`, then by name; if neither matches it shows a **manual linking screen** so people who
-  played before auth existed can claim their old name.
+- Auth: Google OAuth via Supabase, **invite-only**. On login the callback checks for a
+  `porra_jugadores` row by `user_id`: if it exists, you enter; if not, you only get in by presenting
+  a valid invite (`?invite=<token>` in the URL), redeemed **server-side** via `/api/redeem-invite`
+  (which provisions the row). No valid invite → `renderAccessDenied`. There is **no client-side
+  provisioning or name-linking** (RLS blocks it); the admin generates invite links from the Admin
+  tab (`/api/create-invite`).
 - Scoring is computed in the browser: `gPts` (1 pt per correct 1/X/2) + `podiumBonus` (5/3/2 for
   champion/runner-up/third). The **group standings table**, by contrast, is precomputed in the
   updater and read straight from `results.json` (`renderStandings` does no calculation).
+
+## Security model
+
+The app is a **static client with a public `anon` key** (it ships in `app.js`). So **any control
+that lives only in the client is bypassable** — an attacker can hit the Supabase REST API directly.
+Security is enforced in two places only, and new code must respect this:
+
+- **RLS (database)** — `supabase/migrations/*` lock `porra_jugadores`: **reads only for members**
+  (`using (public.es_miembro())` — a `security definer` helper; merely being authenticated, e.g. via
+  open Google login, is NOT enough → reads are invite-only too), writes only for the owner
+  (`auth.uid() = user_id`), no client `INSERT`/`DELETE`, `invitaciones` table closed to everyone but
+  `service_role`. The client's write requests already carry the user JWT, so RLS can scope them.
+- **Serverless (`service_role`)** — `api/redeem-invite.js` (provisions a player only after
+  validating an unexpired invite + the user's session) and `api/create-invite.js` (admin-only, via
+  `ADMIN_TRIGGER_SECRET`). The `service_role` key is server-only (`SUPABASE_SERVICE_ROLE`), never in
+  the client.
+
+Rules of thumb when editing:
+- **Never trust the client for authorization.** Don't add a client-side gate as the only check.
+- **Escape every user-controlled value** before putting it in `innerHTML` with `esc()` (names,
+  podium, etc. are attacker-writable via the API → stored XSS otherwise).
+- **No client-side provisioning/linking** — onboarding is invite-only and happens server-side.
+- The `anon` key being public is fine; the `service_role` key never is.
 
 **Prediction locking.** `isLocked(key)` blocks editing a prediction starting 1h before kickoff.
 Kickoff times in `MATCH_TIMES` are **CEST (UTC+2)**.
@@ -110,13 +140,41 @@ and `fireAuth` (drives the captured `onAuthStateChange` callback).
   `render*` output (`render.test.js`), Supabase/data layer (`data.test.js`), the auth callback
   (`auth.test.js`), and `window.*` handlers (`handlers.test.js`).
 
+**Integration tests (`test/integration/*.itest.mjs`, run with `npm run test:integration`).** The unit
+tests mock the network, so they can't prove RLS or the serverless invite flow actually work.
+`test/integration/security.itest.mjs` boots a **real local Supabase stack** with **testcontainers**
+(`supabase/postgres` + PostgREST + GoTrue + an nginx gateway routing `/rest/v1` and `/auth/v1`) and
+asserts, against it: **RLS by the real path** (HTTP → PostgREST → `auth.uid()`: anon can't read/write,
+**reads only for members** (a logged-in non-member sees nothing), owner-only updates, `invitaciones` closed) and the **invite flow** (`api/create-invite` /
+`api/redeem-invite`: provisioning, idempotency, expired/invalid invites, with a user signed up in the
+local GoTrue to get a real JWT). Needs only Docker (no Supabase CLI). It lives outside `test/*.test.js`
+so `npm test` skips it, and **hard-aborts unless `SUPABASE_URL` is localhost** so it can never hit
+production. PostgREST runs with `PGRST_DB_USE_LEGACY_GUCS=true` so `auth.uid()` (which reads
+`request.jwt.claim.sub` in this `supabase/postgres` version) resolves.
+
 ## CI
 
-`.github/workflows/tests.yml` runs `npm test` on push to `main` and on PRs.
+`.github/workflows/tests.yml` (workflow **Tests**) has two jobs: `test` runs `npm test` (unit), and
+`integration` runs `npm run test:integration` — the **integration suite against a real local Supabase**
+(Postgres + PostgREST + GoTrue), orchestrated with **testcontainers** (needs only Docker, no Supabase
+CLI). Both must pass — migrations (gated on the Tests workflow) won't apply otherwise.
 `.github/workflows/changelog.yml` runs on PRs and **fails** any PR that doesn't modify
 `changelog.json` unless it carries the `skip-changelog` label. Workflows pin GitHub Actions to **full
 commit SHAs** (with the version as a trailing comment) rather than tags — keep new actions pinned the
 same way.
+
+## Database migrations (Supabase)
+
+Schema/RLS changes live in **`supabase/migrations/<timestamp>_name.sql`** and are applied
+**automatically on merge to `main`** by the `migrations.yml` workflow — but only **after the `Tests`
+workflow passes** (chained via `workflow_run`); if tests fail, migrations don't run. The Supabase
+CLI tracks what's applied, so each migration runs exactly once.
+
+**Migrations are forward-only.** Never edit (or delete) a migration that has already been
+merged/applied — it won't re-run and prod will drift from the files. To change the schema, **add a
+new migration** with a later timestamp. Keep them idempotent where cheap (`if not exists`,
+`drop ... if exists`). Requires the repo Actions secrets `SUPABASE_ACCESS_TOKEN` and
+`SUPABASE_DB_PASSWORD`. Operator setup lives in `docs/ADMIN.md`.
 
 ## Changelog (required on every PR)
 

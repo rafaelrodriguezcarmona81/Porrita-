@@ -108,39 +108,34 @@ test("loadData: sin usuario no calcula rankChange", async () => {
   assert.equal(app.S.rankChange, null);
 });
 
-// ─── ensurePlayer (resolución/vinculación de jugador) ────────────────────────
-test("ensurePlayer: devuelve el nombre si ya existe por user_id", async () => {
-  const app = loadApp({ fetch: routedFetch([["user_id=eq.U1", [{ nombre: "Ana" }]]]) });
-  const name = await app.ensurePlayer("U1", "Google Ana");
-  assert.equal(name, "Ana");
+// ─── getInviteToken / redeemInvite ───────────────────────────────────────────
+test("getInviteToken: extrae el token de ?invite= de la URL", () => {
+  const app = loadApp();
+  app.window.location.search = "?invite=abc-123";
+  assert.equal(app.getInviteToken(), "abc-123");
 });
 
-test("ensurePlayer: vincula por nombre cuando no tiene user_id y lo devuelve", async () => {
-  const app = loadApp({
-    fetch: routedFetch([
-      ["user_id=eq.U2", []], // no hay match por id
-      ["nombre=eq.", [{ nombre: "Pepe", user_id: null }]], // match por nombre sin vincular
-    ]),
-  });
-  const name = await app.ensurePlayer("U2", "Pepe");
-  assert.equal(name, "Pepe");
-  // debe haber hecho un PATCH para vincular
-  const patched = app.fetchCalls.some((c) => c.options && c.options.method === "PATCH");
-  assert.ok(patched, "debería vincular con un PATCH");
+test("getInviteToken: null si no hay invite en la URL", () => {
+  const app = loadApp();
+  app.window.location.search = "?foo=bar";
+  assert.equal(app.getInviteToken(), null);
 });
 
-test("ensurePlayer: null cuando no hay forma de resolver (requiere vinculación manual)", async () => {
-  const app = loadApp({
-    fetch: routedFetch([
-      ["user_id=eq.U3", []],
-      ["nombre=eq.", []],
-    ]),
-  });
-  const name = await app.ensurePlayer("U3", "Nuevo");
-  assert.equal(name, null);
+test("redeemInvite: POST a /api/redeem-invite con el token y devuelve el json si ok", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, nombre: "Ana" }) }) });
+  const res = await app.redeemInvite("tok");
+  assert.deepEqual(res, { ok: true, nombre: "Ana" });
+  const call = app.fetchCalls.find((c) => c.url === "/api/redeem-invite");
+  assert.equal(call.options.method, "POST");
+  assert.deepEqual(JSON.parse(call.options.body), { token: "tok" });
 });
 
-// ─── saveGroupPreds / savePodium / linkAccount / createFreshAccount ──────────
+test("redeemInvite: null si el endpoint responde no-ok", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: false, status: 403, json: () => Promise.resolve({}) }) });
+  assert.equal(await app.redeemInvite("tok"), null);
+});
+
+// ─── saveGroupPreds / savePodium / createInvite ──────────────────────────────
 test("saveGroupPreds: fusiona pendientes con los guardados y limpia el estado", async () => {
   const app = loadApp({
     fetch: routedFetch([
@@ -179,34 +174,20 @@ test("savePodium: persiste el pódium y baja el flag de guardado", async () => {
   assert.equal(app.S.pendingPodium, null);
 });
 
-test("createFreshAccount: crea jugador nuevo con POST y fija el usuario", async () => {
-  const app = loadApp({
-    fetch: routedFetch([
-      ["porra_jugadores", []],
-      ["results.json", { results: {}, scores: {} }],
-    ]),
-  });
-  Object.assign(app.S, { linkingSession: { userId: "U9", googleName: "Nuevo" } });
-  await app.createFreshAccount();
-  const post = app.fetchCalls.find((c) => c.options && c.options.method === "POST");
-  const body = JSON.parse(post.options.body);
-  assert.equal(body.nombre, "Nuevo");
-  assert.equal(body.user_id, "U9");
-  assert.equal(app.S.user, "Nuevo");
-  assert.equal(app.S.linkingSession, null);
+test("createInvite: POST a /api/create-invite con el secreto y guarda el link", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, token: "tk" }) }) });
+  await app.createInvite("clave-admin");
+  const call = app.fetchCalls.find((c) => c.url === "/api/create-invite");
+  assert.equal(call.options.method, "POST");
+  assert.equal(call.options.headers["X-Admin-Secret"], "clave-admin");
+  assert.match(app.S.adminInviteUrl, /\/\?invite=tk$/);
+  assert.equal(app.S.adminInviteBusy, false);
 });
 
-test("linkAccount: vincula nombre antiguo y fija el usuario", async () => {
-  const app = loadApp({
-    fetch: routedFetch([
-      ["porra_jugadores", []],
-      ["results.json", { results: {}, scores: {} }],
-    ]),
-  });
-  Object.assign(app.S, { linkingSession: { userId: "U8", googleName: "NuevoNombre" } });
-  await app.linkAccount("NombreAntiguo");
-  const patch = app.fetchCalls.find((c) => c.options && c.options.method === "PATCH");
-  assert.match(patch.url, /nombre=eq\.NombreAntiguo/);
-  assert.equal(app.S.user, "NombreAntiguo");
-  assert.equal(app.S.linkingSession, null);
+test("createInvite: error del endpoint no fija link y baja el flag", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({}) }) });
+  await app.createInvite("malo");
+  assert.equal(app.S.adminInviteUrl, null);
+  assert.equal(app.S.adminInviteBusy, false);
+  assert.equal(app.S.adminTriggerOk, false);
 });

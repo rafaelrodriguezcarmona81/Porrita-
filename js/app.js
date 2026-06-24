@@ -165,9 +165,10 @@ let S={
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
   refreshing:false,rankChange:null,lastRank:null,
-  linkingSession:null,linkPlayers:[],
+  inviteToken:null,accessDenied:false,accessError:null,
   adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
-  adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false
+  adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false,
+  adminInviteBusy:false,adminInviteUrl:null
 };
 function ss(p){Object.assign(S,p);render();}
 
@@ -199,29 +200,25 @@ async function loadData(){
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
 
-async function ensurePlayer(userId,googleName){
-  let res=await sbGet("porra_jugadores","user_id=eq."+userId+"&select=nombre");
-  if(Array.isArray(res)&&res.length>0)return res[0].nombre;
-  res=await sbGet("porra_jugadores","nombre=eq."+encodeURIComponent(googleName)+"&select=nombre,user_id");
-  if(Array.isArray(res)&&res.length>0&&!res[0].user_id){
-    await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(googleName),{user_id:userId});
-    return googleName;
-  }
-  return null; // necesita vinculación manual
+// Lee el token de invitación de la URL (?invite=...), si lo hay.
+function getInviteToken(){
+  const q=(window.location&&window.location.search)||"";
+  const m=/[?&]invite=([^&]+)/.exec(q);
+  return m?decodeURIComponent(m[1]):null;
 }
 
-async function linkAccount(nombreAntiguo){
-  const{userId,googleName}=S.linkingSession;
-  await sbPatch("porra_jugadores","nombre=eq."+encodeURIComponent(nombreAntiguo),{user_id:userId});
-  await loadData();
-  ss({user:nombreAntiguo,userId,linkingSession:null,linkPlayers:[]});
-}
-
-async function createFreshAccount(){
-  const{userId,googleName}=S.linkingSession;
-  await sbPost("porra_jugadores",{nombre:googleName,user_id:userId,group_predictions:{},podium:null});
-  await loadData();
-  ss({user:googleName,userId,linkingSession:null,linkPlayers:[]});
+// Canjea una invitación contra el backend: el servidor valida token+caducidad y
+// da de alta al jugador (el alta directa desde el cliente está bloqueada por RLS).
+async function redeemInvite(token){
+  try{
+    const r=await fetch("/api/redeem-invite",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+(_token||"")},
+      body:JSON.stringify({token}),
+    });
+    if(r.ok)return await r.json();
+  }catch(e){console.error(e);}
+  return null;
 }
 
 async function saveGroupPreds(){
@@ -245,6 +242,9 @@ function pill(text,color){
   return`<span class="pill pill--${color||'blue'}">${text}</span>`;
 }
 function card(content){return`<div class="card">${content}</div>`;}
+// Escapa datos controlados por el usuario antes de interpolarlos en innerHTML
+// (los nombres, pódiums, etc. vienen de la BD y no son de confianza).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
 // ─── NOVEDADES (changelog) ────────────────────────────────────────────────────
 // El banner muestra la entrada más reciente de changelog.json. El "ya visto" se
@@ -255,10 +255,10 @@ function changelogSeenId(){try{return window.localStorage.getItem(CHANGELOG_SEEN
 function renderChangelogBanner(){
   const latest=Array.isArray(S.changelog)&&S.changelog[0];
   if(!latest||!latest.id||changelogSeenId()===String(latest.id))return"";
-  const items=(latest.items||[]).map(i=>`<li>${i}</li>`).join("");
+  const items=(latest.items||[]).map(i=>`<li>${esc(i)}</li>`).join("");
   return`<div class="changelog-banner">
     <button onclick="dismissChangelog()" class="changelog-close" aria-label="Descartar">✕</button>
-    <p class="changelog-title">✨ Novedades${latest.fecha?` · ${latest.fecha}`:""}</p>
+    <p class="changelog-title">✨ Novedades${latest.fecha?` · ${esc(latest.fecha)}`:""}</p>
     <ul class="changelog-list">${items}</ul>
   </div>`;
 }
@@ -281,26 +281,19 @@ function renderLogin(){
   </div>`;
 }
 
-// ─── VINCULACIÓN ──────────────────────────────────────────────────────────────
-function renderLinking(){
-  const{googleName}=S.linkingSession;
-  const opts=S.linkPlayers;
+// ─── ACCESO POR INVITACIÓN ─────────────────────────────────────────────────────
+// Si el usuario se loguea pero no es miembro y no trae una invitación válida,
+// no entra: se le pide un enlace de invitación al admin.
+function renderAccessDenied(){
+  const msg=S.accessError?esc(S.accessError):"Esta porra es solo por invitación.";
   return`<div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-head">
-        <div class="auth-logo--sm">👋</div>
-        <h1 class="auth-title--sm">¡Hola, ${googleName}!</h1>
-        <p class="link-greet">¿Ya participabas con otro nombre?</p>
+        <div class="auth-logo--sm">🔒</div>
+        <h1 class="auth-title--sm">Necesitas invitación</h1>
+        <p class="link-greet">${msg} Pídele al admin un enlace de acceso.</p>
       </div>
-      ${opts.length>0?`
-      <label class="link-label">Tu nombre anterior</label>
-      <select id="linkSelect" class="link-select">
-        <option value="">— Elige tu nombre —</option>
-        ${opts.map(n=>`<option value="${n}">${n}</option>`).join("")}
-      </select>
-      <button onclick="doLinkAccount()" class="link-btn-primary">VINCULAR MI CUENTA</button>
-      <p class="link-or">— o —</p>`:""}
-      <button onclick="doFreshAccount()" class="link-btn-secondary">Soy nuevo, empezar desde cero</button>
+      <button onclick="doLogout()" class="link-btn-secondary">Cerrar sesión</button>
     </div>
   </div>`;
 }
@@ -320,7 +313,7 @@ function renderHeader(){
         <span class="hdr-logo">⚽</span>
         <div>
           <p class="hdr-title">PORRA MUNDIAL 2026</p>
-          <p class="hdr-meta">${S.user} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
+          <p class="hdr-meta">${esc(S.user)} · ${myPts} pts · ${rc}/${TOTAL_MATCHES} jugados</p>
         </div>
       </div>
       <div class="hdr-actions">
@@ -363,7 +356,7 @@ function renderStandings(g){
   const rowCls=(t,i)=>!played?'':i<2?'st-row--qual':(i===2&&thirds.has(t.team))?'st-row--third':'';
   const body=rows.map((t,i)=>`<tr class="${rowCls(t,i)}">
     <td class="st-pos">${i+1}</td>
-    <td class="st-team">${fl(t.team)} ${t.team}</td>
+    <td class="st-team">${fl(t.team)} ${esc(t.team)}</td>
     <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
     <td>${t.gf}</td><td>${t.ga}</td>
     <td class="st-gd">${t.gd>0?'+':''}${t.gd}</td>
@@ -517,7 +510,7 @@ function renderPodium(){
   const form=S.pendingPodium||(saved?[...saved]:["","",""]);
   const used=form.filter(Boolean);
   const isSaved=saved&&!S.pendingPodium;
-  const preview=isSaved?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${t}</p></div>`).join("")}</div>`:"";
+  const preview=isSaved?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${esc(t)}</p></div>`).join("")}</div>`:"";
   const podForm=[["🥇 Campeón",0],["🥈 Subcampeón",1],["🥉 3er Puesto",2]].map(([label,idx])=>{
     const avail=ALL_TEAMS.filter(t=>!used.includes(t)||t===form[idx]).sort((a,b)=>a.localeCompare(b,"es"));
     return`<div><label class="podium-field-label">${label}</label>
@@ -533,9 +526,9 @@ function renderPodium(){
     :'<p class="podium-hint">Selecciona los 3 equipos para guardar</p>';
   const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
     <div class="player-row">
-      <div class="avatar">${p.nombre[0].toUpperCase()}</div>
-      <div class="grow"><p class="player-name">${p.nombre}</p>
-        ${p.podium?`<p class="player-podium">🥇${p.podium[0]} · 🥈${p.podium[1]} · 🥉${p.podium[2]}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
+      <div class="avatar">${esc((p.nombre[0]||"?").toUpperCase())}</div>
+      <div class="grow"><p class="player-name">${esc(p.nombre)}</p>
+        ${p.podium?`<p class="player-podium">🥇${esc(p.podium[0])} · 🥈${esc(p.podium[1])} · 🥉${esc(p.podium[2])}</p>`:`<p class="player-empty">Sin pronóstico aún</p>`}
       </div></div>`).join("");
   return`
   ${card(`<h2 class="podium-title">Mi Pronóstico de Pódium</h2>
@@ -558,7 +551,7 @@ function renderRanking(){
     <div class="rank-row${s.name===S.user?' rank-row--me':''}">
       <span class="rank-pos">${medals[i]||(i+1)+"."}</span>
       <div class="grow">
-        <p class="rank-name">${s.name}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
+        <p class="rank-name">${esc(s.name)}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
         <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
       </div>
       <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>
@@ -587,9 +580,14 @@ function renderAdmin(){
   const msg=S.adminTriggerMsg
     ?`<p class="admin-msg admin-msg--${S.adminTriggerOk?'ok':'err'}">${S.adminTriggerMsg}</p>`
     :"";
+  const invite=S.adminInviteUrl
+    ?`<input class="admin-input admin-invite" type="text" readonly value="${esc(S.adminInviteUrl)}" onclick="this.select()" />`
+    :"";
   return card(`<h2 class="title">Zona Admin</h2>
     <p class="hint admin-hint">Tareas administrativas.</p>
     <button onclick="doTriggerUpdate()" class="admin-btn${S.adminTriggering?' admin-btn--busy':''}">${S.adminTriggering?'⏳ Actualizando...':'🔄 Forzar actualización de resultados'}</button>
+    <button onclick="doCreateInvite()" class="admin-btn${S.adminInviteBusy?' admin-btn--busy':''}">${S.adminInviteBusy?'⏳ Generando...':'🔗 Generar invitación (30 min)'}</button>
+    ${invite}
     ${msg}`);
 }
 
@@ -598,17 +596,14 @@ function render(){
   const app=document.getElementById("app");
   if(!app)return;
   if(S.loading){app.innerHTML=`<div class="loading"><div class="loading-inner"><div class="loading-logo">⚽</div><p class="loading-text">Conectando...</p></div></div>`;return;}
-  if(S.linkingSession){app.innerHTML=renderLinking();return;}
-  if(!S.user){app.innerHTML=renderLogin();return;}
+  if(!S.user){app.innerHTML=S.accessDenied?renderAccessDenied():renderLogin();return;}
   const content={hoy:renderToday,grupos:renderGrupos,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
   app.innerHTML=`${renderHeader()}<div class="app-main">${renderChangelogBanner()}${content||""}</div>`;
 }
 
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────
 window.doGoogleLogin=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
-window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,linkingSession:null,linkPlayers:[],adminUnlocked:false,adminKey:"",adminGateError:false,adminTriggerMsg:null});};
-window.doLinkAccount=()=>{const v=document.getElementById("linkSelect")?.value;if(v)linkAccount(v);};
-window.doFreshAccount=()=>createFreshAccount();
+window.doLogout=async()=>{await sb.auth.signOut();ss({user:null,userId:null,pendingPreds:{},pendingPodium:null,accessDenied:false,accessError:null,adminUnlocked:false,adminKey:"",adminGateError:false,adminTriggerMsg:null,adminInviteUrl:null});};
 window.setTab=t=>ss({tab:t});
 window.dismissChangelog=()=>{const l=Array.isArray(S.changelog)&&S.changelog[0];if(l&&l.id){try{window.localStorage.setItem(CHANGELOG_SEEN_KEY,String(l.id));}catch(e){}}ss({});};
 window.setGroup=g=>ss({activeGroup:g,pendingPreds:{}});
@@ -646,23 +641,47 @@ async function triggerUpdate(secret){
 }
 window.doTriggerUpdate=()=>{if(S.adminTriggering)return;if(S.adminKey)triggerUpdate(S.adminKey);};
 
+async function createInvite(secret){
+  ss({adminInviteBusy:true,adminInviteUrl:null});
+  try{
+    const r=await fetch("/api/create-invite",{method:"POST",headers:{"X-Admin-Secret":secret}});
+    if(r.ok){
+      const d=await r.json();
+      const origin=(window.location&&window.location.origin)||"";
+      ss({adminInviteBusy:false,adminInviteUrl:origin+"/?invite="+d.token});
+    }else{
+      ss({adminInviteBusy:false,adminTriggerOk:false,adminTriggerMsg:"❌ No se pudo generar la invitación"});
+    }
+  }catch(e){
+    ss({adminInviteBusy:false,adminTriggerOk:false,adminTriggerMsg:"❌ Error de red"});
+  }
+}
+window.doCreateInvite=()=>{if(S.adminInviteBusy)return;if(S.adminKey)createInvite(S.adminKey);};
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 sb.auth.onAuthStateChange(async(event,session)=>{
   _token=session?.access_token||null;
-  if(session){
-    const googleName=session.user.user_metadata.full_name||session.user.email.split('@')[0];
-    const linked=await ensurePlayer(session.user.id,googleName);
-    if(linked===null){
-      const unlinked=await sbGet("porra_jugadores","user_id=is.null&select=nombre&order=nombre");
-      await loadData();
-      ss({loading:false,linkingSession:{userId:session.user.id,googleName},linkPlayers:Array.isArray(unlinked)?unlinked.map(p=>p.nombre):[]});
-    }else{
-      await loadData();
-      ss({user:linked,userId:session.user.id,loading:false,linkingSession:null,linkPlayers:[]});
-    }
-  }else{
+  if(!session){
     _token=null;
-    ss({user:null,userId:null,loading:false,linkingSession:null,linkPlayers:[]});
+    ss({user:null,userId:null,loading:false,accessDenied:false,accessError:null});
+    return;
   }
+  const userId=session.user.id;
+  // ¿Ya es miembro? (su fila la creó un canje de invitación previo)
+  const rows=await sbGet("porra_jugadores","user_id=eq."+userId+"&select=nombre");
+  let nombre=Array.isArray(rows)&&rows[0]&&rows[0].nombre;
+  if(!nombre){
+    // No es miembro: solo entra si trae una invitación válida.
+    if(S.inviteToken){
+      const res=await redeemInvite(S.inviteToken);
+      if(res&&res.ok)nombre=res.nombre;
+      else{ss({user:null,userId:null,loading:false,accessDenied:true,accessError:"Tu invitación no es válida o ha caducado.",inviteToken:null});return;}
+    }else{
+      ss({user:null,userId:null,loading:false,accessDenied:true,accessError:null});return;
+    }
+  }
+  await loadData();
+  ss({user:nombre,userId,loading:false,accessDenied:false,accessError:null,inviteToken:null});
 });
+S.inviteToken=getInviteToken();
 render();

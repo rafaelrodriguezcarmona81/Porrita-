@@ -5,6 +5,10 @@
   "private": true,
   "scripts": {
     "test": "node --test test/*.test.js",
-    "test:coverage": "node --test --experimental-test-coverage test/*.test.js"
+    "test:coverage": "node --test --experimental-test-coverage test/*.test.js test/integration/*.itest.mjs",
+    "test:integration": "node --test test/integration/*.itest.mjs"
+  },
+  "devDependencies": {
+    "testcontainers": "^12.0.3"
   }
 }

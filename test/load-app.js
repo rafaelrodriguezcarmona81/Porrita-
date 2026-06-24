@@ -9,19 +9,19 @@ const APP_PATH = path.join(__dirname, "..", "js", "app.js");
 // Nombres definidos en el ámbito superior de app.js que queremos exponer al test.
 const EXPOSED = [
   // helpers / lógica pura
-  "gPts", "podiumBonus", "fmtTime", "tvChannel", "isLocked", "fl", "pill", "card",
+  "gPts", "podiumBonus", "fmtTime", "tvChannel", "isLocked", "fl", "pill", "card", "esc",
   // datos
   "GROUPS", "GM", "ALL_TEAMS", "TOTAL_MATCHES", "FLAGS", "MATCH_TIMES", "LA1_MATCHES",
   // estado + setState
   "S", "ss",
   // render (devuelven strings HTML)
-  "render", "renderLogin", "renderLinking", "renderHeader",
+  "render", "renderLogin", "renderAccessDenied", "renderHeader",
   "renderToday", "renderGrupos", "renderStandings", "bestThirdTeams", "renderChangelogBanner",
   "renderPodium", "renderRanking", "renderAdmin",
   // capa de datos / red
   "getHDR", "sbGet", "sbPost", "sbPatch",
-  "loadData", "ensurePlayer", "linkAccount", "createFreshAccount",
-  "saveGroupPreds", "savePodium", "triggerUpdate", "verifyAdminKey",
+  "loadData", "getInviteToken", "redeemInvite",
+  "saveGroupPreds", "savePodium", "triggerUpdate", "verifyAdminKey", "createInvite",
 ];
 
 /**

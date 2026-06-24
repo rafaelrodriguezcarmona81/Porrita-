@@ -649,7 +649,7 @@ async function triggerUpdate(secret){
 window.doTriggerUpdate=()=>{if(S.adminTriggering)return;if(S.adminKey)triggerUpdate(S.adminKey);};
 
 async function createInvite(secret){
-  ss({adminInviteBusy:true,adminInviteUrl:null});
+  ss({adminInviteBusy:true,adminInviteUrl:null,adminTriggerMsg:null});
   try{
     const r=await fetch("/api/create-invite",{method:"POST",headers:{"X-Admin-Secret":secret}});
     if(r.ok){

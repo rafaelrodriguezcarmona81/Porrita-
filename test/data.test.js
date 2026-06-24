@@ -201,3 +201,12 @@ test("createInvite: error del endpoint no fija link y baja el flag", async () =>
   assert.equal(app.S.adminInviteBusy, false);
   assert.equal(app.S.adminTriggerOk, false);
 });
+
+test("createInvite: una generación correcta limpia el mensaje de error previo", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, token: "tk" }) }) });
+  // Simula un error que quedó en pantalla de un intento anterior.
+  Object.assign(app.S, { adminTriggerMsg: "❌ No se pudo generar la invitación", adminTriggerOk: false });
+  await app.createInvite("clave-admin");
+  assert.equal(app.S.adminTriggerMsg, null, "el mensaje de error anterior debe desaparecer");
+  assert.match(app.S.adminInviteUrl, /\/\?invite=tk$/);
+});

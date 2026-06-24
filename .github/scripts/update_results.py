@@ -139,6 +139,26 @@ for group, teams in standings.items():
     key=lambda t: (-t["pts"], -t["gd"], -t["gf"], t["team"]),
   )
 
+# ─── TODO: ELIMINATORIAS (knockout / cuadro) ──────────────────────────────────
+# Cuando arranque la fase final (tras la fase de grupos), este script debe poblar
+# también el cuadro de eliminatorias, igual que hace arriba con los grupos, y
+# añadir DOS claves a `output` (de momento NO se emiten — ver más abajo):
+#
+#   * "ko"        → cruces por ronda:
+#                   { "r32":[{ "key":"r32_{LOCAL}_{VISITANTE}", "home":..., "away":... }, ...],
+#                     "r16":[...], "qf":[...], "sf":[...], "third":[...], "final":[...] }
+#                   con la match-key "{RONDA}_{LOCAL}_{VISITANTE}" (mismas claves de
+#                   RONDA que KO_ROUNDS en js/app.js: r32/r16/qf/sf/third/final) y los
+#                   nombres de equipo en español (pasados por TEAM_MAP, como los grupos).
+#   * "koResults" → mapa match-key → equipo que AVANZÓ (en español), para puntuar el
+#                   cuadro (bracketPts en app.js: `base` puntos por acertante por ronda).
+#
+# NO se implementa todavía porque a fecha de hoy el Mundial está en fase de grupos:
+# no existen fixtures ni resultados KO que raspar, y NO se debe inventar el mapa
+# oficial de cruces (debe venir de datos reales). El cliente ya tolera su ausencia
+# (S.koFixtures / S.koResults caen a {} y la pestaña Cuadro muestra estado bloqueado),
+# por eso `output` se deja EXACTAMENTE como estaba: sin claves "ko"/"koResults".
+
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "results": results,

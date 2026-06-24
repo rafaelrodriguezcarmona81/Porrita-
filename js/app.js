@@ -162,9 +162,10 @@ function isLocked(key){
 let S={
   user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},changelog:[],tab:"hoy",
   activeGroup:"A",loading:true,loginBusy:false,
-  savingGroup:false,savingPodium:false,
+  savingGroup:false,savingPodium:false,savingBracket:false,
   editingName:false,pendingName:"",savingName:false,nameError:null,
-  pendingPreds:{},pendingPodium:null,
+  pendingPreds:{},pendingPodium:null,pendingBracket:{},
+  koFixtures:{},koResults:{},
   refreshing:false,rankChange:null,lastRank:null,
   inviteToken:null,accessDenied:false,accessError:null,
   adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
@@ -174,9 +175,45 @@ let S={
 };
 function ss(p){Object.assign(S,p);render();}
 
+// ─── ELIMINATORIAS (knockout / cuadro) ────────────────────────────────────────
+// Metadatos de las rondas KO, dirigidos por datos (NO un mapa fijo de cruces
+// oficiales del Mundial 2026). `base` = puntos por cada equipo correctamente
+// pronosticado como "avanza" en esa ronda; coincide con la tabla de puntuación de
+// renderRanking. `advancers` (cuando aplica) es solo informativo (nº de equipos
+// que pasan la ronda). Los cruces reales (emparejamientos) llegarán como datos en
+// results.json cuando arranque la fase eliminatoria — ver S.koFixtures.
+const KO_ROUNDS=[
+  {key:"r32",label:"Dieciseisavos",base:2,advancers:16},
+  {key:"r16",label:"Octavos",base:4,advancers:8},
+  {key:"qf",label:"Cuartos",base:8,advancers:4},
+  {key:"sf",label:"Semifinales",base:16,advancers:2},
+  {key:"third",label:"3º/4º puesto",base:24},
+  {key:"final",label:"Gran Final",base:32}
+];
+
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 function gPts(preds,results){let p=0;for(const k in results)if(preds[k]&&preds[k]===results[k])p++;return p;}
 function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])p+=5;if(pod[1]===fin[1])p+=3;if(pod[2]===fin[2])p+=2;return p;}
+// Puntos del cuadro de eliminatorias. REGLA: por cada ronda KO se suman `base`
+// puntos por cada equipo que el jugador acertó como "avanza" (el equipo que
+// pronosticó realmente avanzó, según koResults). koResults es un mapa
+// match-key → equipo que avanzó (mismas claves que bracket_predictions). Se
+// suma a través de las rondas usando el prefijo de ronda de cada clave
+// ("{RONDA}_..."). Devuelve 0 cuando no hay resultados KO (fase de grupos →
+// inerte, igual que podiumBonus es 0 hasta la final). Tolera entradas vacías.
+function bracketPts(bracketPreds,koResults){
+  if(!bracketPreds||!koResults)return 0;
+  // base por ronda, indexada por la `key` de KO_ROUNDS.
+  const baseByRound={};for(const r of KO_ROUNDS)baseByRound[r.key]=r.base;
+  let pts=0;
+  for(const k in koResults){
+    const round=k.split("_")[0]; // "{RONDA}_{LOCAL}_{VISITANTE}" → ronda
+    const base=baseByRound[round];
+    if(!base)continue; // clave de ronda desconocida → se ignora
+    if(bracketPreds[k]&&bracketPreds[k]===koResults[k])pts+=base;
+  }
+  return pts;
+}
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 async function loadData(){
@@ -190,6 +227,11 @@ async function loadData(){
     const groupResults=resJson.results||{};
     const groupScores=resJson.scores||{};
     const groupStandings=resJson.standings||{};
+    // Eliminatorias (KO): los cruces y resultados llegarán en results.json bajo
+    // las claves `ko`/`bracket` y `koResults` cuando arranque la fase final. Aún
+    // NO existen → por defecto vacíos (la UI del cuadro muestra estado bloqueado).
+    const koFixtures=resJson.ko||resJson.bracket||{};
+    const koResults=resJson.koResults||{};
     const changelog=Array.isArray(clJson)?clJson:[];
     let rankChange=null,newRank=null;
     if(S.user){
@@ -197,7 +239,7 @@ async function loadData(){
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,groupScores,groupStandings,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    ss({players,groupResults,groupScores,groupStandings,koFixtures,koResults,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -244,6 +286,16 @@ async function savePodium(podium){
   await sbPatch("porra_jugadores","user_id=eq."+S.userId,{podium,updated_at:new Date().toISOString()});
   await loadData();
   ss({savingPodium:false,pendingPodium:null});
+}
+
+// Guarda el pronóstico del cuadro de eliminatorias (mapa match-key → equipo que
+// el jugador cree que avanza). Es un UPDATE de la propia fila; la petición lleva
+// el JWT del usuario (getHDR) y RLS la limita al dueño (auth.uid() = user_id).
+async function saveBracket(preds){
+  ss({savingBracket:true});
+  await sbPatch("porra_jugadores","user_id=eq."+S.userId,{bracket_predictions:preds,updated_at:new Date().toISOString()});
+  await loadData();
+  ss({savingBracket:false,pendingBracket:{}});
 }
 
 // Longitud máxima del nombre visible (mote/alias) del jugador.
@@ -356,7 +408,7 @@ function renderHeader(){
   const me=S.players.find(p=>p.nombre===S.user);
   const myPts=gPts(me?.group_predictions||{},S.groupResults);
   const rc=Object.keys(S.groupResults).length;
-  const tabs=[["hoy","📅 Hoy"],["grupos","⚽ Grupos"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
+  const tabs=[["hoy","📅 Hoy"],["grupos","⚽ Grupos"],["bracket","🏆 Cuadro"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
   const rankBanner=S.rankChange!==null?`<div class="rank-banner ${S.rankChange>0?'rank-banner--up':'rank-banner--down'}">
     ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
   </div>`:"";
@@ -638,7 +690,8 @@ function renderRanking(){
     name:p.nombre,
     gpts:gPts(p.group_predictions||{},S.groupResults),
     ppts:podiumBonus(p.podium,null),
-    get total(){return this.gpts+this.ppts;}
+    bpts:bracketPts(p.bracket_predictions||{},S.koResults||{}),
+    get total(){return this.gpts+this.ppts+this.bpts;}
   })).sort((a,b)=>b.total-a.total);
   const medals=["🥇","🥈","🥉"];
   // Ranking estilo competición: los empates en puntos comparten puesto (premio
@@ -655,7 +708,7 @@ function renderRanking(){
       <span class="rank-pos">${badge}</span>
       <div class="grow">
         <p class="rank-name">${esc(s.name)}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}${tied?' <span class="rank-tie">empate</span>':''}</p>
-        <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
+        <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts · Bracket: ${s.bpts}pts</p>
       </div>
       <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>
     </div>`;}).join("");
@@ -666,6 +719,94 @@ function renderRanking(){
     <div class="list">${rows||'<p class="rank-empty">Aún no hay participantes</p>'}</div>`)}
   ${card(`<h3 class="card-title">📋 Puntuación por fase</h3>
     <div class="rules">${rules.map(([l,r])=>`<div class="rule"><span class="rule-label">${l}</span><span class="rule-value">${r}</span></div>`).join("")}</div>`)}`;
+}
+
+// ─── CUADRO / ELIMINATORIAS (knockout bracket) ─────────────────────────────────
+// El cuadro es dirigido por datos: NO hay un mapa fijo de cruces oficiales. Los
+// emparejamientos llegan en S.koFixtures (cargado de results.json → `ko`/`bracket`
+// cuando exista), agrupados por la `key` de ronda de KO_ROUNDS. Cada fixture tiene
+// una match-key estable ("{RONDA}_{LOCAL}_{VISITANTE}") y dos equipos.
+//
+// Desbloqueo progresivo: una ronda solo es editable cuando sus fixtures se conocen
+// (presentes en koFixtures); mientras no haya datos, la ronda sale informativa
+// (solo se ve su base de puntos). Por partido, isLocked(matchKey) bloquea la
+// edición cerca del saque (CEST). Si un partido ya tiene resultado (S.koResults),
+// se muestra el equipo que avanzó y se marca el acierto/fallo.
+//
+// Formato de un fixture (cuando exista en datos):
+//   { key:"r16_España_Francia", home:"España", away:"Francia" }
+// koFixtures = { r16:[fixture,...], qf:[...], ... }
+function renderBracket(){
+  const me=S.players.find(p=>p.nombre===S.user);
+  const saved=(me&&me.bracket_predictions)||{};
+  const picks={...saved,...S.pendingBracket};
+  const fixtures=S.koFixtures||{};
+  const koResults=S.koResults||{};
+  // ¿Hay algún cruce conocido en alguna ronda? Si no, fase de grupos en curso.
+  const anyFixtures=KO_ROUNDS.some(r=>Array.isArray(fixtures[r.key])&&fixtures[r.key].length);
+
+  if(!anyFixtures){
+    // Estado bloqueado/vacío: la fase de grupos sigue en marcha. Mostramos la
+    // lista de rondas con sus bases como información, sin romper con datos vacíos.
+    const roundsInfo=KO_ROUNDS.map(r=>`<div class="bracket-round-info">
+      <span class="bracket-round-name">${esc(r.label)}</span>
+      <span class="bracket-round-base">Base ${r.base}pts</span>
+    </div>`).join("");
+    return`
+    ${card(`<div class="section-head"><h2 class="title">Cuadro de eliminatorias</h2></div>
+      <p class="bracket-locked">🔒 El cuadro se desbloqueará cuando termine la fase de grupos. Cada ronda se irá abriendo a medida que se conozcan los cruces.</p>`)}
+    ${card(`<h3 class="card-title">📋 Puntuación por ronda</h3>
+      <div class="bracket-rounds">${roundsInfo}</div>`)}`;
+  }
+
+  // Hay cruces: pintamos cada ronda que tenga fixtures (desbloqueo progresivo).
+  const sections=KO_ROUNDS.map(r=>{
+    const list=Array.isArray(fixtures[r.key])?fixtures[r.key]:[];
+    if(!list.length)
+      return`${card(`<div class="section-head"><h3 class="title">${esc(r.label)}</h3><span class="bracket-round-base">Base ${r.base}pts</span></div>
+        <p class="bracket-round-pending">Aún no se conocen los cruces de esta ronda ⏳</p>`)}`;
+    const matches=list.map(f=>{
+      const key=f.key;
+      const teams=[f.home,f.away];
+      const res=koResults[key]; // equipo que avanzó (si ya hay resultado)
+      const hasR=!!res;
+      const pick=picks[key];
+      const locked=isLocked(key);
+      const blocked=hasR||locked;
+      const badge=hasR
+        ?`<span class="bracket-badge badge ${pick&&pick===res?'badge--correct':pick?'badge--wrong':'badge--neutral'}">${pick&&pick===res?'+'+r.base+'✓':pick?'✗':'—'}</span>`
+        :locked?'<span class="bracket-badge badge badge--locked">🔒</span>':'';
+      const opts=teams.map(t=>{
+        const sel=pick===t;
+        const isAdv=hasR&&res===t;
+        let pc="bracket-pick";
+        if(sel)pc+=hasR?(res===t?" bracket-pick--correct":" bracket-pick--wrong"):" bracket-pick--sel";
+        if(hasR&&isAdv&&pick!==t)pc+=" bracket-pick--result";
+        if(locked&&!hasR)pc+=" bracket-pick--locked";
+        if(blocked)pc+=" bracket-pick--blocked";
+        return`<button onclick="${blocked?'':('setBracketPick(\''+esc(key)+'\',\''+esc(t)+'\')')}" class="${pc}">${fl(t)} ${esc(t)}</button>`;
+      }).join("");
+      return`<div class="bracket-match">
+        ${badge}
+        <div class="match-meta">${fmtTime(key)}</div>
+        <div class="bracket-options">${opts}</div>
+      </div>`;
+    }).join("");
+    return`${card(`<div class="section-head"><h3 class="title">${esc(r.label)}</h3><span class="bracket-round-base">Base ${r.base}pts</span></div>
+      <div class="bracket-list">${matches}</div>`)}`;
+  }).join("");
+
+  // Botón de guardar: solo si hay cambios pendientes sin guardar.
+  const hasPending=Object.keys(S.pendingBracket||{}).length>0;
+  const saveBtn=hasPending
+    ?`<button onclick="doSaveBracket()" class="btn-bracket${S.savingBracket?' btn-bracket--busy':''}">${S.savingBracket?'Guardando...':'💾 GUARDAR CUADRO'}</button>`
+    :`<p class="bracket-saved">✓ Cuadro guardado</p>`;
+
+  return`
+  ${card(`<div class="section-head"><h2 class="title">Cuadro de eliminatorias</h2></div>
+    <p class="hint">Elige el equipo que avanza en cada cruce · 🔒=bloqueado 1h antes</p>`)}
+  ${sections}
+  ${card(saveBtn)}`;
 }
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
@@ -710,7 +851,7 @@ function render(){
   if(!app)return;
   if(S.loading){app.innerHTML=`<div class="loading"><div class="loading-inner"><div class="loading-logo">⚽</div><p class="loading-text">Conectando...</p></div></div>`;return;}
   if(!S.user){app.innerHTML=S.accessDenied?renderAccessDenied():renderLogin();return;}
-  const content={hoy:renderToday,grupos:renderGrupos,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
+  const content={hoy:renderToday,grupos:renderGrupos,bracket:renderBracket,podium:renderPodium,marcador:renderRanking,admin:renderAdmin}[S.tab]?.();
   app.innerHTML=`${renderHeader()}<div class="app-main">${renderChangelogBanner()}${content||""}</div>`;
 }
 
@@ -724,6 +865,14 @@ window.setPred=(key,val)=>ss({pendingPreds:{...S.pendingPreds,[key]:val}});
 window.doSavePreds=()=>{if(!S.savingGroup)saveGroupPreds();};
 window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);const base=S.pendingPodium||(me?.podium?[...me.podium]:["","",""]);const u=[...base];u[idx]=val;ss({pendingPodium:u});};
 window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
+// Cuadro de eliminatorias: selecciona el equipo que avanza en un cruce y guarda.
+window.setBracketPick=(key,team)=>ss({pendingBracket:{...S.pendingBracket,[key]:team}});
+window.doSaveBracket=()=>{
+  if(S.savingBracket||!Object.keys(S.pendingBracket||{}).length)return;
+  const me=S.players.find(p=>p.nombre===S.user);
+  const merged={...((me&&me.bracket_predictions)||{}),...S.pendingBracket};
+  saveBracket(merged);
+};
 window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
 
 // ─── Perfil: editar el nombre visible (mote) ─────────────────────────────────

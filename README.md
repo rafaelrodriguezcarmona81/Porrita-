@@ -17,6 +17,14 @@ se actualizan solos cada día.
 - **Novedades:** al entrar se muestra un pequeño aviso con los cambios recientes, que puedes descartar (no vuelve a salir hasta que haya algo nuevo).
 - **Acceso solo por invitación:** se entra con un enlace que genera el admin (caduca a los 30 min). La puesta en marcha y la generación de invitaciones se describen en [`docs/ADMIN.md`](docs/ADMIN.md).
 
+## Instalar en el móvil (PWA)
+
+La app es una **PWA instalable**: añádela a la pantalla de inicio para abrirla como una app y que cargue el cascarón aunque no tengas conexión (los datos se actualizan solos cuando hay internet).
+
+- **Android (Chrome):** menú ⋮ → **Instalar app** / *Añadir a la pantalla de inicio* (o el aviso "Instalar" que aparece solo).
+- **iPhone/iPad (Safari):** botón **Compartir** → **Añadir a pantalla de inicio**.
+- **Escritorio (Chrome/Edge):** icono de **instalar** ⊕ en la barra de direcciones.
+
 ## Ejecutar en local
 
 ### Opción 1: Servidor estático (solo la app, sin admin)

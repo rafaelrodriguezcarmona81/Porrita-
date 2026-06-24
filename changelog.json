@@ -3,7 +3,8 @@
     "id": "2026-06-24",
     "fecha": "2026-06-24",
     "items": [
-      "Arreglado el acceso por invitación: ahora entras a la primera tras el login de Google, sin tener que refrescar."
+      "Arreglado el acceso por invitación: ahora entras a la primera tras el login de Google, sin tener que refrescar.",
+      "En la clasificación, si dos o más jugadores empatan a puntos ahora comparten el mismo puesto (premio compartido) y se marca el empate, en vez de ordenarse de forma arbitraria."
     ]
   },
   {

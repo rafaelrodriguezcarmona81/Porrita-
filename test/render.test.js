@@ -295,6 +295,9 @@ test("renderToday: lista los partidos de hoy con canal de TV", () => {
   // canal: España va por La 1; los demás por DAZN
   assert.match(html, /📺 La 1/);
   assert.match(html, /🟣 DAZN/);
+  // cada partido indica de qué grupo es (España→H, Bélgica→G)
+  assert.match(html, /today-group">Grupo H</);
+  assert.match(html, /today-group">Grupo G</);
   // un partido de otro día NO debe aparecer
   assert.doesNotMatch(html, /Inglaterra/); // L_Inglaterra_Croacia es 17/06
 });

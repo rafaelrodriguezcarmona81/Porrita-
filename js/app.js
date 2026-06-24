@@ -534,7 +534,7 @@ function renderToday(){
       ?`<span class="today-score">${score}</span>`
       :`<span class="today-vs">vs</span>`;
     return`<div class="today-match">
-      <div class="match-meta">${fmtTime(key)} · ${tvChannel(key)}</div>
+      <div class="match-meta"><span class="today-group">Grupo ${key[0]}</span> · ${fmtTime(key)} · ${tvChannel(key)}</div>
       <div class="today-row">
         <span class="team">${fl(home)} ${home}</span>
         ${center}

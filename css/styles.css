@@ -681,6 +681,15 @@ body {
   color: #9ca3af;
 }
 
+.today-group {
+  display: inline-block;
+  padding: .05rem .35rem;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 800;
+}
+
 .match-row {
   display: flex;
   align-items: center;

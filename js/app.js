@@ -554,15 +554,24 @@ function renderRanking(){
     get total(){return this.gpts+this.ppts;}
   })).sort((a,b)=>b.total-a.total);
   const medals=["🥇","🥈","🥉"];
-  const rows=scores.map((s,i)=>`
-    <div class="rank-row${s.name===S.user?' rank-row--me':''}">
-      <span class="rank-pos">${medals[i]||(i+1)+"."}</span>
+  // Ranking estilo competición: los empates en puntos comparten puesto (premio
+  // compartido), sin desempate arbitrario. Secuencia tipo 1, 2, 2, 4.
+  const tiedTotals={};
+  scores.forEach(s=>{tiedTotals[s.total]=(tiedTotals[s.total]||0)+1;});
+  let pos=0,prevTotal=null;
+  const rows=scores.map((s,i)=>{
+    if(s.total!==prevTotal){pos=i+1;prevTotal=s.total;}
+    const tied=s.total>0&&tiedTotals[s.total]>1;
+    const badge=(s.total>0&&pos<=3)?medals[pos-1]:pos+".";
+    return `
+    <div class="rank-row${s.name===S.user?' rank-row--me':''}${tied?' rank-row--tie':''}">
+      <span class="rank-pos">${badge}</span>
       <div class="grow">
-        <p class="rank-name">${esc(s.name)}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}</p>
+        <p class="rank-name">${esc(s.name)}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}${tied?' <span class="rank-tie">empate</span>':''}</p>
         <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts</p>
       </div>
       <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>
-    </div>`).join("");
+    </div>`;}).join("");
   const rules=[["⚽ Grupos (72 partidos)","1pt/acierto"],["🔟 Dieciseisavos","Base 2pts"],["8️⃣ Octavos","Base 4pts"],["4️⃣ Cuartos","Base 8pts"],["2️⃣ Semifinales","Base 16pts"],["🏅 3º/4º puesto","Base 24pts"],["🏆 Gran Final","Base 32pts"],["🎯 Bonus Pódium","+5+3+2pts"]];
   return`
   ${card(`<div class="section-head"><h2 class="title">Clasificación en vivo</h2>${pill(S.players.length+" jugadores","blue")}</div>

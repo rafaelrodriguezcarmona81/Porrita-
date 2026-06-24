@@ -430,6 +430,46 @@ test("renderRanking: ordena por puntos y resalta al usuario", () => {
   assert.ok(html.indexOf("Ana") < html.indexOf("Beto"), "Ana debería ir por delante de Beto");
 });
 
+test("renderRanking: empate en puntos comparte puesto (1, 2, 2, 4) y marca 'empate'", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: { "k1": "1", "k2": "1" }, podium: null }, // 2 pts
+      { nombre: "Beto", group_predictions: { "k1": "1" }, podium: null },           // 1 pt (empata con Caro)
+      { nombre: "Caro", group_predictions: { "k2": "1" }, podium: null },           // 1 pt (empata con Beto)
+      { nombre: "Dani", group_predictions: {}, podium: null },                      // 0 pts
+    ],
+    groupResults: { "k1": "1", "k2": "1" },
+  });
+  const html = app.renderRanking();
+  // Ana es 1ª con medalla de oro.
+  assert.match(html, /🥇/);
+  // Los dos empatados a 1 pt comparten el puesto 2 (medalla de plata, no hay un "3.").
+  const platas = (html.match(/🥈/g) || []).length;
+  assert.equal(platas, 2, "los dos empatados a 1pt deben compartir la plata");
+  assert.ok(!html.includes("🥉"), "no debe haber bronce: el bronce se 'salta' por el empate");
+  // El siguiente (0 pts) cae al puesto 4.
+  assert.match(html, /4\./);
+  // Las filas empatadas se marcan visualmente.
+  assert.equal((html.match(/rank-tie/g) || []).length >= 2, true);
+  assert.match(html, /rank-row--tie/);
+});
+
+test("renderRanking: todos a 0 puntos no muestran medallas ni empate (puesto numérico)", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: {}, podium: null },
+      { nombre: "Beto", group_predictions: {}, podium: null },
+    ],
+    groupResults: {},
+  });
+  const html = app.renderRanking();
+  assert.ok(!html.includes("🥇"), "sin puntos no se reparten medallas");
+  assert.ok(!html.includes("rank-tie"), "sin puntos no se marca empate");
+  assert.match(html, /1\./);
+});
+
 test("renderRanking: sin participantes muestra mensaje vacío", () => {
   const app = withState({ user: "Ana", players: [], groupResults: {} });
   const html = app.renderRanking();

@@ -169,7 +169,8 @@ let S={
   inviteToken:null,accessDenied:false,accessError:null,
   adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
   adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false,
-  adminInviteBusy:false,adminInviteUrl:null
+  adminInviteBusy:false,adminInviteUrl:null,
+  adminRemoveBusy:false,adminRemoveMsg:null,adminRemoveOk:false
 };
 function ss(p){Object.assign(S,p);render();}
 
@@ -685,12 +686,20 @@ function renderAdmin(){
   const invite=S.adminInviteUrl
     ?`<input class="admin-input admin-invite" type="text" readonly value="${esc(S.adminInviteUrl)}" onclick="this.select()" />`
     :"";
+  const removeMsg=S.adminRemoveMsg
+    ?`<p class="admin-msg admin-msg--${S.adminRemoveOk?'ok':'err'}">${S.adminRemoveMsg}</p>`
+    :"";
+  const options=(S.players||[]).map(p=>`<option value="${esc(p.user_id)}">${esc(p.nombre)}</option>`).join("");
   return card(`<h2 class="title">Zona Admin</h2>
     <p class="hint admin-hint">Tareas administrativas.</p>
     <button onclick="doTriggerUpdate()" class="admin-btn${S.adminTriggering?' admin-btn--busy':''}">${S.adminTriggering?'⏳ Actualizando...':'🔄 Forzar actualización de resultados'}</button>
     <button onclick="doCreateInvite()" class="admin-btn${S.adminInviteBusy?' admin-btn--busy':''}">${S.adminInviteBusy?'⏳ Generando...':'🔗 Generar invitación (30 min)'}</button>
     ${invite}
-    ${msg}`);
+    ${msg}
+    <label class="admin-label">Dar de baja a un jugador</label>
+    <select id="adminRemoveSelect" class="select">${options}</select>
+    <button onclick="doRemovePlayer()" class="admin-btn${S.adminRemoveBusy?' admin-btn--busy':''}">${S.adminRemoveBusy?'⏳ Dando de baja...':'🗑️ Dar de baja'}</button>
+    ${removeMsg}`);
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
@@ -765,6 +774,33 @@ async function createInvite(secret){
   }
 }
 window.doCreateInvite=()=>{if(S.adminInviteBusy)return;if(S.adminKey)createInvite(S.adminKey);};
+
+async function removePlayer(secret,userId){
+  ss({adminRemoveBusy:true,adminRemoveMsg:null});
+  try{
+    const r=await fetch("/api/remove-player",{method:"POST",headers:{"X-Admin-Secret":secret,"Content-Type":"application/json"},body:JSON.stringify({user_id:userId})});
+    if(r.ok){
+      const d=await r.json().catch(()=>({}));
+      ss({adminRemoveBusy:false,adminRemoveOk:true,adminRemoveMsg:"✅ "+esc(d.nombre||"Jugador")+" dado de baja."});
+      loadData();
+    }else{
+      const e=await r.json().catch(()=>({}));
+      ss({adminRemoveBusy:false,adminRemoveOk:false,adminRemoveMsg:"❌ "+(e.error||("Error "+r.status))});
+    }
+  }catch(e){
+    ss({adminRemoveBusy:false,adminRemoveOk:false,adminRemoveMsg:"❌ Error de red"});
+  }
+}
+window.doRemovePlayer=()=>{
+  if(S.adminRemoveBusy)return;
+  if(!S.adminUnlocked||!S.adminKey)return;
+  const userId=document.getElementById("adminRemoveSelect")?.value||"";
+  if(!userId)return;
+  const p=(S.players||[]).find(x=>x.user_id===userId);
+  const nombre=(p&&p.nombre)||"este jugador";
+  if(!window.confirm("¿Seguro que quieres dar de baja a "+nombre+"? Se borrarán sus pronósticos."))return;
+  removePlayer(S.adminKey,userId);
+};
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 sb.auth.onAuthStateChange(async(event,session)=>{

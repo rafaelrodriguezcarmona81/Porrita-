@@ -21,7 +21,7 @@ const EXPOSED = [
   // capa de datos / red
   "getHDR", "sbGet", "sbPost", "sbPatch",
   "loadData", "getInviteToken", "redeemInvite",
-  "saveGroupPreds", "savePodium", "triggerUpdate", "verifyAdminKey", "createInvite",
+  "saveGroupPreds", "savePodium", "triggerUpdate", "verifyAdminKey", "createInvite", "removePlayer",
   // perfil (nombre/mote)
   "MAX_NAME_LEN", "validateName", "saveName",
 ];

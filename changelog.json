@@ -4,7 +4,10 @@
     "fecha": "2026-06-24",
     "items": [
       "Arreglado el acceso por invitación: ahora entras a la primera tras el login de Google, sin tener que refrescar.",
-      "En la clasificación, si dos o más jugadores empatan a puntos ahora comparten el mismo puesto (premio compartido) y se marca el empate, en vez de ordenarse de forma arbitraria."
+      "En la clasificación, si dos o más jugadores empatan a puntos ahora comparten el mismo puesto (premio compartido) y se marca el empate, en vez de ordenarse de forma arbitraria.",
+      "Nuevo bloque «Tu jornada» en la pestaña Hoy: mira de un vistazo si ya tienes hechas tus apuestas del día y, cuando haya resultados oficiales, cuántos aciertos y puntos llevas hoy.",
+      "Al entrar, la app abre directamente en la pestaña Hoy para que veas tu jornada de un vistazo.",
+      "En la pestaña Hoy cada partido indica ahora de qué grupo es."
     ]
   },
   {

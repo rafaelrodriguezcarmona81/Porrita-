@@ -160,7 +160,7 @@ function isLocked(key){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
-  user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},changelog:[],tab:"grupos",
+  user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},changelog:[],tab:"hoy",
   activeGroup:"A",loading:true,loginBusy:false,
   savingGroup:false,savingPodium:false,
   pendingPreds:{},pendingPodium:null,
@@ -481,6 +481,43 @@ function todayKeysCEST(){
   keys.sort((a,b)=>MATCH_TIMES[a].localeCompare(MATCH_TIMES[b]));
   return keys;
 }
+// "Tu jornada": resumen diario del usuario sobre los partidos de HOY que ya
+// tienen resultado oficial. Cuenta aciertos y puntos ganados hoy (1pt por cada
+// 1/X/2 acertado) y muestra el cambio de puesto en la clasificación (reusa
+// S.rankChange, que loadData calcula respecto a la carga anterior).
+// `keys` son las claves de los partidos de hoy (de todayKeysCEST).
+function renderTuJornada(keys){
+  const me=S.players.find(p=>p.nombre===S.user);
+  const preds=(me&&me.group_predictions)||{};
+  // ¿Tengo hechas mis apuestas de hoy? (sobre todos los partidos del día)
+  const total=keys.length;
+  const hechos=keys.filter(k=>preds[k]).length;
+  const faltanAbiertos=keys.filter(k=>!preds[k]&&!isLocked(k)).length;
+  let estado;
+  if(hechos===total)
+    estado=`<p class="tujornada-status tujornada-status--ok">✅ Tienes todas tus apuestas de hoy hechas</p>`;
+  else if(faltanAbiertos)
+    estado=`<p class="tujornada-status tujornada-status--warn">⚠️ Te faltan ${faltanAbiertos} por pronosticar · ¡aún estás a tiempo!</p>`;
+  else
+    estado=`<p class="tujornada-status">Te quedaron ${total-hechos} sin pronosticar</p>`;
+  // Aciertos/puntos: solo sobre partidos de hoy con resultado oficial.
+  const playedKeys=keys.filter(k=>S.groupResults[k]);
+  let statsHtml;
+  if(playedKeys.length){
+    const todayResults={};
+    for(const k of playedKeys)todayResults[k]=S.groupResults[k];
+    const pts=gPts(preds,todayResults); // 1pt = 1 acierto en fase de grupos
+    statsHtml=`<div class="tujornada-stats">
+      <div class="tujornada-stat"><p class="tujornada-num">${pts}/${playedKeys.length}</p><p class="tujornada-lbl">Aciertos hoy</p></div>
+      <div class="tujornada-stat"><p class="tujornada-num">${pts}</p><p class="tujornada-lbl">Puntos hoy</p></div>
+    </div>`;
+  }else{
+    statsHtml=`<p class="tujornada-empty">Aún no hay resultados oficiales de hoy ⏳</p>`;
+  }
+  return card(`<div class="section-head"><h2 class="title">Tu jornada</h2>${pill(hechos+"/"+total+" apuestas","blue")}</div>
+    ${estado}
+    ${statsHtml}`);
+}
 function renderToday(){
   const keys=todayKeysCEST();
   if(!keys.length)
@@ -497,7 +534,7 @@ function renderToday(){
       ?`<span class="today-score">${score}</span>`
       :`<span class="today-vs">vs</span>`;
     return`<div class="today-match">
-      <div class="match-meta">${fmtTime(key)} · ${tvChannel(key)}</div>
+      <div class="match-meta"><span class="today-group">Grupo ${key[0]}</span> · ${fmtTime(key)} · ${tvChannel(key)}</div>
       <div class="today-row">
         <span class="team">${fl(home)} ${home}</span>
         ${center}
@@ -505,7 +542,9 @@ function renderToday(){
       </div>
     </div>`;
   }).join("");
-  return card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2>${pill(keys.length,"blue")}</div>
+  // Bloque "Tu jornada" (resumen diario del usuario) encima de la lista.
+  return renderTuJornada(keys)+
+    card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2>${pill(keys.length,"blue")}</div>
     <p class="hint">Solo informativo · horarios CEST · dónde verlo por TV</p>
     <div class="today-list">${rows}</div>`);
 }

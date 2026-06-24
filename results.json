@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-23T17:02:15Z",
+  "updated": "2026-06-24T05:54:57Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -44,7 +44,11 @@
     "I_Francia_Irak": "1",
     "I_Noruega_Senegal": "1",
     "J_Argentina_Austria": "1",
-    "J_Jordania_Argelia": "2"
+    "J_Jordania_Argelia": "2",
+    "K_Portugal_Uzbekistán": "1",
+    "L_Panamá_Croacia": "2",
+    "K_Colombia_RD Congo": "1",
+    "L_Inglaterra_Ghana": "X"
   },
   "scores": {
     "A_México_Sudáfrica": "2-0",
@@ -90,7 +94,11 @@
     "I_Francia_Irak": "3-0",
     "I_Noruega_Senegal": "3-2",
     "J_Argentina_Austria": "2-0",
-    "J_Jordania_Argelia": "1-2"
+    "J_Jordania_Argelia": "1-2",
+    "K_Portugal_Uzbekistán": "5-0",
+    "L_Panamá_Croacia": "0-1",
+    "K_Colombia_RD Congo": "1-0",
+    "L_Inglaterra_Ghana": "0-0"
   },
   "standings": {
     "A": [
@@ -556,91 +564,91 @@
     "K": [
       {
         "team": "Colombia",
-        "mp": 1,
-        "w": 1,
+        "mp": 2,
+        "w": 2,
         "d": 0,
         "l": 0,
-        "gf": 3,
+        "gf": 4,
         "ga": 1,
-        "gd": 2,
-        "pts": 3
+        "gd": 3,
+        "pts": 6
       },
       {
         "team": "Portugal",
-        "mp": 1,
-        "w": 0,
+        "mp": 2,
+        "w": 1,
         "d": 1,
         "l": 0,
-        "gf": 1,
+        "gf": 6,
         "ga": 1,
-        "gd": 0,
-        "pts": 1
+        "gd": 5,
+        "pts": 4
       },
       {
         "team": "RD Congo",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 1,
-        "l": 0,
+        "l": 1,
         "gf": 1,
-        "ga": 1,
-        "gd": 0,
+        "ga": 2,
+        "gd": -1,
         "pts": 1
       },
       {
         "team": "Uzbekistán",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
+        "l": 2,
         "gf": 1,
-        "ga": 3,
-        "gd": -2,
+        "ga": 8,
+        "gd": -7,
         "pts": 0
       }
     ],
     "L": [
       {
         "team": "Inglaterra",
-        "mp": 1,
+        "mp": 2,
         "w": 1,
-        "d": 0,
+        "d": 1,
         "l": 0,
         "gf": 4,
         "ga": 2,
         "gd": 2,
-        "pts": 3
+        "pts": 4
       },
       {
         "team": "Ghana",
-        "mp": 1,
+        "mp": 2,
         "w": 1,
-        "d": 0,
+        "d": 1,
         "l": 0,
         "gf": 1,
         "ga": 0,
         "gd": 1,
+        "pts": 4
+      },
+      {
+        "team": "Croacia",
+        "mp": 2,
+        "w": 1,
+        "d": 0,
+        "l": 1,
+        "gf": 3,
+        "ga": 4,
+        "gd": -1,
         "pts": 3
       },
       {
         "team": "Panamá",
-        "mp": 1,
+        "mp": 2,
         "w": 0,
         "d": 0,
-        "l": 1,
+        "l": 2,
         "gf": 0,
-        "ga": 1,
-        "gd": -1,
-        "pts": 0
-      },
-      {
-        "team": "Croacia",
-        "mp": 1,
-        "w": 0,
-        "d": 0,
-        "l": 1,
-        "gf": 2,
-        "ga": 4,
+        "ga": 2,
         "gd": -2,
         "pts": 0
       }

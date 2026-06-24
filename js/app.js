@@ -200,12 +200,19 @@ async function loadData(){
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
 
-// Lee el token de invitación de la URL (?invite=...), si lo hay.
+// Token de invitación: se lee de la URL (?invite=...) y se PERSISTE en
+// localStorage, porque el ida-y-vuelta del login de Google vuelve a `origin`
+// sin la query → si no, el token se perdería y el canje nunca correría. Tras
+// el redirect (sin ?invite en la URL) se recupera del localStorage.
+const PENDING_INVITE_KEY="porra_pending_invite";
 function getInviteToken(){
   const q=(window.location&&window.location.search)||"";
   const m=/[?&]invite=([^&]+)/.exec(q);
-  return m?decodeURIComponent(m[1]):null;
+  const fromUrl=m?decodeURIComponent(m[1]):null;
+  if(fromUrl){try{window.localStorage.setItem(PENDING_INVITE_KEY,fromUrl);}catch(e){}return fromUrl;}
+  try{return window.localStorage.getItem(PENDING_INVITE_KEY);}catch(e){return null;}
 }
+function clearPendingInvite(){try{window.localStorage.removeItem(PENDING_INVITE_KEY);}catch(e){}}
 
 // Canjea una invitación contra el backend: el servidor valida token+caducidad y
 // da de alta al jugador (el alta directa desde el cliente está bloqueada por RLS).
@@ -674,13 +681,14 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     // No es miembro: solo entra si trae una invitación válida.
     if(S.inviteToken){
       const res=await redeemInvite(S.inviteToken);
-      if(res&&res.ok)nombre=res.nombre;
-      else{ss({user:null,userId:null,loading:false,accessDenied:true,accessError:"Tu invitación no es válida o ha caducado.",inviteToken:null});return;}
+      if(res&&res.ok){nombre=res.nombre;clearPendingInvite();}
+      else{clearPendingInvite();ss({user:null,userId:null,loading:false,accessDenied:true,accessError:"Tu invitación no es válida o ha caducado.",inviteToken:null});return;}
     }else{
       ss({user:null,userId:null,loading:false,accessDenied:true,accessError:null});return;
     }
   }
   await loadData();
+  clearPendingInvite();
   ss({user:nombre,userId,loading:false,accessDenied:false,accessError:null,inviteToken:null});
 });
 S.inviteToken=getInviteToken();

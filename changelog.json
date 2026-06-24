@@ -1,5 +1,12 @@
 [
   {
+    "id": "2026-06-24",
+    "fecha": "2026-06-24",
+    "items": [
+      "Arreglado el acceso por invitación: ahora entras a la primera tras el login de Google, sin tener que refrescar."
+    ]
+  },
+  {
     "id": "2026-06-19",
     "fecha": "2026-06-19",
     "items": [

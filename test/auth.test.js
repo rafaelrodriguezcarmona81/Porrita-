@@ -67,6 +67,21 @@ test("auth: no-miembro con invitación válida → canjea y entra", async () => 
   assert.equal(app.S.inviteToken, null); // se limpia tras canjear
 });
 
+test("auth: canjea con el token persistido en localStorage tras el redirect de OAuth (URL sin ?invite)", async () => {
+  // Simula la vuelta de Google: la URL ya no trae ?invite, pero el token quedó
+  // guardado en localStorage al abrir el enlace. `S.inviteToken` se rellena en el
+  // init desde getInviteToken() → debe canjear igualmente y limpiar el pendiente.
+  const app = loadApp({
+    localStorage: { porra_pending_invite: "tok-persist" },
+    fetch: flowFetch({ member: [], redeem: { ok: true, json: () => Promise.resolve({ ok: true, nombre: "Invitado" }) } }),
+  });
+  assert.equal(app.S.inviteToken, "tok-persist"); // recuperado del localStorage en el init
+  await app.fireAuth("SIGNED_IN", sessionFor("U5", "Invitado"));
+  assert.equal(app.S.user, "Invitado");
+  assert.equal(app.S.accessDenied, false);
+  assert.equal(app.window.localStorage.getItem("porra_pending_invite"), null); // limpiado
+});
+
 test("auth: no-miembro con invitación inválida → acceso denegado con mensaje", async () => {
   const app = loadApp({
     fetch: flowFetch({ member: [], redeem: { ok: false, status: 403, json: () => Promise.resolve({}) } }),

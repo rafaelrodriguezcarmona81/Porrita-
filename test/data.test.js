@@ -121,6 +121,16 @@ test("getInviteToken: null si no hay invite en la URL", () => {
   assert.equal(app.getInviteToken(), null);
 });
 
+test("getInviteToken: persiste el token y lo recupera tras el redirect de OAuth (URL ya sin ?invite)", () => {
+  const app = loadApp();
+  // 1) Llega con el invite en la URL → debe devolverlo y persistirlo.
+  app.window.location.search = "?invite=tok-persist";
+  assert.equal(app.getInviteToken(), "tok-persist");
+  // 2) Google devuelve a `origin` SIN la query → se recupera de localStorage.
+  app.window.location.search = "";
+  assert.equal(app.getInviteToken(), "tok-persist");
+});
+
 test("redeemInvite: POST a /api/redeem-invite con el token y devuelve el json si ok", async () => {
   const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, nombre: "Ana" }) }) });
   const res = await app.redeemInvite("tok");
@@ -190,4 +200,13 @@ test("createInvite: error del endpoint no fija link y baja el flag", async () =>
   assert.equal(app.S.adminInviteUrl, null);
   assert.equal(app.S.adminInviteBusy, false);
   assert.equal(app.S.adminTriggerOk, false);
+});
+
+test("createInvite: una generación correcta limpia el mensaje de error previo", async () => {
+  const app = loadApp({ fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, token: "tk" }) }) });
+  // Simula un error que quedó en pantalla de un intento anterior.
+  Object.assign(app.S, { adminTriggerMsg: "❌ No se pudo generar la invitación", adminTriggerOk: false });
+  await app.createInvite("clave-admin");
+  assert.equal(app.S.adminTriggerMsg, null, "el mensaje de error anterior debe desaparecer");
+  assert.match(app.S.adminInviteUrl, /\/\?invite=tk$/);
 });

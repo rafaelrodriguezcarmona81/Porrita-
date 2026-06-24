@@ -5,10 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Porra Mundial 2026</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0a2240" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Porra 2026" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div id="app"></div>
 <script src="js/app.js"></script>
+<!-- Registro del service worker (PWA). Va aquí y NO en app.js: el harness de
+     tests carga app.js en una VM sin `navigator`, y registrarlo allí lo rompería. -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function (err) {
+        console.warn("Service worker no registrado:", err);
+      });
+    });
+  }
+</script>
 </body>
 </html>

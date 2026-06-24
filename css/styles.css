@@ -585,6 +585,64 @@ body {
   margin: 0;
 }
 
+/* ── Tu jornada (resumen diario del usuario) ── */
+.tujornada-stats {
+  display: flex;
+  gap: .6rem;
+  margin-top: .2rem;
+}
+
+.tujornada-stat {
+  flex: 1 1 0;
+  text-align: center;
+  border-radius: .5rem;
+  padding: .6rem .4rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.tujornada-num {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #111;
+  margin: 0;
+}
+
+.tujornada-lbl {
+  font-size: .7rem;
+  color: #6b7280;
+  margin: .15rem 0 0;
+}
+
+.tujornada-status {
+  margin: .2rem 0 .6rem;
+  text-align: center;
+  border-radius: .5rem;
+  padding: .45rem .6rem;
+  font-size: .8rem;
+  font-weight: 700;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.tujornada-status--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tujornada-status--warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.tujornada-empty {
+  font-size: .8rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 1rem 0;
+  margin: 0;
+}
+
 .match-list {
   display: flex;
   flex-direction: column;

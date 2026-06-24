@@ -341,6 +341,127 @@ test("renderToday: estado vacío cuando no hay partidos hoy", () => {
   assert.doesNotMatch(html, /today-match/);
 });
 
+// ─── renderTuJornada ("Tu jornada", resumen diario) ──────────────────────────
+// El 18/06/2026 (CEST) juegan: A_Rep. Checa_Sudáfrica, B_Suiza_Bosnia y Herc.,
+// K_Uzbekistán_Colombia y L_Ghana_Panamá.
+const J_DATE = "2026-06-18T12:00:00+02:00";
+const J_KEYS = ["A_Rep. Checa_Sudáfrica", "B_Suiza_Bosnia y Herc.", "K_Uzbekistán_Colombia", "L_Ghana_Panamá"];
+
+test("renderTuJornada: cuenta aciertos y puntos de hoy (solo partidos con resultado oficial)", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: {
+        "A_Rep. Checa_Sudáfrica": "1",   // acierta
+        "B_Suiza_Bosnia y Herc.": "2",   // falla
+        "L_Ghana_Panamá": "1",           // acierta pero SIN resultado oficial → no cuenta
+      } }],
+      // Solo 2 de los 4 partidos de hoy tienen resultado oficial.
+      groupResults: { "A_Rep. Checa_Sudáfrica": "1", "B_Suiza_Bosnia y Herc.": "X" },
+      rankChange: null,
+    },
+    { now: Date.parse(J_DATE) });
+  const html = app.renderTuJornada(J_KEYS);
+  assert.match(html, /Tu jornada/);
+  // 1 acierto de 2 jugados; 1 punto.
+  assert.match(html, /1\/2/);                       // aciertos hoy
+  assert.match(html, /tujornada-num">1<\/p><p class="tujornada-lbl">Puntos hoy/);
+  // El pill resume cuántas apuestas del día llevas hechas (3 de 4).
+  assert.match(html, /3\/4 apuestas/);
+});
+
+test("renderTuJornada: el jugador sin pronósticos de hoy obtiene 0 aciertos / 0 puntos", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: {} }],
+      groupResults: { "A_Rep. Checa_Sudáfrica": "1" },
+      rankChange: null,
+    },
+    { now: Date.parse(J_DATE) });
+  const html = app.renderTuJornada(J_KEYS);
+  assert.match(html, /0\/1/);                        // 0 aciertos de 1 jugado
+  assert.match(html, /tujornada-num">0<\/p><p class="tujornada-lbl">Puntos hoy/);
+});
+
+test("renderTuJornada: con todas las apuestas de hoy hechas muestra el estado OK", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: {
+        "A_Rep. Checa_Sudáfrica": "1",
+        "B_Suiza_Bosnia y Herc.": "X",
+        "K_Uzbekistán_Colombia": "2",
+        "L_Ghana_Panamá": "1",
+      } }],
+      groupResults: {},
+    },
+    { now: Date.parse(J_DATE) });
+  const html = app.renderTuJornada(J_KEYS);
+  assert.match(html, /tujornada-status--ok/);
+  assert.match(html, /todas tus apuestas de hoy hechas/);
+  assert.match(html, /4\/4 apuestas/);
+});
+
+test("renderTuJornada: si faltan apuestas y los partidos siguen abiertos, avisa", () => {
+  // A medianoche del día de la jornada ningún partido está bloqueado todavía.
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: { "A_Rep. Checa_Sudáfrica": "1" } }],
+      groupResults: {},
+    },
+    { now: Date.parse("2026-06-18T00:01:00+02:00") });
+  const html = app.renderTuJornada(J_KEYS);
+  assert.match(html, /tujornada-status--warn/);
+  assert.match(html, /Te faltan \d+ por pronosticar/);
+});
+
+test("renderTuJornada: si faltan apuestas pero los partidos ya cerraron, estado neutro", () => {
+  // Tarde-noche del día de la jornada: los partidos ya arrancaron → bloqueados.
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: { "A_Rep. Checa_Sudáfrica": "1" } }],
+      groupResults: {},
+    },
+    { now: Date.parse("2026-06-18T23:59:00+02:00") });
+  const html = app.renderTuJornada(J_KEYS);
+  assert.doesNotMatch(html, /tujornada-status--warn/);
+  assert.match(html, /sin pronosticar/);
+});
+
+test("renderTuJornada: mensaje neutral si aún no hay resultados oficiales de hoy", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: { "A_Rep. Checa_Sudáfrica": "1" } }],
+      groupResults: {},   // ningún partido de hoy tiene resultado
+      rankChange: null,
+    },
+    { now: Date.parse(J_DATE) });
+  const html = app.renderTuJornada(J_KEYS);
+  assert.match(html, /Aún no hay resultados oficiales de hoy/);
+  assert.doesNotMatch(html, /Aciertos hoy/);
+});
+
+test("renderToday: incluye el bloque 'Tu jornada' por encima de la lista de partidos", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", group_predictions: { "A_Rep. Checa_Sudáfrica": "1" } }],
+      groupResults: { "A_Rep. Checa_Sudáfrica": "1" },
+      groupScores: { "A_Rep. Checa_Sudáfrica": "2-0" },
+      rankChange: null,
+    },
+    { now: Date.parse(J_DATE) });
+  const html = app.renderToday();
+  assert.match(html, /Tu jornada/);
+  assert.match(html, /Partidos de hoy/);
+  // El resumen va antes que la lista de partidos.
+  assert.ok(html.indexOf("Tu jornada") < html.indexOf("Partidos de hoy"));
+});
+
 test("renderHeader: incluye la pestaña Hoy como primera", () => {
   const app = withState({ user: "Ana", players: [], groupResults: {} });
   const html = app.renderHeader();

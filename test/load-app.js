@@ -15,13 +15,15 @@ const EXPOSED = [
   // estado + setState
   "S", "ss",
   // render (devuelven strings HTML)
-  "render", "renderLogin", "renderAccessDenied", "renderHeader",
+  "render", "renderLogin", "renderAccessDenied", "renderHeader", "renderProfileEditor",
   "renderToday", "renderTuJornada", "renderGrupos", "renderStandings", "bestThirdTeams", "renderChangelogBanner",
   "renderPodium", "renderRanking", "renderAdmin",
   // capa de datos / red
   "getHDR", "sbGet", "sbPost", "sbPatch",
   "loadData", "getInviteToken", "redeemInvite",
   "saveGroupPreds", "savePodium", "triggerUpdate", "verifyAdminKey", "createInvite",
+  // perfil (nombre/mote)
+  "MAX_NAME_LEN", "validateName", "saveName",
 ];
 
 /**

@@ -163,6 +163,7 @@ let S={
   user:null,userId:null,players:[],groupResults:{},groupScores:{},groupStandings:{},changelog:[],tab:"hoy",
   activeGroup:"A",loading:true,loginBusy:false,
   savingGroup:false,savingPodium:false,
+  editingName:false,pendingName:"",savingName:false,nameError:null,
   pendingPreds:{},pendingPodium:null,
   refreshing:false,rankChange:null,lastRank:null,
   inviteToken:null,accessDenied:false,accessError:null,
@@ -244,6 +245,31 @@ async function savePodium(podium){
   ss({savingPodium:false,pendingPodium:null});
 }
 
+// Longitud máxima del nombre visible (mote/alias) del jugador.
+const MAX_NAME_LEN=40;
+// Valida el nombre visible: recorta espacios, rechaza vacío y limita longitud.
+// Devuelve {ok, value} | {ok:false, error}.
+function validateName(raw){
+  const value=String(raw==null?"":raw).trim();
+  if(!value)return{ok:false,error:"El nombre no puede estar vacío."};
+  if(value.length>MAX_NAME_LEN)return{ok:false,error:"Máximo "+MAX_NAME_LEN+" caracteres."};
+  return{ok:true,value};
+}
+// Guarda el nombre visible (mote) del jugador. Es un UPDATE de la propia fila,
+// que RLS permite (auth.uid() = user_id). Las predicciones se indexan por
+// user_id, así que renombrar es solo de cara a la UI; pero S.user y la fila en
+// S.players se emparejan por `nombre`, de modo que hay que actualizar AMBOS o el
+// usuario dejaría de coincidir con su propia fila (ranking/pódium/cabecera).
+async function saveName(newName){
+  const v=validateName(newName);
+  if(!v.ok){ss({nameError:v.error});return;}
+  ss({savingName:true,nameError:null});
+  await sbPatch("porra_jugadores","user_id=eq."+S.userId,{nombre:v.value,updated_at:new Date().toISOString()});
+  // Actualiza la propia fila en S.players y S.user (acoplados por `nombre`).
+  const players=S.players.map(p=>p.user_id===S.userId||p.nombre===S.user?{...p,nombre:v.value}:p);
+  ss({players,user:v.value,editingName:false,pendingName:"",savingName:false,nameError:null,lastRank:null});
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function pill(text,color){
   return`<span class="pill pill--${color||'blue'}">${text}</span>`;
@@ -305,6 +331,25 @@ function renderAccessDenied(){
   </div>`;
 }
 
+// ─── PERFIL (editar nombre/mote) ───────────────────────────────────────────────
+// Formulario inline para editar el nombre visible (mote/alias). Se abre desde el
+// botón de perfil en la cabecera. El valor por defecto es el nombre actual.
+function renderProfileEditor(){
+  if(!S.editingName)return"";
+  const val=S.pendingName!=null?S.pendingName:(S.user||"");
+  const err=S.nameError?`<p class="profile-error">${esc(S.nameError)}</p>`:"";
+  return`<div class="profile-edit">
+    <label class="profile-label" for="profileNameInput">Tu nombre visible</label>
+    <div class="profile-row">
+      <input id="profileNameInput" type="text" class="profile-input" maxlength="${MAX_NAME_LEN}"
+        value="${esc(val)}" oninput="setPendingName(this.value)" placeholder="Tu nombre o mote" />
+      <button onclick="doSaveName()" class="profile-save${S.savingName?' profile-save--busy':''}">${S.savingName?'Guardando...':'Guardar'}</button>
+      <button onclick="cancelEditName()" class="profile-cancel">Cancelar</button>
+    </div>
+    ${err}
+  </div>`;
+}
+
 // ─── HEADER ───────────────────────────────────────────────────────────────────
 function renderHeader(){
   const me=S.players.find(p=>p.nombre===S.user);
@@ -324,10 +369,12 @@ function renderHeader(){
         </div>
       </div>
       <div class="hdr-actions">
+        <button onclick="startEditName()" class="btn-profile" aria-label="Editar nombre">👤 Editar nombre</button>
         <button onclick="doRefresh()" class="btn-refresh">${S.refreshing?'⏳ Actualizando...':'🔄 Actualizar datos'}</button>
         <button onclick="doLogout()" class="btn-logout">Salir</button>
       </div>
     </div>
+    ${renderProfileEditor()}
     ${rankBanner}
     <div class="tabs">
       ${tabs.map(([id,label])=>`<button onclick="setTab('${id}')" class="tab${S.tab===id?' tab--active':''}">${label}</button>`).join("")}
@@ -667,6 +714,12 @@ window.doSavePreds=()=>{if(!S.savingGroup)saveGroupPreds();};
 window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);const base=S.pendingPodium||(me?.podium?[...me.podium]:["","",""]);const u=[...base];u[idx]=val;ss({pendingPodium:u});};
 window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
 window.doRefresh=()=>{if(!S.refreshing){ss({refreshing:true});loadData();}};
+
+// ─── Perfil: editar el nombre visible (mote) ─────────────────────────────────
+window.startEditName=()=>ss({editingName:true,pendingName:S.user||"",nameError:null});
+window.setPendingName=v=>{S.pendingName=v;};
+window.cancelEditName=()=>ss({editingName:false,pendingName:"",nameError:null});
+window.doSaveName=()=>{if(!S.savingName)saveName(S.pendingName);};
 
 async function verifyAdminKey(key){
   ss({adminGateBusy:true,adminGateError:false});

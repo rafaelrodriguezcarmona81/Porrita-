@@ -361,6 +361,85 @@ body {
   font-weight: 600;
 }
 
+.btn-profile {
+  background: rgba(255, 255, 255, .15);
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 700;
+  padding: .3rem .6rem;
+  border-radius: .4rem;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+/* ─── PERFIL (editar nombre/mote) ──────────────────────────────────────────── */
+.profile-edit {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: .5rem 1rem .75rem;
+  border-top: 1px solid rgba(255, 255, 255, .15);
+}
+
+.profile-label {
+  display: block;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-bottom: .3rem;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.profile-input {
+  flex: 1;
+  min-width: 0;
+  padding: .4rem .6rem;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: .4rem;
+  font-size: .85rem;
+  background: #fff;
+  color: #0a2240;
+}
+
+.profile-save {
+  background: #16a34a;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 700;
+  padding: .4rem .7rem;
+  border-radius: .4rem;
+}
+
+.profile-save--busy {
+  opacity: .6;
+  cursor: default;
+}
+
+.profile-cancel {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #93c5fd;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.profile-error {
+  margin: .4rem 0 0;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #fca5a5;
+}
+
 .rank-banner {
   text-align: center;
   padding: .35rem;

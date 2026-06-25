@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-24T16:34:36Z",
+  "updated": "2026-06-25T06:00:13Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -14,12 +14,15 @@
     "J_Jordania_Argelia": "2",
     "K_Portugal_Uzbekistán": "1",
     "L_Panamá_Croacia": "2",
+    "A_Rep. Checa_México": "2",
     "A_Corea del Sur_Rep. Checa": "1",
     "D_Estados Unidos_Paraguay": "1",
     "I_Francia_Senegal": "1",
     "I_Irak_Noruega": "2",
     "K_Portugal_RD Congo": "X",
     "G_Bélgica_Irán": "X",
+    "C_Marruecos_Haití": "1",
+    "A_Sudáfrica_Corea del Sur": "1",
     "E_Costa de Marfil_Ecuador": "1",
     "E_Alemania_Curazao": "1",
     "F_Suecia_Túnez": "1",
@@ -28,6 +31,8 @@
     "C_Escocia_Marruecos": "2",
     "D_Turquía_Paraguay": "2",
     "J_Argentina_Austria": "1",
+    "C_Escocia_Brasil": "2",
+    "B_Bosnia y Herc._Catar": "1",
     "A_México_Sudáfrica": "1",
     "C_Brasil_Marruecos": "X",
     "F_Países Bajos_Japón": "X",
@@ -48,7 +53,8 @@
     "A_Rep. Checa_Sudáfrica": "X",
     "L_Inglaterra_Ghana": "X",
     "G_Bélgica_Egipto": "X",
-    "E_Ecuador_Curazao": "X"
+    "E_Ecuador_Curazao": "X",
+    "B_Suiza_Canadá": "1"
   },
   "scores": {
     "D_Australia_Turquía": "2-0",
@@ -64,12 +70,15 @@
     "J_Jordania_Argelia": "1-2",
     "K_Portugal_Uzbekistán": "5-0",
     "L_Panamá_Croacia": "0-1",
+    "A_Rep. Checa_México": "0-3",
     "A_Corea del Sur_Rep. Checa": "2-1",
     "D_Estados Unidos_Paraguay": "4-1",
     "I_Francia_Senegal": "3-1",
     "I_Irak_Noruega": "1-4",
     "K_Portugal_RD Congo": "1-1",
     "G_Bélgica_Irán": "0-0",
+    "C_Marruecos_Haití": "4-2",
+    "A_Sudáfrica_Corea del Sur": "1-0",
     "E_Costa de Marfil_Ecuador": "1-0",
     "E_Alemania_Curazao": "7-1",
     "F_Suecia_Túnez": "5-1",
@@ -78,6 +87,8 @@
     "C_Escocia_Marruecos": "0-1",
     "D_Turquía_Paraguay": "0-1",
     "J_Argentina_Austria": "2-0",
+    "C_Escocia_Brasil": "0-3",
+    "B_Bosnia y Herc._Catar": "3-1",
     "A_México_Sudáfrica": "2-0",
     "C_Brasil_Marruecos": "1-1",
     "F_Países Bajos_Japón": "2-2",
@@ -98,7 +109,8 @@
     "A_Rep. Checa_Sudáfrica": "1-1",
     "L_Inglaterra_Ghana": "0-0",
     "G_Bélgica_Egipto": "1-1",
-    "E_Ecuador_Curazao": "0-0"
+    "E_Ecuador_Curazao": "0-0",
+    "B_Suiza_Canadá": "2-1"
   },
   "standings": {
     "D": [
@@ -149,47 +161,47 @@
     ],
     "B": [
       {
-        "team": "Canadá",
-        "mp": 2,
-        "w": 1,
+        "team": "Suiza",
+        "mp": 3,
+        "w": 2,
         "d": 1,
         "l": 0,
         "gf": 7,
-        "ga": 1,
-        "gd": 6,
-        "pts": 4
+        "ga": 3,
+        "gd": 4,
+        "pts": 7
       },
       {
-        "team": "Suiza",
-        "mp": 2,
+        "team": "Canadá",
+        "mp": 3,
         "w": 1,
         "d": 1,
-        "l": 0,
-        "gf": 5,
-        "ga": 2,
-        "gd": 3,
+        "l": 1,
+        "gf": 8,
+        "ga": 3,
+        "gd": 5,
         "pts": 4
       },
       {
         "team": "Bosnia y Herc.",
-        "mp": 2,
-        "w": 0,
+        "mp": 3,
+        "w": 1,
         "d": 1,
         "l": 1,
-        "gf": 2,
-        "ga": 5,
-        "gd": -3,
-        "pts": 1
+        "gf": 5,
+        "ga": 6,
+        "gd": -1,
+        "pts": 4
       },
       {
         "team": "Catar",
-        "mp": 2,
+        "mp": 3,
         "w": 0,
         "d": 1,
-        "l": 1,
-        "gf": 1,
-        "ga": 7,
-        "gd": -6,
+        "l": 2,
+        "gf": 2,
+        "ga": 10,
+        "gd": -8,
         "pts": 1
       }
     ],
@@ -334,46 +346,46 @@
     "C": [
       {
         "team": "Brasil",
-        "mp": 2,
-        "w": 1,
+        "mp": 3,
+        "w": 2,
         "d": 1,
         "l": 0,
-        "gf": 4,
+        "gf": 7,
         "ga": 1,
-        "gd": 3,
-        "pts": 4
+        "gd": 6,
+        "pts": 7
       },
       {
         "team": "Marruecos",
-        "mp": 2,
-        "w": 1,
+        "mp": 3,
+        "w": 2,
         "d": 1,
         "l": 0,
-        "gf": 2,
-        "ga": 1,
-        "gd": 1,
-        "pts": 4
+        "gf": 6,
+        "ga": 3,
+        "gd": 3,
+        "pts": 7
       },
       {
         "team": "Escocia",
-        "mp": 2,
+        "mp": 3,
         "w": 1,
         "d": 0,
-        "l": 1,
+        "l": 2,
         "gf": 1,
-        "ga": 1,
-        "gd": 0,
+        "ga": 4,
+        "gd": -3,
         "pts": 3
       },
       {
         "team": "Haití",
-        "mp": 2,
+        "mp": 3,
         "w": 0,
         "d": 0,
-        "l": 2,
-        "gf": 0,
-        "ga": 4,
-        "gd": -4,
+        "l": 3,
+        "gf": 2,
+        "ga": 8,
+        "gd": -6,
         "pts": 0
       }
     ],
@@ -564,46 +576,46 @@
     "A": [
       {
         "team": "México",
-        "mp": 2,
-        "w": 2,
+        "mp": 3,
+        "w": 3,
         "d": 0,
         "l": 0,
-        "gf": 3,
+        "gf": 6,
         "ga": 0,
-        "gd": 3,
-        "pts": 6
+        "gd": 6,
+        "pts": 9
       },
       {
-        "team": "Corea del Sur",
-        "mp": 2,
+        "team": "Sudáfrica",
+        "mp": 3,
         "w": 1,
-        "d": 0,
-        "l": 1,
-        "gf": 2,
-        "ga": 2,
-        "gd": 0,
-        "pts": 3
-      },
-      {
-        "team": "Rep. Checa",
-        "mp": 2,
-        "w": 0,
         "d": 1,
         "l": 1,
         "gf": 2,
         "ga": 3,
         "gd": -1,
-        "pts": 1
+        "pts": 4
       },
       {
-        "team": "Sudáfrica",
-        "mp": 2,
+        "team": "Corea del Sur",
+        "mp": 3,
+        "w": 1,
+        "d": 0,
+        "l": 2,
+        "gf": 2,
+        "ga": 3,
+        "gd": -1,
+        "pts": 3
+      },
+      {
+        "team": "Rep. Checa",
+        "mp": 3,
         "w": 0,
         "d": 1,
-        "l": 1,
-        "gf": 1,
-        "ga": 3,
-        "gd": -2,
+        "l": 2,
+        "gf": 2,
+        "ga": 6,
+        "gd": -4,
         "pts": 1
       }
     ],

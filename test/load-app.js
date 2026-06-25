@@ -12,6 +12,7 @@ const EXPOSED = [
   "gPts", "podiumBonus", "bracketPts", "fmtTime", "tvChannel", "isLocked", "fl", "pill", "card", "esc",
   // datos
   "GROUPS", "GM", "ALL_TEAMS", "TOTAL_MATCHES", "FLAGS", "MATCH_TIMES", "LA1_MATCHES", "KO_ROUNDS",
+  "KO_BRACKET", "resolveBracketTeams", "isGroupComplete", "bestThirdsFrom", "assignThirdSlots", "slotLabel",
   // estado + setState
   "S", "ss",
   // render (devuelven strings HTML)

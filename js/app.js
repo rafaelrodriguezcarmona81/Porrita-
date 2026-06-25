@@ -191,6 +191,225 @@ const KO_ROUNDS=[
   {key:"final",label:"Gran Final",base:32}
 ];
 
+// ─── CUADRO OFICIAL (plantilla pública, Mundial 2026) ─────────────────────────
+// La PLANTILLA de huecos del cuadro es fija y pública (Round of 32 = M73..M88,
+// luego octavos/cuartos/semis/3º/final). Los EQUIPOS que rellenan cada hueco se
+// resuelven progresivamente: el 1º/2º de un grupo se sabe cuando ese grupo
+// termina su 3ª jornada; los 8 mejores terceros (y por tanto los huecos "tercero
+// de {…}") solo se conocen cuando los 12 grupos han terminado (ranking entre
+// grupos). Por eso el resolver TOLERA estado parcial → deja `null` lo pendiente.
+//
+// Cada partido tiene: `round` (clave de KO_ROUNDS), `m` (nº oficial de partido,
+// 73..104) y una `key` estable "{RONDA}_M{n}" (independiente de los equipos, que
+// cambian al resolverse → no se puede usar la team-key como clave de plantilla).
+// `home`/`away` son specs de hueco:
+//   {type:"winner",group:"E"}                   → 1º del grupo E
+//   {type:"runner",group:"C"}                   → 2º del grupo C
+//   {type:"third",groups:["A","B","C","D","F"]} → mejor tercero de ese conjunto
+//   {type:"matchWinner",match:74}               → ganador del partido 74
+//   {type:"matchLoser",match:101}               → perdedor del partido 101
+const W=m=>({type:"matchWinner",match:m});
+const L=m=>({type:"matchLoser",match:m});
+const w1=g=>({type:"winner",group:g});
+const r2=g=>({type:"runner",group:g});
+const t3=(...gs)=>({type:"third",groups:gs});
+const KO_BRACKET=[
+  // Round of 32 (dieciseisavos) — plantilla oficial M73..M88.
+  {round:"r32",m:73,key:"r32_M73",home:r2("A"),away:r2("B")},
+  {round:"r32",m:74,key:"r32_M74",home:w1("E"),away:t3("A","B","C","D","F")},
+  {round:"r32",m:75,key:"r32_M75",home:w1("F"),away:r2("C")},
+  {round:"r32",m:76,key:"r32_M76",home:w1("C"),away:r2("F")},
+  {round:"r32",m:77,key:"r32_M77",home:w1("I"),away:t3("C","D","F","G","H")},
+  {round:"r32",m:78,key:"r32_M78",home:r2("E"),away:r2("I")},
+  {round:"r32",m:79,key:"r32_M79",home:w1("A"),away:t3("C","E","F","H","I")},
+  {round:"r32",m:80,key:"r32_M80",home:w1("L"),away:t3("E","H","I","J","K")},
+  {round:"r32",m:81,key:"r32_M81",home:w1("D"),away:t3("B","E","F","I","J")},
+  {round:"r32",m:82,key:"r32_M82",home:w1("G"),away:t3("A","E","H","I","J")},
+  {round:"r32",m:83,key:"r32_M83",home:r2("K"),away:r2("L")},
+  {round:"r32",m:84,key:"r32_M84",home:w1("H"),away:r2("J")},
+  {round:"r32",m:85,key:"r32_M85",home:w1("B"),away:t3("E","F","G","I","J")},
+  {round:"r32",m:86,key:"r32_M86",home:w1("J"),away:r2("H")},
+  {round:"r32",m:87,key:"r32_M87",home:w1("K"),away:t3("D","E","I","J","L")},
+  {round:"r32",m:88,key:"r32_M88",home:r2("D"),away:r2("G")},
+  // Octavos (R16).
+  {round:"r16",m:89,key:"r16_M89",home:W(74),away:W(77)},
+  {round:"r16",m:90,key:"r16_M90",home:W(73),away:W(75)},
+  {round:"r16",m:91,key:"r16_M91",home:W(76),away:W(78)},
+  {round:"r16",m:92,key:"r16_M92",home:W(79),away:W(80)},
+  {round:"r16",m:93,key:"r16_M93",home:W(83),away:W(84)},
+  {round:"r16",m:94,key:"r16_M94",home:W(81),away:W(82)},
+  {round:"r16",m:95,key:"r16_M95",home:W(86),away:W(88)},
+  {round:"r16",m:96,key:"r16_M96",home:W(85),away:W(87)},
+  // Cuartos (QF).
+  {round:"qf",m:97,key:"qf_M97",home:W(89),away:W(90)},
+  {round:"qf",m:98,key:"qf_M98",home:W(93),away:W(94)},
+  {round:"qf",m:99,key:"qf_M99",home:W(91),away:W(92)},
+  {round:"qf",m:100,key:"qf_M100",home:W(95),away:W(96)},
+  // Semifinales (SF).
+  {round:"sf",m:101,key:"sf_M101",home:W(97),away:W(98)},
+  {round:"sf",m:102,key:"sf_M102",home:W(99),away:W(100)},
+  // 3º puesto y Final.
+  {round:"third",m:103,key:"third_M103",home:L(101),away:L(102)},
+  {round:"final",m:104,key:"final_M104",home:W(101),away:W(102)}
+];
+
+// ¿Está el grupo G completo (las 4 selecciones con 3 partidos jugados)? El
+// resolver solo fija 1º/2º/terceros sobre grupos cerrados.
+function isGroupComplete(standings,g){
+  const rows=standings&&standings[g];
+  return Array.isArray(rows)&&rows.length>=4&&rows.every(t=>t&&t.mp===3);
+}
+
+// Los 8 mejores terceros a partir de UN objeto standings dado (versión pura de
+// bestThirdTeams, que opera sobre S.groupStandings). Devuelve filas {team,group,
+// pts,gd,gf,...} ordenadas (pts ▸ DG ▸ GF ▸ nombre) y recortadas a 8. Solo se
+// invoca cuando los 12 grupos están completos.
+function bestThirdsFrom(standings){
+  const thirds=[];
+  for(const g in standings){
+    const rows=standings[g];
+    if(rows&&rows.length>=3)thirds.push({...rows[2],group:g});
+  }
+  thirds.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf||a.team.localeCompare(b.team,"es"));
+  return thirds.slice(0,8);
+}
+
+// Asigna cada uno de los 8 mejores terceros a su hueco "tercero de {…}". NO se
+// transcribe la tabla Anexo C de la FIFA (495 filas): cada hueco lista grupos
+// candidatos; asignamos el tercero clasificado cuyo grupo esté en ese conjunto,
+// garantizando un emparejamiento 1-a-1 sobre los 8 huecos. Se resuelve por
+// backtracking eligiendo siempre el hueco con menos candidatos válidos (heurística
+// de restricción mínima). Devuelve { matchM: teamName } o null si NINGUNA
+// asignación completa es posible con los datos (no se inventa nada).
+function assignThirdSlots(thirdSlots,thirds){
+  const byGroup={};for(const t of thirds)byGroup[t.group]=t.team;
+  const available=new Set(thirds.map(t=>t.group)); // grupos de terceros clasificados
+  // Para cada hueco, los grupos candidatos que SÍ clasificaron como tercero.
+  const slots=thirdSlots.map(s=>({m:s.m,cands:s.groups.filter(g=>available.has(g))}));
+  const result={};
+  function bt(remaining,used){
+    if(!remaining.length)return true;
+    // Elegir el hueco con menos candidatos libres (fail-fast).
+    let bi=0,bf=Infinity;
+    for(let i=0;i<remaining.length;i++){
+      const free=remaining[i].cands.filter(g=>!used.has(g)).length;
+      if(free<bf){bf=free;bi=i;}
+    }
+    const slot=remaining[bi];
+    const rest=remaining.filter((_,i)=>i!==bi);
+    for(const g of slot.cands){
+      if(used.has(g))continue;
+      used.add(g);result[slot.m]=byGroup[g];
+      if(bt(rest,used))return true;
+      used.delete(g);delete result[slot.m];
+    }
+    return false;
+  }
+  return bt(slots,new Set())?result:null;
+}
+
+// Etiqueta legible de un hueco aún sin resolver (para el placeholder "pendiente").
+// Si por lo que sea ya hay equipo resuelto, lo devuelve tal cual.
+function slotLabel(spec,team){
+  if(team!=null)return team;
+  if(!spec)return"Pendiente";
+  if(spec.type==="winner")return"1º Grupo "+spec.group;
+  if(spec.type==="runner")return"2º Grupo "+spec.group;
+  if(spec.type==="third")return"Mejor 3º ("+spec.groups.join("/")+")";
+  if(spec.type==="matchWinner")return"Ganador M"+spec.match;
+  if(spec.type==="matchLoser")return"Perdedor M"+spec.match;
+  return"Pendiente";
+}
+
+// Resolver de huecos → equipos. Función PURA: dado el `standings` por grupo y el
+// mapa `koResults` (match-key → equipo que avanzó), y opcionalmente `koFixtures`
+// con cruces concretos (de results.json, que TIENEN PRECEDENCIA), devuelve un
+// objeto { matchKey: { m, round, key, home, away } } donde home/away son nombres
+// de equipo concretos donde se conocen, o `null` donde siguen pendientes.
+// Tolera estado parcial: grupos sin terminar → sus huecos quedan null; terceros
+// → null hasta que los 12 grupos estén completos.
+function resolveBracketTeams(standings,koResults,koFixtures){
+  standings=standings||{};koResults=koResults||{};koFixtures=koFixtures||{};
+  // Índice plano de fixtures concretos provistos por datos (precedencia máxima),
+  // por match-key estable. Aceptamos tanto {key:"r16_M89",home,away} sueltos como
+  // agrupados por ronda { r16:[...] } (formato histórico de koFixtures).
+  const fixByKey={};
+  for(const rk in koFixtures){
+    const v=koFixtures[rk];
+    if(Array.isArray(v))for(const f of v){if(f&&f.key)fixByKey[f.key]=f;}
+    else if(v&&v.key)fixByKey[rk]=v;
+  }
+  // ¿Todos los grupos (los que aparecen en algún hueco) completos? Necesario para
+  // resolver los terceros (ranking entre grupos).
+  const allGroups=new Set();
+  for(const b of KO_BRACKET){
+    for(const s of[b.home,b.away]){
+      if(s.type==="winner"||s.type==="runner")allGroups.add(s.group);
+      else if(s.type==="third")for(const g of s.groups)allGroups.add(g);
+    }
+  }
+  const allComplete=[...allGroups].every(g=>isGroupComplete(standings,g));
+  // Asignación de terceros a huecos (solo si los 12 grupos están completos).
+  let thirdAssign=null;
+  if(allComplete){
+    const thirds=bestThirdsFrom(standings);
+    const thirdSlots=[];
+    for(const b of KO_BRACKET){
+      for(const s of[b.home,b.away])if(s.type==="third")thirdSlots.push({m:b.m,groups:s.groups});
+    }
+    thirdAssign=assignThirdSlots(thirdSlots,thirds);
+    if(!thirdAssign)console.warn("resolveBracketTeams: no hay asignación 1-a-1 de terceros con estos datos; huecos de tercero quedan pendientes");
+  }
+  const out={};
+  // Primera pasada: resolver huecos de grupo y terceros (no dependen de otros M).
+  const resolveSlot=(s,self)=>{
+    if(s.type==="winner")return isGroupComplete(standings,s.group)?standings[s.group][0].team:null;
+    if(s.type==="runner")return isGroupComplete(standings,s.group)?standings[s.group][1].team:null;
+    if(s.type==="third")return thirdAssign?thirdAssign[self.m]??null:null;
+    return undefined; // matchWinner/matchLoser → 2ª pasada
+  };
+  for(const b of KO_BRACKET){
+    out[b.key]={m:b.m,round:b.round,key:b.key,home:null,away:null};
+    const h=resolveSlot(b.home,b),a=resolveSlot(b.away,b);
+    if(h!==undefined)out[b.key].home=h;
+    if(a!==undefined)out[b.key].away=a;
+    // Precedencia de datos: si koFixtures trae el cruce concreto, fija home/away
+    // YA (antes de propagar ganadores/perdedores), para que matchLoser pueda
+    // calcular el perdedor de un partido cuyo emparejamiento viene de datos.
+    const f=fixByKey[b.key];
+    if(f){if(f.home!=null)out[b.key].home=f.home;if(f.away!=null)out[b.key].away=f.away;}
+  }
+  // Segunda pasada (iterativa): resolver matchWinner/matchLoser desde koResults,
+  // que pueden encadenarse a través de rondas. Iteramos hasta punto fijo.
+  const byM={};for(const b of KO_BRACKET)byM[b.m]=b;
+  const advancer=m=>{const b=byM[m];return b?koResults[b.key]??null:null;};
+  const loserOf=m=>{
+    const b=byM[m];if(!b)return null;
+    const adv=koResults[b.key];if(!adv)return null;
+    const o=out[b.key];if(!o||o.home==null||o.away==null)return null;
+    return adv===o.home?o.away:adv===o.away?o.home:null;
+  };
+  const slotTeam=s=>{
+    if(s.type==="matchWinner")return advancer(s.match);
+    if(s.type==="matchLoser")return loserOf(s.match);
+    return undefined;
+  };
+  let changed=true;
+  while(changed){
+    changed=false;
+    for(const b of KO_BRACKET){
+      const f=fixByKey[b.key];
+      for(const side of["home","away"]){
+        if(f&&f[side]!=null)continue; // un cruce concreto de datos tiene precedencia
+        const s=b[side];
+        const t=slotTeam(s);
+        if(t!==undefined&&t!=null&&out[b.key][side]!==t){out[b.key][side]=t;changed=true;}
+      }
+    }
+  }
+  return out;
+}
+
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 function gPts(preds,results){let p=0;for(const k in results)if(preds[k]&&preds[k]===results[k])p++;return p;}
 function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])p+=5;if(pod[1]===fin[1])p+=3;if(pod[2]===fin[2])p+=2;return p;}
@@ -722,60 +941,66 @@ function renderRanking(){
 }
 
 // ─── CUADRO / ELIMINATORIAS (knockout bracket) ─────────────────────────────────
-// El cuadro es dirigido por datos: NO hay un mapa fijo de cruces oficiales. Los
-// emparejamientos llegan en S.koFixtures (cargado de results.json → `ko`/`bracket`
-// cuando exista), agrupados por la `key` de ronda de KO_ROUNDS. Cada fixture tiene
-// una match-key estable ("{RONDA}_{LOCAL}_{VISITANTE}") y dos equipos.
+// La PLANTILLA de cruces es fija y pública (KO_BRACKET, M73..M104). Los equipos de
+// cada hueco se resuelven con resolveBracketTeams() contra S.groupStandings (1º/2º
+// de cada grupo cerrado + los 8 mejores terceros cuando los 12 grupos terminan) y
+// S.koResults (ganador/perdedor de partidos previos para octavos en adelante). Si
+// S.koFixtures trae cruces concretos (de results.json), tienen precedencia.
 //
-// Desbloqueo progresivo: una ronda solo es editable cuando sus fixtures se conocen
-// (presentes en koFixtures); mientras no haya datos, la ronda sale informativa
-// (solo se ve su base de puntos). Por partido, isLocked(matchKey) bloquea la
-// edición cerca del saque (CEST). Si un partido ya tiene resultado (S.koResults),
-// se muestra el equipo que avanzó y se marca el acierto/fallo.
-//
-// Formato de un fixture (cuando exista en datos):
-//   { key:"r16_España_Francia", home:"España", away:"Francia" }
-// koFixtures = { r16:[fixture,...], qf:[...], ... }
+// Desbloqueo progresivo POR HUECO: un partido es editable solo cuando AMBOS equipos
+// están resueltos; si alguno está pendiente (grupo sin terminar, o terceros aún sin
+// determinar), se muestra "pendiente". isLocked(key) bloquea cerca del saque (CEST)
+// y, si hay resultado (S.koResults), se marca el acierto/fallo y el equipo que avanzó.
 function renderBracket(){
   const me=S.players.find(p=>p.nombre===S.user);
   const saved=(me&&me.bracket_predictions)||{};
   const picks={...saved,...S.pendingBracket};
-  const fixtures=S.koFixtures||{};
   const koResults=S.koResults||{};
-  // ¿Hay algún cruce conocido en alguna ronda? Si no, fase de grupos en curso.
-  const anyFixtures=KO_ROUNDS.some(r=>Array.isArray(fixtures[r.key])&&fixtures[r.key].length);
+  const resolved=resolveBracketTeams(S.groupStandings||{},koResults,S.koFixtures||{});
+  // ¿Hay algún cruce con AMBOS equipos resueltos? Si no, fase de grupos en curso.
+  const anyResolved=KO_BRACKET.some(b=>{const o=resolved[b.key];return o&&o.home!=null&&o.away!=null;});
 
-  if(!anyFixtures){
-    // Estado bloqueado/vacío: la fase de grupos sigue en marcha. Mostramos la
-    // lista de rondas con sus bases como información, sin romper con datos vacíos.
+  if(!anyResolved){
+    // Estado vacío: la fase de grupos sigue en marcha y aún no se conoce ningún
+    // cruce. Mostramos la plantilla de rondas con sus bases como información.
     const roundsInfo=KO_ROUNDS.map(r=>`<div class="bracket-round-info">
       <span class="bracket-round-name">${esc(r.label)}</span>
       <span class="bracket-round-base">Base ${r.base}pts</span>
     </div>`).join("");
     return`
     ${card(`<div class="section-head"><h2 class="title">Cuadro de eliminatorias</h2></div>
-      <p class="bracket-locked">🔒 El cuadro se desbloqueará cuando termine la fase de grupos. Cada ronda se irá abriendo a medida que se conozcan los cruces.</p>`)}
+      <p class="bracket-locked">🔒 El cuadro se desbloqueará cuando termine la fase de grupos. Cada cruce se irá rellenando a medida que se conozcan los clasificados.</p>`)}
     ${card(`<h3 class="card-title">📋 Puntuación por ronda</h3>
       <div class="bracket-rounds">${roundsInfo}</div>`)}`;
   }
 
-  // Hay cruces: pintamos cada ronda que tenga fixtures (desbloqueo progresivo).
+  // Hay cruces: pintamos cada ronda con sus partidos de KO_BRACKET.
   const sections=KO_ROUNDS.map(r=>{
-    const list=Array.isArray(fixtures[r.key])?fixtures[r.key]:[];
-    if(!list.length)
-      return`${card(`<div class="section-head"><h3 class="title">${esc(r.label)}</h3><span class="bracket-round-base">Base ${r.base}pts</span></div>
-        <p class="bracket-round-pending">Aún no se conocen los cruces de esta ronda ⏳</p>`)}`;
-    const matches=list.map(f=>{
-      const key=f.key;
-      const teams=[f.home,f.away];
+    const list=KO_BRACKET.filter(b=>b.round===r.key);
+    const matches=list.map(b=>{
+      const key=b.key;
+      const o=resolved[key]||{home:null,away:null};
+      const pending=o.home==null||o.away==null; // algún hueco sin resolver
       const res=koResults[key]; // equipo que avanzó (si ya hay resultado)
       const hasR=!!res;
       const pick=picks[key];
       const locked=isLocked(key);
-      const blocked=hasR||locked;
+      const blocked=pending||hasR||locked;
       const badge=hasR
         ?`<span class="bracket-badge badge ${pick&&pick===res?'badge--correct':pick?'badge--wrong':'badge--neutral'}">${pick&&pick===res?'+'+r.base+'✓':pick?'✗':'—'}</span>`
+        :pending?'<span class="bracket-badge badge badge--neutral">⏳</span>'
         :locked?'<span class="bracket-badge badge badge--locked">🔒</span>':'';
+      if(pending){
+        // Hueco aún no resuelto: mostramos placeholder claro, sin botones.
+        return`<div class="bracket-match bracket-match--pending">
+          ${badge}
+          <div class="bracket-options">
+            <span class="bracket-pending">${esc(slotLabel(b.home,o.home))}</span>
+            <span class="bracket-pending">${esc(slotLabel(b.away,o.away))}</span>
+          </div>
+        </div>`;
+      }
+      const teams=[o.home,o.away];
       const opts=teams.map(t=>{
         const sel=pick===t;
         const isAdv=hasR&&res===t;

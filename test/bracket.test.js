@@ -16,19 +16,44 @@ function routedFetch(routes) {
   };
 }
 
-// Construye un set sintético de cruces KO + resultados para los tests de render.
-// "Hoy" en los tests por defecto es 2026-06-15, así que usamos fechas lejanas
-// (sin MATCH_TIMES → isLocked() devuelve false: editables).
+// Construye un set sintético de cruces KO concretos (precedencia sobre la
+// resolución) para los tests de render. Usa las claves ESTABLES de la plantilla
+// (KO_BRACKET: "{RONDA}_M{n}"). "Hoy" en los tests por defecto es 2026-06-15, y
+// estas claves no están en MATCH_TIMES → isLocked() devuelve false (editables).
 function synthFixtures() {
   return {
-    r16: [
-      { key: "r16_España_Francia", home: "España", away: "Francia" },
-      { key: "r16_Brasil_Argentina", home: "Brasil", away: "Argentina" },
+    r32: [
+      { key: "r32_M73", home: "España", away: "Francia" },
+      { key: "r32_M74", home: "Brasil", away: "Argentina" },
     ],
-    qf: [
-      { key: "qf_España_Brasil", home: "España", away: "Brasil" },
+    r16: [
+      { key: "r16_M89", home: "España", away: "Brasil" },
     ],
   };
+}
+
+// Fila de clasificación sintética con un grupo "terminado" (4 equipos, mp=3).
+function row(team, pts, gd = 0, gf = 0) {
+  return { team, mp: 3, w: 0, d: 0, l: 0, gf, ga: 0, gd, pts };
+}
+// Grupo completo de 4 equipos, ya ordenado 1º..4º.
+function fullGroup(t1, t2, t3, t4) {
+  return [row(t1, 9, 9, 9), row(t2, 6, 3, 3), row(t3, 3, 0, 1), row(t4, 0, -9, 0)];
+}
+// 12 grupos A..L completos; el 3º de cada grupo es "3<Letra>" (determinista).
+// El "pts" del 3º decrece por grupo para que el ranking de terceros sea estable.
+function full12Standings() {
+  const letters = "ABCDEFGHIJKL".split("");
+  const st = {};
+  letters.forEach((g, i) => {
+    st[g] = [
+      row("1" + g, 9, 9, 9),
+      row("2" + g, 6, 3, 3),
+      row("3" + g, 5 - i * 0.0, 3, 12 - i), // mismo pts, desempata por GF (12-i)
+      row("4" + g, 0, -9, 0),
+    ];
+  });
+  return st;
 }
 
 // ─── bracketPts ───────────────────────────────────────────────────────────────
@@ -105,13 +130,13 @@ test("renderBracket: pinta rondas y picks guardados cuando hay cruces", () => {
   const app = loadApp();
   Object.assign(app.S, {
     user: "Ana",
-    players: [{ nombre: "Ana", bracket_predictions: { "r16_España_Francia": "España" } }],
+    players: [{ nombre: "Ana", bracket_predictions: { "r32_M73": "España" } }],
     koFixtures: synthFixtures(),
     koResults: {},
   });
   const html = app.renderBracket();
+  assert.match(html, /Dieciseisavos/);
   assert.match(html, /Octavos/);
-  assert.match(html, /Cuartos/);
   // El pick guardado aparece marcado como seleccionado.
   assert.match(html, /bracket-pick--sel/);
   // Hay botones de elección de equipo.
@@ -122,14 +147,14 @@ test("renderBracket: marca acierto y fallo cuando hay resultados KO", () => {
   const app = loadApp();
   Object.assign(app.S, {
     user: "Ana",
-    players: [{ nombre: "Ana", bracket_predictions: { "r16_España_Francia": "España", "r16_Brasil_Argentina": "Argentina" } }],
+    players: [{ nombre: "Ana", bracket_predictions: { "r32_M73": "España", "r32_M74": "Argentina" } }],
     koFixtures: synthFixtures(),
-    koResults: { "r16_España_Francia": "España", "r16_Brasil_Argentina": "Brasil" },
+    koResults: { "r32_M73": "España", "r32_M74": "Brasil" },
   });
   const html = app.renderBracket();
   assert.match(html, /bracket-pick--correct/); // España acertado
   assert.match(html, /bracket-pick--wrong/);   // Argentina fallado
-  assert.match(html, /\+4✓/);                  // badge de acierto con base r16
+  assert.match(html, /\+2✓/);                  // badge de acierto con base r32
 });
 
 test("renderBracket: escapa los nombres de equipo", () => {
@@ -137,12 +162,37 @@ test("renderBracket: escapa los nombres de equipo", () => {
   Object.assign(app.S, {
     user: "Ana",
     players: [{ nombre: "Ana", bracket_predictions: {} }],
-    koFixtures: { r16: [{ key: "r16_<b>X</b>_Y", home: "<b>X</b>", away: "Y" }] },
+    koFixtures: { r32: [{ key: "r32_M73", home: "<b>X</b>", away: "Y" }] },
     koResults: {},
   });
   const html = app.renderBracket();
   assert.ok(!html.includes("<b>X</b>"), "no debe inyectar HTML sin escapar");
   assert.match(html, /&lt;b&gt;X&lt;\/b&gt;/);
+});
+
+test("renderBracket: muestra resueltos desde standings completos y pendiente sin terminar", () => {
+  const app = loadApp();
+  // Solo el grupo A está completo → su 2º (hueco de M73, 2A vs 2B) sigue pendiente
+  // porque 2B no está; pero un partido cuyos dos huecos sean del grupo A no existe.
+  // Completamos A y B para resolver M73 (2A vs 2B) y dejamos el resto pendiente.
+  const standings = {
+    A: fullGroup("Aa", "Ab", "Ac", "Ad"),
+    B: fullGroup("Ba", "Bb", "Bc", "Bd"),
+  };
+  Object.assign(app.S, {
+    user: "Ana",
+    players: [{ nombre: "Ana", bracket_predictions: {} }],
+    groupStandings: standings,
+    koFixtures: {},
+    koResults: {},
+  });
+  const html = app.renderBracket();
+  // M73 = 2A vs 2B resuelto → nombres concretos + botones.
+  assert.match(html, /Ab/);
+  assert.match(html, /Bb/);
+  assert.match(html, /setBracketPick/);
+  // Algún hueco pendiente (terceros / grupos sin terminar).
+  assert.match(html, /bracket-pending|pendiente|Pendiente|3º|Grupo/);
 });
 
 // ─── saveBracket ────────────────────────────────────────────────────────────
@@ -169,6 +219,165 @@ test("saveBracket: PATCH de bracket_predictions con JWT y limpia el estado", asy
   assert.match(patch.url, /user_id=eq\.U1/);
   assert.equal(app.S.savingBracket, false);
   assert.deepEqual(app.S.pendingBracket, {});
+});
+
+// ─── KO_BRACKET (plantilla oficial) ──────────────────────────────────────────
+test("KO_BRACKET: cuenta de partidos por ronda (16/8/4/2/1/1)", () => {
+  const { KO_BRACKET } = loadApp();
+  const byRound = {};
+  for (const b of KO_BRACKET) byRound[b.round] = (byRound[b.round] || 0) + 1;
+  assert.equal(byRound.r32, 16);
+  assert.equal(byRound.r16, 8);
+  assert.equal(byRound.qf, 4);
+  assert.equal(byRound.sf, 2);
+  assert.equal(byRound.third, 1);
+  assert.equal(byRound.final, 1);
+  assert.equal(KO_BRACKET.length, 32);
+});
+
+test("KO_BRACKET: claves y nº de partido únicos y prefijo de ronda correcto", () => {
+  const { KO_BRACKET } = loadApp();
+  const keys = new Set(), ms = new Set();
+  for (const b of KO_BRACKET) {
+    assert.ok(!keys.has(b.key), "clave duplicada " + b.key);
+    keys.add(b.key);
+    assert.ok(!ms.has(b.m), "nº de partido duplicado " + b.m);
+    ms.add(b.m);
+    assert.equal(b.key.split("_")[0], b.round, "el prefijo de la clave debe ser la ronda");
+    assert.equal(b.key, b.round + "_M" + b.m);
+  }
+  // Numeración oficial M73..M104.
+  assert.equal(Math.min(...ms), 73);
+  assert.equal(Math.max(...ms), 104);
+});
+
+test("KO_BRACKET: matchWinner/matchLoser apuntan a partidos anteriores reales", () => {
+  const { KO_BRACKET } = loadApp();
+  const byM = {};
+  for (const b of KO_BRACKET) byM[b.m] = b;
+  for (const b of KO_BRACKET) {
+    for (const s of [b.home, b.away]) {
+      if (s.type === "matchWinner" || s.type === "matchLoser") {
+        assert.ok(byM[s.match], "referencia a partido inexistente M" + s.match);
+        assert.ok(s.match < b.m, "M" + b.m + " referencia a M" + s.match + " que no es anterior");
+      }
+    }
+  }
+});
+
+test("KO_BRACKET: las bases de cada ronda coinciden con KO_ROUNDS", () => {
+  const { KO_BRACKET, KO_ROUNDS } = loadApp();
+  const base = {};
+  for (const r of KO_ROUNDS) base[r.key] = r.base;
+  // Las rondas usadas por la plantilla están todas en KO_ROUNDS.
+  for (const b of KO_BRACKET) assert.ok(base[b.round] != null, "ronda desconocida " + b.round);
+  assert.deepEqual(
+    { r32: base.r32, r16: base.r16, qf: base.qf, sf: base.sf, third: base.third, final: base.final },
+    { r32: 2, r16: 4, qf: 8, sf: 16, third: 24, final: 32 }
+  );
+});
+
+// ─── resolveBracketTeams ──────────────────────────────────────────────────────
+test("resolveBracketTeams: estado parcial — grupos terminados resuelven 1º/2º, otros pendientes", () => {
+  const { resolveBracketTeams } = loadApp();
+  const standings = {
+    A: fullGroup("Aa", "Ab", "Ac", "Ad"),
+    B: fullGroup("Ba", "Bb", "Bc", "Bd"),
+    // C incompleto: un equipo con mp<3.
+    C: [row("Ca", 6), row("Cb", 3), { team: "Cc", mp: 1, pts: 1, gd: 0, gf: 0 }, row("Cd", 0)],
+  };
+  const out = resolveBracketTeams(standings, {}, {});
+  // M73 = 2A vs 2B → ambos resueltos.
+  assert.equal(out.r32_M73.home, "Ab");
+  assert.equal(out.r32_M73.away, "Bb");
+  // M75 = 1F vs 2C → F ausente y C incompleto → ambos null.
+  assert.equal(out.r32_M75.home, null);
+  assert.equal(out.r32_M75.away, null);
+  // M79 home = 1A (resuelto), away = tercero (pendiente: 12 grupos no completos).
+  assert.equal(out.r32_M79.home, "Aa");
+  assert.equal(out.r32_M79.away, null);
+});
+
+test("resolveBracketTeams: terceros pendientes hasta que TODOS los grupos terminen", () => {
+  const { resolveBracketTeams, KO_BRACKET } = loadApp();
+  // 11 grupos completos, falta L → ningún hueco de tercero debe resolverse.
+  const st = full12Standings();
+  st.L = [row("1L", 9), row("2L", 6), { team: "3L", mp: 2, pts: 3, gd: 0, gf: 0 }, row("4L", 0)];
+  const out = resolveBracketTeams(st, {}, {});
+  for (const b of KO_BRACKET) {
+    for (const side of ["home", "away"]) {
+      if (b[side].type === "third") assert.equal(out[b.key][side], null, b.key + " tercero no debe resolverse");
+    }
+  }
+});
+
+test("resolveBracketTeams: 12 grupos completos — 1º/2º resueltos y 8 terceros asignados a huecos válidos", () => {
+  const { resolveBracketTeams, KO_BRACKET } = loadApp();
+  const st = full12Standings();
+  const out = resolveBracketTeams(st, {}, {});
+  // 1º/2º resueltos en todos los huecos de grupo.
+  for (const b of KO_BRACKET) {
+    for (const side of ["home", "away"]) {
+      const s = b[side];
+      if (s.type === "winner") assert.equal(out[b.key][side], "1" + s.group);
+      if (s.type === "runner") assert.equal(out[b.key][side], "2" + s.group);
+    }
+  }
+  // Recogemos las asignaciones de tercero y validamos que cada una cae en un hueco
+  // cuyo conjunto candidato incluye el grupo del tercero, y que los 8 están puestos.
+  const assigned = [];
+  for (const b of KO_BRACKET) {
+    for (const side of ["home", "away"]) {
+      if (b[side].type === "third") {
+        const team = out[b.key][side];
+        assert.ok(team != null, "hueco de tercero sin asignar " + b.key);
+        const grp = team.slice(1); // "3X" → "X"
+        assert.ok(b[side].groups.includes(grp), team + " no pertenece al conjunto candidato de " + b.key);
+        assigned.push(team);
+      }
+    }
+  }
+  assert.equal(assigned.length, 8, "deben asignarse 8 huecos de tercero");
+  assert.equal(new Set(assigned).size, 8, "cada tercero se asigna a un único hueco");
+});
+
+test("resolveBracketTeams: koResults propaga ganadores/perdedores a rondas siguientes", () => {
+  const { resolveBracketTeams } = loadApp();
+  const st = full12Standings();
+  // Resolvemos M74 y M77 (ambos huecos de M89 = W74,W77).
+  // M74 = 1E vs mejor-3º; M77 = 1I vs mejor-3º. Tomamos sus equipos resueltos.
+  const base = resolveBracketTeams(st, {}, {});
+  const koResults = {
+    [base.r32_M74.key]: base.r32_M74.home, // gana 1E
+    [base.r32_M77.key]: base.r32_M77.home, // gana 1I
+  };
+  const out = resolveBracketTeams(st, koResults, {});
+  // M89 = W74 vs W77.
+  assert.equal(out.r16_M89.home, base.r32_M74.home);
+  assert.equal(out.r16_M89.away, base.r32_M77.home);
+  // matchLoser: M103 = perdedor M101 vs perdedor M102.
+  const out2 = resolveBracketTeams(st, {
+    ...koResults,
+    sf_M101: "GANA101",
+  }, {
+    // damos cruce concreto a M101 para poder calcular su perdedor
+    sf: [{ key: "sf_M101", home: "GANA101", away: "PIERDE101" }],
+  });
+  assert.equal(out2.third_M103.home, "PIERDE101"); // perdedor de M101
+});
+
+test("resolveBracketTeams: koFixtures (cruces concretos) tienen precedencia sobre lo calculado", () => {
+  const { resolveBracketTeams } = loadApp();
+  const st = full12Standings();
+  // Sin override, M73 = 2A vs 2B.
+  const plain = resolveBracketTeams(st, {}, {});
+  assert.equal(plain.r32_M73.home, "2A");
+  // Con override explícito, gana el dato.
+  const out = resolveBracketTeams(st, {}, {
+    r32: [{ key: "r32_M73", home: "Override1", away: "Override2" }],
+  });
+  assert.equal(out.r32_M73.home, "Override1");
+  assert.equal(out.r32_M73.away, "Override2");
 });
 
 // ─── ranking integra los puntos del cuadro ───────────────────────────────────

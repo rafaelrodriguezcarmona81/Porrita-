@@ -333,10 +333,61 @@ function fmtKO(matchNumber){
 }
 
 // ¿Está el grupo G completo (las 4 selecciones con 3 partidos jugados)? El
-// resolver solo fija 1º/2º/terceros sobre grupos cerrados.
+// resolver fija terceros solo sobre grupos cerrados; 1º/2º pueden fijarse antes
+// si la posición está matemáticamente asegurada (ver clinchedPositions).
 function isGroupComplete(standings,g){
   const rows=standings&&standings[g];
   return Array.isArray(rows)&&rows.length>=4&&rows.every(t=>t&&t.mp===3);
+}
+
+// Partidos del grupo G que aún NO se han jugado (de GM menos los de groupResults).
+function groupRemaining(g,groupResults){
+  const rem=[];
+  for(const[home,away]of(GM[g]||[])){
+    if(!((g+"_"+home+"_"+away)in groupResults))rem.push([home,away]);
+  }
+  return rem;
+}
+
+// Posiciones de grupo MATEMÁTICAMENTE ASEGURADAS (p. ej. Alemania ya 1ª del E con
+// el grupo sin terminar). Devuelve { equipo: puesto } (0=1º, 1=2º, …) SOLO para
+// equipos cuyo puesto está cerrado por PUNTOS: se enumeran los resultados V/E/D de
+// los partidos que faltan y se exige que, en TODOS los escenarios, el nº de
+// equipos estrictamente por encima sea el mismo y que el equipo NUNCA empate a
+// puntos con otro (un empate a puntos exigiría desempate por DG/head-to-head, que
+// no garantizamos → no se fija). Conservador a propósito: no coloca a nadie mal.
+function clinchedPositions(g,standings,groupResults){
+  const rows=standings&&standings[g];
+  if(!Array.isArray(rows)||rows.length<4)return{};
+  const teams=rows.map(r=>r.team);
+  const base={};for(const r of rows)base[r.team]=r.pts||0;
+  const rem=groupRemaining(g,groupResults||{});
+  // Guard de consistencia: si un partido "restante" menciona un equipo que no
+  // está en el standings (datos incoherentes, p. ej. nombres que no casan con GM),
+  // no razonamos para no colocar a nadie mal.
+  for(const[h,a]of rem){if(!(h in base)||!(a in base))return{};}
+  const total=Math.pow(3,rem.length); // 3^restantes (≤ 729)
+  const scenarios=[];
+  for(let mask=0;mask<total;mask++){
+    const pts={...base};let m=mask;
+    for(let i=0;i<rem.length;i++){
+      const o=m%3;m=Math.floor(m/3);const[h,a]=rem[i];
+      if(o===0)pts[h]+=3;else if(o===1){pts[h]+=1;pts[a]+=1;}else pts[a]+=3;
+    }
+    scenarios.push(pts);
+  }
+  const locked={};
+  for(const t of teams){
+    let pos=null,ok=true;
+    for(const pts of scenarios){
+      let above=0,tied=false;
+      for(const u of teams){if(u===t)continue;if(pts[u]>pts[t])above++;else if(pts[u]===pts[t])tied=true;}
+      if(tied){ok=false;break;}
+      if(pos===null)pos=above;else if(pos!==above){ok=false;break;}
+    }
+    if(ok&&pos!==null)locked[t]=pos;
+  }
+  return locked;
 }
 
 // Los 8 mejores terceros a partir de UN objeto standings dado (versión pura de
@@ -407,8 +458,16 @@ function slotLabel(spec,team){
 // de equipo concretos donde se conocen, o `null` donde siguen pendientes.
 // Tolera estado parcial: grupos sin terminar → sus huecos quedan null; terceros
 // → null hasta que los 12 grupos estén completos.
-function resolveBracketTeams(standings,koResults,koFixtures){
-  standings=standings||{};koResults=koResults||{};koFixtures=koFixtures||{};
+function resolveBracketTeams(standings,koResults,koFixtures,groupResults){
+  standings=standings||{};koResults=koResults||{};koFixtures=koFixtures||{};groupResults=groupResults||{};
+  // Cache de posiciones aseguradas por grupo (1º/2º antes de cerrar el grupo).
+  const clinchCache={};
+  const clinchedTeamAt=(g,pos)=>{
+    if(isGroupComplete(standings,g))return standings[g][pos]?standings[g][pos].team:null;
+    if(!clinchCache[g])clinchCache[g]=clinchedPositions(g,standings,groupResults);
+    for(const t in clinchCache[g])if(clinchCache[g][t]===pos)return t;
+    return null;
+  };
   // Índice plano de fixtures concretos provistos por datos (precedencia máxima),
   // por match-key estable. Aceptamos tanto {key:"r16_M89",home,away} sueltos como
   // agrupados por ronda { r16:[...] } (formato histórico de koFixtures).
@@ -442,8 +501,8 @@ function resolveBracketTeams(standings,koResults,koFixtures){
   const out={};
   // Primera pasada: resolver huecos de grupo y terceros (no dependen de otros M).
   const resolveSlot=(s,self)=>{
-    if(s.type==="winner")return isGroupComplete(standings,s.group)?standings[s.group][0].team:null;
-    if(s.type==="runner")return isGroupComplete(standings,s.group)?standings[s.group][1].team:null;
+    if(s.type==="winner")return clinchedTeamAt(s.group,0);
+    if(s.type==="runner")return clinchedTeamAt(s.group,1);
     if(s.type==="third")return thirdAssign?thirdAssign[self.m]??null:null;
     return undefined; // matchWinner/matchLoser → 2ª pasada
   };
@@ -1035,9 +1094,11 @@ function renderBracket(){
   const saved=(me&&me.bracket_predictions)||{};
   const picks={...saved,...S.pendingBracket};
   const koResults=S.koResults||{};
-  const resolved=resolveBracketTeams(S.groupStandings||{},koResults,S.koFixtures||{});
-  // ¿Hay algún cruce con AMBOS equipos resueltos? Si no, fase de grupos en curso.
-  const anyResolved=KO_BRACKET.some(b=>{const o=resolved[b.key];return o&&o.home!=null&&o.away!=null;});
+  const resolved=resolveBracketTeams(S.groupStandings||{},koResults,S.koFixtures||{},S.groupResults||{});
+  // ¿Hay algún hueco ya resuelto (un solo equipo basta)? Así, en cuanto un grupo
+  // cierra (o una posición queda asegurada), se pinta el cuadro con ese equipo en
+  // su sitio y el rival como "pendiente" — sin esperar a que un cruce tenga AMBOS.
+  const anyResolved=KO_BRACKET.some(b=>{const o=resolved[b.key];return o&&(o.home!=null||o.away!=null);});
 
   if(!anyResolved){
     // Estado vacío: la fase de grupos sigue en marcha y aún no se conoce ningún
@@ -1082,15 +1143,19 @@ function renderBracket(){
       // El "vs" va ENTRE las dos cards de equipo, nunca dentro de ellas.
       const sep=`<span class="bracket-vs-sep">vs</span>`;
       if(pending){
-        // Hueco aún no resuelto: cada lado es una card-placeholder (sin botón),
-        // con el "vs" en medio. Fecha/hora/sede sí se muestran.
+        // Cruce aún no jugable (falta un rival). Cada lado: si el equipo YA está
+        // resuelto, se pinta con su bandera como card fija (no clicable); si sigue
+        // pendiente, placeholder gris. Fecha/hora/sede se muestran igualmente.
+        const cell=(spec,team,lab)=>team!=null
+          ?`<span class="bracket-pick bracket-pick--fixed">${fl(team)} ${lab}</span>`
+          :`<span class="bracket-pick bracket-pick--ph">${lab}</span>`;
         return`<div class="bracket-match bracket-match--pending">
           ${badge}
           ${meta}
           <div class="bracket-options">
-            <span class="bracket-pick bracket-pick--ph">${labHome}</span>
+            ${cell(b.home,o.home,labHome)}
             ${sep}
-            <span class="bracket-pick bracket-pick--ph">${labAway}</span>
+            ${cell(b.away,o.away,labAway)}
           </div>
         </div>`;
       }

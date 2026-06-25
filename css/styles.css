@@ -1124,6 +1124,14 @@ body {
   cursor: default;
 }
 
+/* Equipo ya colocado en un cruce que aún no es jugable (falta el rival): se ve
+   como card normal con su bandera, pero no es clicable. */
+.bracket-pick--fixed {
+  cursor: default;
+  color: #111;
+  background: #fff;
+}
+
 .bracket-pick--sel {
   border-color: #2563eb;
   background: #eff6ff;

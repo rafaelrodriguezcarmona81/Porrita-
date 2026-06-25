@@ -5,7 +5,8 @@
     "items": [
       "El cuadro de eliminatorias ya muestra los cruces reales por posición (2ºA-2ºB, 1ºE-mejor tercero, etc.) y se irá rellenando con los equipos a medida que avancen los grupos.",
       "Cada cruce del cuadro muestra ahora su día, hora (en horario peninsular) y sede del estadio, además de la cabecera «Equipo A vs Equipo B».",
-      "Arreglado que algunas novedades no se veían hasta limpiar la caché: la app ya carga siempre la última versión al abrirla con conexión (y sigue funcionando sin conexión)."
+      "Arreglado que algunas novedades no se veían hasta limpiar la caché: la app ya carga siempre la última versión al abrirla con conexión (y sigue funcionando sin conexión).",
+      "El cuadro ya coloca a un equipo en su cruce en cuanto su grupo termina (aunque su rival aún no se sepa) y también cuando su puesto queda matemáticamente asegurado antes de cerrar el grupo (p. ej. un primero de grupo ya inalcanzable)."
     ]
   },
   {

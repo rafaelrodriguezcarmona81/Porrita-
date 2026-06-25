@@ -193,6 +193,9 @@ test("renderBracket: muestra resueltos desde standings completos y pendiente sin
   assert.match(html, /setBracketPick/);
   // Algún hueco pendiente (terceros / grupos sin terminar).
   assert.match(html, /bracket-pending|pendiente|Pendiente|3º|Grupo/);
+  // Chip con el ID del propio partido (para cruzar "Ganador M74" en rondas siguientes).
+  assert.match(html, /bracket-mid">M73</);
+  assert.match(html, /bracket-mid">M104</);
 });
 
 // ─── saveBracket ────────────────────────────────────────────────────────────

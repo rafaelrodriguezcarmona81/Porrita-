@@ -1064,9 +1064,10 @@ function renderBracket(){
       const sch=KO_SCHEDULE[b.m];
       const labHome=esc(slotLabel(b.home,o.home));
       const labAway=esc(slotLabel(b.away,o.away));
-      const meta=sch
-        ?`<div class="match-meta bracket-meta">${fmtKO(b.m)} · ${esc(sch.venue)}</div>`
-        :"";
+      // Chip con el ID del propio partido (M73..M104) — permite cruzar las
+      // referencias "Ganador M74" que aparecen en las rondas siguientes.
+      const mid=`<span class="bracket-mid">M${b.m}</span>`;
+      const meta=`<div class="match-meta bracket-meta">${mid}${sch?` ${fmtKO(b.m)} · ${esc(sch.venue)}`:""}</div>`;
       // El "vs" va ENTRE las dos cards de equipo, nunca dentro de ellas.
       const sep=`<span class="bracket-vs-sep">vs</span>`;
       if(pending){

@@ -151,11 +151,22 @@ function tvChannel(key){
   return LA1_MATCHES.has(key) ? "📺 La 1" : "🟣 DAZN";
 }
 
-function isLocked(key){
+// Epoch (ms) del saque para una clave de partido, sea de GRUPOS o de ELIMINATORIAS.
+// - Grupos: clave team-key en MATCH_TIMES (hora CEST naive, UTC+2).
+// - KO: clave "{RONDA}_M{n}" → su nº de partido se busca en KO_SCHEDULE (instante
+//   UTC absoluto). Devuelve null si la clave no corresponde a ningún partido.
+function kickoffMs(key){
   const t=MATCH_TIMES[key];
-  if(!t)return false;
-  const kickoff=new Date(t+":00+02:00");
-  return Date.now()>=kickoff.getTime()-60*60*1000;
+  if(t)return new Date(t+":00+02:00").getTime();
+  const m=koMatchNum(key);
+  const sch=m!=null?KO_SCHEDULE[m]:null;
+  if(sch)return new Date(sch.utc).getTime();
+  return null;
+}
+function isLocked(key){
+  const ko=kickoffMs(key);
+  if(ko==null)return false;
+  return Date.now()>=ko-60*60*1000;
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -252,6 +263,64 @@ const KO_BRACKET=[
   {round:"third",m:103,key:"third_M103",home:L(101),away:L(102)},
   {round:"final",m:104,key:"final_M104",home:W(101),away:W(102)}
 ];
+
+// ─── CALENDARIO OFICIAL DE ELIMINATORIAS (fecha/hora/sede) ────────────────────
+// Keyed por nº de partido (73..104). `utc` es el INSTANTE absoluto del saque en
+// UTC (calculado a partir de la hora local de la sede + su offset UTC oficial,
+// almacenado en UTC para evitar ambigüedad). `venue` = "Estadio, Ciudad". La
+// hora se MUESTRA en CEST (UTC+2) como el resto de la app — ver fmtKO().
+const KO_SCHEDULE={
+  73:{utc:"2026-06-28T19:00:00Z",venue:"SoFi Stadium, Inglewood"},
+  74:{utc:"2026-06-29T20:30:00Z",venue:"Gillette Stadium, Foxborough"},
+  75:{utc:"2026-06-30T01:00:00Z",venue:"Estadio BBVA, Guadalupe"},
+  76:{utc:"2026-06-29T17:00:00Z",venue:"NRG Stadium, Houston"},
+  77:{utc:"2026-06-30T21:00:00Z",venue:"MetLife Stadium, East Rutherford"},
+  78:{utc:"2026-06-30T17:00:00Z",venue:"AT&T Stadium, Arlington"},
+  79:{utc:"2026-07-01T01:00:00Z",venue:"Estadio Azteca, Mexico City"},
+  80:{utc:"2026-07-01T16:00:00Z",venue:"Mercedes-Benz Stadium, Atlanta"},
+  81:{utc:"2026-07-02T00:00:00Z",venue:"Levi's Stadium, Santa Clara"},
+  82:{utc:"2026-07-01T20:00:00Z",venue:"Lumen Field, Seattle"},
+  83:{utc:"2026-07-02T23:00:00Z",venue:"BMO Field, Toronto"},
+  84:{utc:"2026-07-02T19:00:00Z",venue:"SoFi Stadium, Inglewood"},
+  85:{utc:"2026-07-03T03:00:00Z",venue:"BC Place, Vancouver"},
+  86:{utc:"2026-07-03T22:00:00Z",venue:"Hard Rock Stadium, Miami Gardens"},
+  87:{utc:"2026-07-04T01:30:00Z",venue:"Arrowhead Stadium, Kansas City"},
+  88:{utc:"2026-07-03T18:00:00Z",venue:"AT&T Stadium, Arlington"},
+  89:{utc:"2026-07-04T21:00:00Z",venue:"Lincoln Financial Field, Philadelphia"},
+  90:{utc:"2026-07-04T17:00:00Z",venue:"NRG Stadium, Houston"},
+  91:{utc:"2026-07-05T20:00:00Z",venue:"MetLife Stadium, East Rutherford"},
+  92:{utc:"2026-07-06T00:00:00Z",venue:"Estadio Azteca, Mexico City"},
+  93:{utc:"2026-07-06T19:00:00Z",venue:"AT&T Stadium, Arlington"},
+  94:{utc:"2026-07-07T00:00:00Z",venue:"Lumen Field, Seattle"},
+  95:{utc:"2026-07-07T16:00:00Z",venue:"Mercedes-Benz Stadium, Atlanta"},
+  96:{utc:"2026-07-07T20:00:00Z",venue:"BC Place, Vancouver"},
+  97:{utc:"2026-07-09T20:00:00Z",venue:"Gillette Stadium, Foxborough"},
+  98:{utc:"2026-07-10T19:00:00Z",venue:"SoFi Stadium, Inglewood"},
+  99:{utc:"2026-07-11T21:00:00Z",venue:"Hard Rock Stadium, Miami Gardens"},
+  100:{utc:"2026-07-12T01:00:00Z",venue:"Arrowhead Stadium, Kansas City"},
+  101:{utc:"2026-07-14T19:00:00Z",venue:"AT&T Stadium, Arlington"},
+  102:{utc:"2026-07-15T19:00:00Z",venue:"Mercedes-Benz Stadium, Atlanta"},
+  103:{utc:"2026-07-18T21:00:00Z",venue:"Hard Rock Stadium, Miami Gardens"},
+  104:{utc:"2026-07-19T19:00:00Z",venue:"MetLife Stadium, East Rutherford"}
+};
+// Extrae el nº de partido (73..104) de una clave de plantilla KO "{RONDA}_M{n}".
+// Devuelve null si la clave no encaja con ese patrón.
+function koMatchNum(key){
+  const mt=/_M(\d+)$/.exec(key||"");
+  return mt?+mt[1]:null;
+}
+// Formatea el saque de un partido KO (por nº) en CEST (UTC+2) con el mismo estilo
+// que fmtTime() para los grupos: "Día DD/MM HH:MM" (p.ej. "Dom 28/06 21:00").
+// Gestiona el cambio de día cuando el instante UTC cae en el día siguiente CEST.
+function fmtKO(matchNumber){
+  const sch=KO_SCHEDULE[matchNumber];
+  if(!sch)return"";
+  const days=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const pad=n=>String(n).padStart(2,"0");
+  const c=new Date(new Date(sch.utc).getTime()+2*60*60*1000); // a CEST
+  return days[c.getUTCDay()]+" "+pad(c.getUTCDate())+"/"+pad(c.getUTCMonth()+1)+" "
+    +pad(c.getUTCHours())+":"+pad(c.getUTCMinutes());
+}
 
 // ¿Está el grupo G completo (las 4 selecciones con 3 partidos jugados)? El
 // resolver solo fija 1º/2º/terceros sobre grupos cerrados.
@@ -990,13 +1059,28 @@ function renderBracket(){
         ?`<span class="bracket-badge badge ${pick&&pick===res?'badge--correct':pick?'badge--wrong':'badge--neutral'}">${pick&&pick===res?'+'+r.base+'✓':pick?'✗':'—'}</span>`
         :pending?'<span class="bracket-badge badge badge--neutral">⏳</span>'
         :locked?'<span class="bracket-badge badge badge--locked">🔒</span>':'';
+      // Cabecera "Equipo A vs Equipo B" y línea de fecha/hora/sede. Cuando un
+      // lado sigue pendiente usamos su placeholder de hueco (slotLabel), pero
+      // fecha/hora/sede SÍ se conocen (vienen de KO_SCHEDULE por nº de partido).
+      const sch=KO_SCHEDULE[b.m];
+      const labHome=esc(slotLabel(b.home,o.home));
+      const labAway=esc(slotLabel(b.away,o.away));
+      const flHome=o.home!=null?fl(o.home)+" ":"";
+      const flAway=o.away!=null?fl(o.away)+" ":"";
+      const header=`<div class="bracket-vs">${flHome}${labHome} <span class="bracket-vs-sep">vs</span> ${flAway}${labAway}</div>`;
+      const meta=sch
+        ?`<div class="match-meta bracket-meta">${fmtKO(b.m)} · ${esc(sch.venue)}</div>`
+        :"";
       if(pending){
-        // Hueco aún no resuelto: mostramos placeholder claro, sin botones.
+        // Hueco aún no resuelto: mostramos placeholder claro, sin botones, pero
+        // CON cabecera y fecha/hora/sede (conocidas aunque falte el rival).
         return`<div class="bracket-match bracket-match--pending">
           ${badge}
+          ${header}
+          ${meta}
           <div class="bracket-options">
-            <span class="bracket-pending">${esc(slotLabel(b.home,o.home))}</span>
-            <span class="bracket-pending">${esc(slotLabel(b.away,o.away))}</span>
+            <span class="bracket-pending">${labHome}</span>
+            <span class="bracket-pending">${labAway}</span>
           </div>
         </div>`;
       }
@@ -1013,7 +1097,8 @@ function renderBracket(){
       }).join("");
       return`<div class="bracket-match">
         ${badge}
-        <div class="match-meta">${fmtTime(key)}</div>
+        ${header}
+        ${meta}
         <div class="bracket-options">${opts}</div>
       </div>`;
     }).join("");

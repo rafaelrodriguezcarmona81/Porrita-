@@ -380,6 +380,141 @@ test("resolveBracketTeams: koFixtures (cruces concretos) tienen precedencia sobr
   assert.equal(out.r32_M73.away, "Override2");
 });
 
+// ─── KO_SCHEDULE (calendario oficial: fecha/hora/sede) ────────────────────────
+test("KO_SCHEDULE: una entrada por cada partido 73..104 con utc y venue", () => {
+  const { KO_SCHEDULE } = loadApp();
+  for (let m = 73; m <= 104; m++) {
+    const e = KO_SCHEDULE[m];
+    assert.ok(e, "falta entrada para M" + m);
+    assert.ok(typeof e.utc === "string" && /\dT.*Z$/.test(e.utc), "M" + m + " utc inválido");
+    assert.ok(typeof e.venue === "string" && e.venue.length > 0, "M" + m + " venue inválido");
+    assert.ok(!Number.isNaN(new Date(e.utc).getTime()), "M" + m + " utc no parseable");
+  }
+  // No debe haber entradas espurias fuera del rango.
+  const nums = Object.keys(KO_SCHEDULE).map(Number);
+  assert.equal(Math.min(...nums), 73);
+  assert.equal(Math.max(...nums), 104);
+  assert.equal(nums.length, 32);
+});
+
+// ─── fmtKO (conversión a CEST con estilo de fmtTime) ──────────────────────────
+// Calculamos el render esperado de forma INDEPENDIENTE: tomamos el instante UTC
+// del KO_SCHEDULE, le sumamos 2h (CEST = UTC+2) y formateamos en componentes UTC.
+function expectedCEST(utcStr) {
+  const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const pad = (n) => String(n).padStart(2, "0");
+  const c = new Date(new Date(utcStr).getTime() + 2 * 60 * 60 * 1000);
+  return days[c.getUTCDay()] + " " + pad(c.getUTCDate()) + "/" + pad(c.getUTCMonth() + 1) +
+    " " + pad(c.getUTCHours()) + ":" + pad(c.getUTCMinutes());
+}
+
+test("fmtKO: M73 (12:00 UTC-7) → Dom 28/06 21:00 CEST", () => {
+  const { fmtKO } = loadApp();
+  // 2026-06-28 12:00 UTC-7 = 2026-06-28T19:00:00Z; CEST = 21:00 del 28 jun (domingo).
+  assert.equal(fmtKO(73), "Dom 28/06 21:00");
+});
+
+test("fmtKO: M75 (19:00 UTC-6) rueda al día siguiente en CEST → Mar 30/06 03:00", () => {
+  const { fmtKO } = loadApp();
+  // 2026-06-29 19:00 UTC-6 = 2026-06-30T01:00:00Z; CEST = 03:00 del 30 jun (martes).
+  // La fecha LOCAL es 29 jun pero la CEST avanza a 30 jun → verifica el rollover.
+  assert.equal(fmtKO(75), "Mar 30/06 03:00");
+});
+
+test("fmtKO: coincide con el cálculo CEST independiente para todos los partidos", () => {
+  const { fmtKO, KO_SCHEDULE } = loadApp();
+  for (let m = 73; m <= 104; m++) {
+    assert.equal(fmtKO(m), expectedCEST(KO_SCHEDULE[m].utc), "M" + m);
+  }
+});
+
+test("fmtKO: nº inexistente devuelve cadena vacía", () => {
+  const { fmtKO } = loadApp();
+  assert.equal(fmtKO(999), "");
+});
+
+// ─── isLocked para claves KO (desde KO_SCHEDULE, regla 1h antes) ──────────────
+// El instante UTC de M73 (independiente del módulo cargado, para fijar opts.now).
+const M73_UTC = new Date("2026-06-28T19:00:00Z").getTime();
+
+test("isLocked (KO): no bloqueado bastante antes del saque", () => {
+  const { isLocked, KO_SCHEDULE } = loadApp({
+    now: M73_UTC - 3 * 60 * 60 * 1000, // 3h antes
+  });
+  assert.equal(new Date(KO_SCHEDULE[73].utc).getTime(), M73_UTC); // sanity
+  assert.equal(isLocked("r32_M73"), false);
+});
+
+test("isLocked (KO): bloqueado dentro de la última hora antes del saque", () => {
+  const { isLocked } = loadApp({
+    now: M73_UTC - 30 * 60 * 1000, // 30 min antes
+  });
+  assert.equal(isLocked("r32_M73"), true);
+});
+
+test("isLocked (KO): no rompe el comportamiento de grupos (clave en MATCH_TIMES)", () => {
+  // Antes del saque del primer partido de grupos (2026-06-11T21:00 CEST) → abierto;
+  // dentro de la última hora → bloqueado. Replica el contrato de fmtTime/MATCH_TIMES.
+  const groupKey = "A_México_Sudáfrica";
+  const kickoff = new Date("2026-06-11T21:00:00+02:00").getTime();
+  let app = loadApp({ now: kickoff - 2 * 60 * 60 * 1000 });
+  assert.equal(app.isLocked(groupKey), false);
+  app = loadApp({ now: kickoff - 30 * 60 * 1000 });
+  assert.equal(app.isLocked(groupKey), true);
+  // Una clave desconocida sigue devolviendo false.
+  assert.equal(app.isLocked("clave_inexistente"), false);
+});
+
+// ─── renderBracket muestra sede + fecha/hora (resuelto y pendiente) ───────────
+test("renderBracket: muestra sede y fecha/hora CEST con cruce resuelto + cabecera vs", () => {
+  const app = loadApp();
+  Object.assign(app.S, {
+    user: "Ana",
+    players: [{ nombre: "Ana", bracket_predictions: {} }],
+    koFixtures: synthFixtures(), // resuelve r32_M73 = España vs Francia
+    koResults: {},
+  });
+  const html = app.renderBracket();
+  assert.match(html, /SoFi Stadium, Inglewood/);        // sede de M73
+  assert.match(html, /Dom 28\/06 21:00/);               // fecha/hora CEST de M73
+  assert.match(html, /bracket-vs/);                     // cabecera "A vs B"
+  assert.match(html, /España[\s\S]*?vs[\s\S]*?Francia/); // "Equipo A vs Equipo B"
+});
+
+test("renderBracket: muestra sede/fecha aunque un lado esté pendiente", () => {
+  const app = loadApp();
+  // Solo grupo A completo → huecos de M73 (2A vs 2B) sin 2B → partido pendiente,
+  // pero fecha/hora/sede SÍ deben aparecer (vienen de KO_SCHEDULE por nº).
+  const standings = { A: fullGroup("Aa", "Ab", "Ac", "Ad") };
+  Object.assign(app.S, {
+    user: "Ana",
+    players: [{ nombre: "Ana", bracket_predictions: {} }],
+    groupStandings: standings,
+    koFixtures: { r32: [{ key: "r32_M74", home: "España", away: "Francia" }] }, // fuerza anyResolved
+    koResults: {},
+  });
+  const html = app.renderBracket();
+  // M73 está pendiente (falta 2B) pero su sede/fecha se renderizan igualmente.
+  assert.match(html, /bracket-match--pending/);
+  assert.match(html, /SoFi Stadium, Inglewood/);  // sede de M73 (pendiente)
+  assert.match(html, /Dom 28\/06 21:00/);         // fecha/hora de M73 (pendiente)
+});
+
+test("renderBracket: escapa la sede", () => {
+  const app = loadApp();
+  Object.assign(app.S, {
+    user: "Ana",
+    players: [{ nombre: "Ana", bracket_predictions: {} }],
+    koFixtures: synthFixtures(),
+    koResults: {},
+  });
+  // Inyectamos una sede maliciosa en una entrada del calendario.
+  app.KO_SCHEDULE[73].venue = "<img src=x>Estadio";
+  const html = app.renderBracket();
+  assert.ok(!html.includes("<img src=x>"), "no debe inyectar HTML de sede sin escapar");
+  assert.match(html, /&lt;img src=x&gt;Estadio/);
+});
+
 // ─── ranking integra los puntos del cuadro ───────────────────────────────────
 test("renderRanking: un jugador con aciertos en el cuadro suma esos puntos al total", () => {
   const app = loadApp();

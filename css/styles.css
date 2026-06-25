@@ -1073,6 +1073,26 @@ body {
   right: .4rem;
 }
 
+.bracket-vs {
+  font-size: .8rem;
+  font-weight: 800;
+  color: #111827;
+  padding-right: 2.2rem;
+  line-height: 1.3;
+}
+
+.bracket-vs-sep {
+  color: #9ca3af;
+  font-weight: 700;
+  font-size: .7rem;
+  margin: 0 .15rem;
+}
+
+.bracket-meta {
+  text-align: left;
+  margin-top: .2rem;
+}
+
 .bracket-options {
   display: flex;
   gap: .5rem;

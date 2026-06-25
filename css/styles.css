@@ -1195,6 +1195,12 @@ body {
   margin-bottom: .35rem;
 }
 
+.admin-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
 .admin-input {
   width: 100%;
   border: 2px solid #e5e7eb;

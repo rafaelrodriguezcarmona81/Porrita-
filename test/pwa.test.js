@@ -93,6 +93,19 @@ test("sw.js no intercepta peticiones cross-origin (Supabase/OAuth)", () => {
   assert.match(sw, /url\.origin\s*!==\s*self\.location\.origin/);
 });
 
+test("sw.js sirve el shell network-first (no cache-first, para no servir app.js viejo)", () => {
+  const sw = read("sw.js");
+  // El shell debe resolverse con network-first.
+  assert.match(sw, /isShellAsset\(url\)[\s\S]*?networkFirst\(/);
+  // No debe quedar la antigua estrategia cache-first.
+  assert.doesNotMatch(sw, /cacheFirst/);
+});
+
+test("sw.js versiona la cache con semver (evita vN creciendo sin fin)", () => {
+  const sw = read("sw.js");
+  assert.match(sw, /const VERSION\s*=\s*["'][^"']*\d+\.\d+\.\d+["']/);
+});
+
 // ─── changelog ───────────────────────────────────────────────────────────────
 test("changelog.json menciona la instalación/offline en la entrada de hoy", () => {
   const cl = JSON.parse(read("changelog.json"));

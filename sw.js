@@ -1,8 +1,11 @@
 /* Service worker para Porra Mundial 2026 (PWA).
  *
  * Estrategias (ver CLAUDE.md "Security model" y la issue #19):
- *  - Shell estático (index.html, css, js, manifest, iconos): cache-first.
- *    El shell se puede servir sin red, lo que permite abrir la app offline.
+ *  - Shell estático (index.html, css, js, manifest, iconos): NETWORK-FIRST con
+ *    fallback a cache. Online se sirve siempre la última versión desplegada (así
+ *    los cambios de app.js/css se ven sin esperar a un cambio de sw.js); offline
+ *    se sirve la copia precacheada, de modo que la app sigue abriendo sin red.
+ *    (Antes era cache-first y dejaba servir app.js viejo indefinidamente.)
  *  - Navegaciones (request.mode === "navigate"): NETWORK-FIRST con fallback
  *    al shell precacheado. Nunca servimos una página cacheada que pueda
  *    "tragarse" el redirect de OAuth de Google ni el manejo de ?invite=...
@@ -16,7 +19,11 @@
  *    se cachean ni se interceptan; van directas a la red.
  */
 
-const VERSION = "porra-pwa-v1";
+// Versión del caché en semver. Solo hay que subirla cuando cambie la LÓGICA del
+// SW (estrategias/assets), no en cada deploy: el shell es network-first y se
+// refresca solo. v1.0.0 era el cache-first inicial; 1.1.0 pasa el shell a
+// network-first para no servir app.js viejo.
+const VERSION = "porra-pwa-1.1.0";
 const SHELL_CACHE = `${VERSION}-shell`;
 const DATA_CACHE = `${VERSION}-data`;
 
@@ -87,16 +94,22 @@ async function networkFirstData(request, cacheName) {
   }
 }
 
-// Cache-first: sirve de cache si existe; si no, red y cachea.
-async function cacheFirst(request, cacheName) {
+// Network-first para el shell: intenta la red y refresca la copia cacheada; si
+// la red falla (offline), sirve la copia precacheada. Garantiza que online se
+// use siempre el último app.js/css/index.html desplegado.
+async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  const response = await fetch(request);
-  if (response && response.ok) {
-    cache.put(request, response.clone());
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (err) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw err;
   }
-  return response;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -134,9 +147,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Shell estático: cache-first.
+  // Shell estático: network-first (fresco online, cae a cache offline).
   if (isShellAsset(url)) {
-    event.respondWith(cacheFirst(request, SHELL_CACHE));
+    event.respondWith(networkFirst(request, SHELL_CACHE));
     return;
   }
 

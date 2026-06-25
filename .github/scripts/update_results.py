@@ -139,6 +139,35 @@ for group, teams in standings.items():
     key=lambda t: (-t["pts"], -t["gd"], -t["gf"], t["team"]),
   )
 
+# ─── TODO: ELIMINATORIAS (knockout / cuadro) ──────────────────────────────────
+# Cuando arranque la fase final (tras la fase de grupos), este script debe poblar
+# también el cuadro de eliminatorias, igual que hace arriba con los grupos, y
+# añadir DOS claves a `output` (de momento NO se emiten — ver más abajo):
+#
+#   * "koResults" → mapa match-key → equipo que AVANZÓ (en español), CLAVE PRINCIPAL.
+#                   La match-key es la ESTABLE de la plantilla: "{RONDA}_M{n}" (p. ej.
+#                   "r32_M73", "r16_M89", "final_M104"; ver KO_BRACKET en js/app.js,
+#                   M73..M104). Con esto el cliente: (a) puntúa el cuadro (bracketPts:
+#                   `base` puntos por acertante por ronda) y (b) propaga ganadores y
+#                   perdedores a las rondas siguientes (matchWinner/matchLoser) desde
+#                   resolveBracketTeams(). Nombres de equipo en español (vía TEAM_MAP).
+#   * "ko"        → OPCIONAL. Cruces concretos por ronda, con PRECEDENCIA sobre la
+#                   resolución calculada por el cliente (útil para el caso real de la
+#                   FIFA donde la asignación de los 8 terceros a sus huecos sigue la
+#                   tabla Anexo C). Formato:
+#                   { "r32":[{ "key":"r32_M73", "home":..., "away":... }, ...],
+#                     "r16":[...], "qf":[...], "sf":[...], "third":[...], "final":[...] }
+#                   Si NO se emite, el cliente resuelve los huecos solo (1º/2º de grupo
+#                   + 8 mejores terceros asignados por conjunto candidato).
+#
+# NO se implementa todavía porque a fecha de hoy el Mundial está en fase de grupos:
+# no existen resultados KO que raspar, y NO se debe inventar el resultado de ningún
+# cruce (debe venir de datos reales). La PLANTILLA de huecos (KO_BRACKET) ya es
+# pública y fija en el cliente, que la rellena progresivamente desde S.groupStandings;
+# mientras no haya "koResults"/"ko", S.koResults/S.koFixtures caen a {} y la pestaña
+# Cuadro muestra los huecos como "pendiente". Por eso `output` se deja EXACTAMENTE
+# como estaba: sin claves "ko"/"koResults".
+
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "results": results,

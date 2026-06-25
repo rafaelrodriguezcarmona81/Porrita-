@@ -1010,6 +1010,174 @@ body {
   margin-top: .5rem;
 }
 
+/* ─── Cuadro / eliminatorias ──────────────────────────────────────────────── */
+.bracket-locked {
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  border-radius: .5rem;
+  padding: .75rem;
+  font-size: .8rem;
+  color: #713f12;
+  margin: .5rem 0 0;
+}
+
+.bracket-rounds {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.bracket-round-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  font-size: .8rem;
+}
+
+.bracket-round-name {
+  font-weight: 700;
+  color: #111;
+}
+
+.bracket-round-base {
+  font-size: .7rem;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.bracket-round-pending {
+  font-size: .75rem;
+  color: #9ca3af;
+  margin: .5rem 0 0;
+}
+
+.bracket-list {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.bracket-match {
+  position: relative;
+  background: #f9fafb;
+  border-radius: .5rem;
+  padding: .6rem;
+}
+
+.bracket-badge {
+  position: absolute;
+  top: .4rem;
+  right: .4rem;
+}
+
+.bracket-vs-sep {
+  flex: 0 0 auto;
+  color: #9ca3af;
+  font-weight: 700;
+  font-size: .7rem;
+  text-transform: uppercase;
+}
+
+.bracket-meta {
+  text-align: left;
+  margin-top: .1rem;
+  padding-right: 1.6rem;
+}
+
+.bracket-mid {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 800;
+  font-size: .6rem;
+  padding: .05rem .3rem;
+  border-radius: .3rem;
+  margin-right: .35rem;
+}
+
+.bracket-options {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .4rem;
+}
+
+.bracket-pick {
+  flex: 1;
+  border: 2px solid #e5e7eb;
+  border-radius: .5rem;
+  padding: .5rem;
+  font-size: .8rem;
+  font-weight: 700;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.bracket-pick--ph {
+  color: #9ca3af;
+  font-weight: 600;
+  background: #f9fafb;
+  cursor: default;
+}
+
+.bracket-pick--sel {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.bracket-pick--correct {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.bracket-pick--wrong {
+  border-color: #dc2626;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.bracket-pick--result {
+  border-color: #16a34a;
+}
+
+.bracket-pick--locked {
+  opacity: .7;
+}
+
+.bracket-pick--blocked {
+  cursor: default;
+}
+
+.btn-bracket {
+  width: 100%;
+  padding: .65rem;
+  border-radius: .5rem;
+  font-weight: 900;
+  font-size: .85rem;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  background: #16a34a;
+}
+
+.btn-bracket--busy {
+  background: #9ca3af;
+}
+
+.bracket-saved {
+  text-align: center;
+  font-size: .8rem;
+  color: #16a34a;
+  font-weight: 700;
+  margin: 0;
+}
+
 .player-row {
   display: flex;
   align-items: center;

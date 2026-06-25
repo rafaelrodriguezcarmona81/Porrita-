@@ -1,5 +1,13 @@
 [
   {
+    "id": "2026-06-25",
+    "fecha": "2026-06-25",
+    "items": [
+      "El cuadro de eliminatorias ya muestra los cruces reales por posición (2ºA-2ºB, 1ºE-mejor tercero, etc.) y se irá rellenando con los equipos a medida que avancen los grupos.",
+      "Cada cruce del cuadro muestra ahora su día, hora (en horario peninsular) y sede del estadio, además de la cabecera «Equipo A vs Equipo B»."
+    ]
+  },
+  {
     "id": "2026-06-24",
     "fecha": "2026-06-24",
     "items": [
@@ -10,7 +18,8 @@
       "En la pestaña Hoy cada partido indica ahora de qué grupo es.",
       "Ahora puedes cambiar tu nombre visible (mote) desde el botón «Editar nombre» de la cabecera: se actualiza al instante en el ranking, el pódium y la cabecera.",
       "Ahora puedes instalar la porra en tu móvil y abrirla aunque no tengas conexión: Android (Chrome) «Instalar app», iPhone (Safari) Compartir → «Añadir a pantalla de inicio».",
-      "El administrador ya puede dar de baja a un jugador desde la Zona Admin, eliminando su ficha y sus pronósticos de la porra."
+      "El administrador ya puede dar de baja a un jugador desde la Zona Admin, eliminando su ficha y sus pronósticos de la porra.",
+      "Llega el pronóstico del cuadro de eliminatorias: una nueva pestaña «Cuadro» que se podrá rellenar cuando acabe la fase de grupos, eligiendo qué equipo avanza en cada cruce."
     ]
   },
   {

@@ -551,3 +551,80 @@ test("renderRanking: un jugador con aciertos en el cuadro suma esos puntos al to
   // El total de Ana (4) aparece como número de puntos.
   assert.match(html, /rank-total-num">4</);
 });
+
+// ─── clinchedPositions / colocación anticipada (grupo sin cerrar) ──────────────
+// Grupo E con 5 de 6 partidos jugados; falta solo Curazao-Costa de Marfil.
+// Alemania 9 (ganó sus 3), Ecuador 3 (mp3), Costa de Marfil 3 (mp2), Curazao 0 (mp2).
+function groupEAlemaniaClinch() {
+  const groupResults = {
+    "E_Alemania_Curazao": "1",
+    "E_Costa de Marfil_Ecuador": "1",
+    "E_Alemania_Costa de Marfil": "1",
+    "E_Ecuador_Curazao": "1",
+    "E_Ecuador_Alemania": "2",
+  };
+  const standings = {
+    E: [
+      { team: "Alemania", mp: 3, pts: 9, gd: 6, gf: 7 },
+      { team: "Ecuador", mp: 3, pts: 3, gd: 0, gf: 3 },
+      { team: "Costa de Marfil", mp: 2, pts: 3, gd: 0, gf: 2 },
+      { team: "Curazao", mp: 2, pts: 0, gd: -6, gf: 0 },
+    ],
+  };
+  return { standings, groupResults };
+}
+
+test("clinchedPositions: Alemania 1ª del E asegurada aunque el grupo no haya cerrado", () => {
+  const { clinchedPositions } = loadApp();
+  const { standings, groupResults } = groupEAlemaniaClinch();
+  const locked = clinchedPositions("E", standings, groupResults);
+  assert.equal(locked["Alemania"], 0, "Alemania debe quedar fija como 1ª (puesto 0)");
+  // El 2º NO está asegurado (Costa de Marfil aún puede llegar a 6 y empatar/superar).
+  assert.equal("Ecuador" in locked, false, "el 2º no debe fijarse: hay empate a puntos posible");
+});
+
+test("clinchedPositions: no fija nada si la posición puede empatar a puntos", () => {
+  const { clinchedPositions } = loadApp();
+  // Grupo E sin ningún partido jugado → todo abierto, nada asegurable.
+  const standings = { E: [
+    { team: "Alemania", mp: 0, pts: 0, gd: 0, gf: 0 },
+    { team: "Curazao", mp: 0, pts: 0, gd: 0, gf: 0 },
+    { team: "Costa de Marfil", mp: 0, pts: 0, gd: 0, gf: 0 },
+    { team: "Ecuador", mp: 0, pts: 0, gd: 0, gf: 0 },
+  ] };
+  assert.deepEqual(clinchedPositions("E", standings, {}), {});
+});
+
+test("resolveBracketTeams: coloca el 1º de un grupo asegurado aunque no esté cerrado (Alemania→M74)", () => {
+  const { resolveBracketTeams } = loadApp();
+  const { standings, groupResults } = groupEAlemaniaClinch();
+  const out = resolveBracketTeams(standings, {}, {}, groupResults);
+  // M74 = 1ºE vs mejor 3º → el local debe ser Alemania ya; el rival sigue pendiente.
+  assert.equal(out["r32_M74"].home, "Alemania");
+  assert.equal(out["r32_M74"].away, null);
+});
+
+test("renderBracket: con un grupo cerrado y rivales pendientes, coloca su equipo (no la pantalla bloqueada)", () => {
+  const app = loadApp();
+  // Grupo C completo (Brasil 1º); su rival de 16avos es del grupo F, aún sin datos.
+  const standings = {
+    C: [
+      { team: "Brasil", mp: 3, pts: 9, gd: 6, gf: 8 },
+      { team: "Marruecos", mp: 3, pts: 6, gd: 2, gf: 4 },
+      { team: "Escocia", mp: 3, pts: 3, gd: -2, gf: 3 },
+      { team: "Haití", mp: 3, pts: 0, gd: -6, gf: 1 },
+    ],
+  };
+  Object.assign(app.S, {
+    user: "Ana",
+    players: [{ nombre: "Ana", bracket_predictions: {} }],
+    groupStandings: standings,
+    groupResults: {},
+    koFixtures: {},
+    koResults: {},
+  });
+  const html = app.renderBracket();
+  assert.doesNotMatch(html, /El cuadro se desbloqueará/);
+  assert.match(html, /Brasil/);               // 1ºC ya colocado
+  assert.match(html, /Mejor 3º|2º Grupo F/);  // su rival sigue como pendiente
+});

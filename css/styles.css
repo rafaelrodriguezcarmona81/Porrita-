@@ -1073,30 +1073,25 @@ body {
   right: .4rem;
 }
 
-.bracket-vs {
-  font-size: .8rem;
-  font-weight: 800;
-  color: #111827;
-  padding-right: 2.2rem;
-  line-height: 1.3;
-}
-
 .bracket-vs-sep {
+  flex: 0 0 auto;
   color: #9ca3af;
   font-weight: 700;
   font-size: .7rem;
-  margin: 0 .15rem;
+  text-transform: uppercase;
 }
 
 .bracket-meta {
   text-align: left;
-  margin-top: .2rem;
+  margin-top: .1rem;
+  padding-right: 1.6rem;
 }
 
 .bracket-options {
   display: flex;
+  align-items: center;
   gap: .5rem;
-  margin-top: .35rem;
+  margin-top: .4rem;
 }
 
 .bracket-pick {
@@ -1108,6 +1103,14 @@ body {
   font-weight: 700;
   background: #fff;
   cursor: pointer;
+  text-align: center;
+}
+
+.bracket-pick--ph {
+  color: #9ca3af;
+  font-weight: 600;
+  background: #f9fafb;
+  cursor: default;
 }
 
 .bracket-pick--sel {

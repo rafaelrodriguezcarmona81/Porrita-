@@ -1059,33 +1059,31 @@ function renderBracket(){
         ?`<span class="bracket-badge badge ${pick&&pick===res?'badge--correct':pick?'badge--wrong':'badge--neutral'}">${pick&&pick===res?'+'+r.base+'✓':pick?'✗':'—'}</span>`
         :pending?'<span class="bracket-badge badge badge--neutral">⏳</span>'
         :locked?'<span class="bracket-badge badge badge--locked">🔒</span>':'';
-      // Cabecera "Equipo A vs Equipo B" y línea de fecha/hora/sede. Cuando un
-      // lado sigue pendiente usamos su placeholder de hueco (slotLabel), pero
-      // fecha/hora/sede SÍ se conocen (vienen de KO_SCHEDULE por nº de partido).
+      // Línea de fecha/hora (CEST) y sede — conocida por nº de partido aunque el
+      // rival siga pendiente (viene de KO_SCHEDULE).
       const sch=KO_SCHEDULE[b.m];
       const labHome=esc(slotLabel(b.home,o.home));
       const labAway=esc(slotLabel(b.away,o.away));
-      const flHome=o.home!=null?fl(o.home)+" ":"";
-      const flAway=o.away!=null?fl(o.away)+" ":"";
-      const header=`<div class="bracket-vs">${flHome}${labHome} <span class="bracket-vs-sep">vs</span> ${flAway}${labAway}</div>`;
       const meta=sch
         ?`<div class="match-meta bracket-meta">${fmtKO(b.m)} · ${esc(sch.venue)}</div>`
         :"";
+      // El "vs" va ENTRE las dos cards de equipo, nunca dentro de ellas.
+      const sep=`<span class="bracket-vs-sep">vs</span>`;
       if(pending){
-        // Hueco aún no resuelto: mostramos placeholder claro, sin botones, pero
-        // CON cabecera y fecha/hora/sede (conocidas aunque falte el rival).
+        // Hueco aún no resuelto: cada lado es una card-placeholder (sin botón),
+        // con el "vs" en medio. Fecha/hora/sede sí se muestran.
         return`<div class="bracket-match bracket-match--pending">
           ${badge}
-          ${header}
           ${meta}
           <div class="bracket-options">
-            <span class="bracket-pending">${labHome}</span>
-            <span class="bracket-pending">${labAway}</span>
+            <span class="bracket-pick bracket-pick--ph">${labHome}</span>
+            ${sep}
+            <span class="bracket-pick bracket-pick--ph">${labAway}</span>
           </div>
         </div>`;
       }
-      const teams=[o.home,o.away];
-      const opts=teams.map(t=>{
+      // Cada equipo es una card-button; el "vs" queda fuera, entre ambas.
+      const teamBtn=t=>{
         const sel=pick===t;
         const isAdv=hasR&&res===t;
         let pc="bracket-pick";
@@ -1094,12 +1092,11 @@ function renderBracket(){
         if(locked&&!hasR)pc+=" bracket-pick--locked";
         if(blocked)pc+=" bracket-pick--blocked";
         return`<button onclick="${blocked?'':('setBracketPick(\''+esc(key)+'\',\''+esc(t)+'\')')}" class="${pc}">${fl(t)} ${esc(t)}</button>`;
-      }).join("");
+      };
       return`<div class="bracket-match">
         ${badge}
-        ${header}
         ${meta}
-        <div class="bracket-options">${opts}</div>
+        <div class="bracket-options">${teamBtn(o.home)}${sep}${teamBtn(o.away)}</div>
       </div>`;
     }).join("");
     return`${card(`<div class="section-head"><h3 class="title">${esc(r.label)}</h3><span class="bracket-round-base">Base ${r.base}pts</span></div>

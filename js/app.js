@@ -696,10 +696,12 @@ function renderAdmin(){
     <button onclick="doCreateInvite()" class="admin-btn${S.adminInviteBusy?' admin-btn--busy':''}">${S.adminInviteBusy?'⏳ Generando...':'🔗 Generar invitación (30 min)'}</button>
     ${invite}
     ${msg}
-    <label class="admin-label">Dar de baja a un jugador</label>
-    <select id="adminRemoveSelect" class="select">${options}</select>
-    <button onclick="doRemovePlayer()" class="admin-btn${S.adminRemoveBusy?' admin-btn--busy':''}">${S.adminRemoveBusy?'⏳ Dando de baja...':'🗑️ Dar de baja'}</button>
-    ${removeMsg}`);
+    <div class="admin-section">
+      <label class="admin-label">Dar de baja a un jugador</label>
+      <select id="adminRemoveSelect" class="select">${options}</select>
+      <button onclick="doRemovePlayer()" class="admin-btn${S.adminRemoveBusy?' admin-btn--busy':''}">${S.adminRemoveBusy?'⏳ Dando de baja...':'🗑️ Dar de baja'}</button>
+      ${removeMsg}
+    </div>`);
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────

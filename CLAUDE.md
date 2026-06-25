@@ -1,6 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides repository guidance for coding agents working in this project.
+It is intentionally shared by Claude Code (claude.ai/code) and Codex: Claude Code
+discovers it as `CLAUDE.md`, and Codex should treat it as this repository's
+agent-instructions file. Keep guidance here agent-neutral and project-specific;
+if a note only applies to one agent, label it explicitly.
 
 ## What this is
 
@@ -162,6 +166,32 @@ CLI). Both must pass — migrations (gated on the Tests workflow) won't apply ot
 `changelog.json` unless it carries the `skip-changelog` label. Workflows pin GitHub Actions to **full
 commit SHAs** (with the version as a trailing comment) rather than tags — keep new actions pinned the
 same way.
+
+## Pull request format
+
+When opening a PR, use the repository template in
+`.github/PULL_REQUEST_TEMPLATE.md`.
+
+**Title.** Use a conventional-commit style title, usually in Spanish:
+
+- `feat: el admin puede dar de baja a un jugador (#21)`
+- `feat: pronóstico del cuadro de eliminatorias (#14)`
+- `fix(invite): arreglos del flujo de invitación (token vía OAuth + mensaje de error admin)`
+
+Reference the issue in the title when the branch implements one. Prefer Spanish user-facing wording
+for feature titles; technical scope in parentheses is fine for fixes.
+
+**Body.** Use Spanish and follow the template. Start with `Closes #N.` when the PR closes an issue.
+Skip sections that do not apply. For docs/internal-only PRs with no user-visible app change, label
+the PR `skip-changelog` and state that in the `Changelog` section instead of editing
+`changelog.json`.
+
+Screenshots and other PR-only assets can be committed to the dedicated `pr-assets` branch. When an
+agent needs images for the `Cómo se ve` section, it may add them there and reference the raw GitHub
+URL from the PR body/template, keeping those assets out of `main`.
+
+If an agent adds a generated-by footer, it must name the agent that actually produced the work (for
+example Claude Code or Codex); do not claim another agent generated it.
 
 ## Database migrations (Supabase)
 

@@ -198,6 +198,20 @@ test("renderBracket: muestra resueltos desde standings completos y pendiente sin
   assert.match(html, /bracket-mid">M104</);
 });
 
+test("venueCountry: clasifica las sedes por país anfitrión", () => {
+  const app = loadApp();
+  assert.equal(app.venueCountry("Estadio Azteca, Mexico City"), "México");
+  assert.equal(app.venueCountry("Estadio BBVA, Guadalupe"), "México");
+  assert.equal(app.venueCountry("BMO Field, Toronto"), "Canadá");
+  assert.equal(app.venueCountry("BC Place, Vancouver"), "Canadá");
+  assert.equal(app.venueCountry("SoFi Stadium, Inglewood"), "Estados Unidos");
+  // Cada sede de KO_SCHEDULE resuelve a un país con bandera conocida.
+  for (const m of Object.values(app.KO_SCHEDULE)) {
+    const flag = app.fl(app.venueCountry(m.venue));
+    assert.notEqual(flag, "🏳️", `sede sin bandera: ${m.venue}`);
+  }
+});
+
 // ─── saveBracket ────────────────────────────────────────────────────────────
 test("saveBracket: PATCH de bracket_predictions con JWT y limpia el estado", async () => {
   const app = loadApp({

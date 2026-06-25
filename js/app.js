@@ -303,6 +303,16 @@ const KO_SCHEDULE={
   103:{utc:"2026-07-18T21:00:00Z",venue:"Hard Rock Stadium, Miami Gardens"},
   104:{utc:"2026-07-19T19:00:00Z",venue:"MetLife Stadium, East Rutherford"}
 };
+
+// País anfitrión de cada sede (Mundial 2026: EEUU, México y Canadá). Solo 4 de las
+// 16 sedes no son de EEUU, así que las marcamos por nombre y el resto es EEUU.
+const VENUE_MX=["Estadio BBVA, Guadalupe","Estadio Azteca, Mexico City"];
+const VENUE_CA=["BMO Field, Toronto","BC Place, Vancouver"];
+function venueCountry(venue){
+  if(VENUE_MX.includes(venue))return"México";
+  if(VENUE_CA.includes(venue))return"Canadá";
+  return"Estados Unidos";
+}
 // Extrae el nº de partido (73..104) de una clave de plantilla KO "{RONDA}_M{n}".
 // Devuelve null si la clave no encaja con ese patrón.
 function koMatchNum(key){
@@ -1067,7 +1077,8 @@ function renderBracket(){
       // Chip con el ID del propio partido (M73..M104) — permite cruzar las
       // referencias "Ganador M74" que aparecen en las rondas siguientes.
       const mid=`<span class="bracket-mid">M${b.m}</span>`;
-      const meta=`<div class="match-meta bracket-meta">${mid}${sch?` ${fmtKO(b.m)} · ${esc(sch.venue)}`:""}</div>`;
+      const venue=sch?` ${fmtKO(b.m)} · ${fl(venueCountry(sch.venue))} ${esc(sch.venue)}`:"";
+      const meta=`<div class="match-meta bracket-meta">${mid}${venue}</div>`;
       // El "vs" va ENTRE las dos cards de equipo, nunca dentro de ellas.
       const sep=`<span class="bracket-vs-sep">vs</span>`;
       if(pending){

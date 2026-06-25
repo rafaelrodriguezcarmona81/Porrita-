@@ -1143,15 +1143,19 @@ function renderBracket(){
       // El "vs" va ENTRE las dos cards de equipo, nunca dentro de ellas.
       const sep=`<span class="bracket-vs-sep">vs</span>`;
       if(pending){
-        // Hueco aún no resuelto: cada lado es una card-placeholder (sin botón),
-        // con el "vs" en medio. Fecha/hora/sede sí se muestran.
+        // Cruce aún no jugable (falta un rival). Cada lado: si el equipo YA está
+        // resuelto, se pinta con su bandera como card fija (no clicable); si sigue
+        // pendiente, placeholder gris. Fecha/hora/sede se muestran igualmente.
+        const cell=(spec,team,lab)=>team!=null
+          ?`<span class="bracket-pick bracket-pick--fixed">${fl(team)} ${lab}</span>`
+          :`<span class="bracket-pick bracket-pick--ph">${lab}</span>`;
         return`<div class="bracket-match bracket-match--pending">
           ${badge}
           ${meta}
           <div class="bracket-options">
-            <span class="bracket-pick bracket-pick--ph">${labHome}</span>
+            ${cell(b.home,o.home,labHome)}
             ${sep}
-            <span class="bracket-pick bracket-pick--ph">${labAway}</span>
+            ${cell(b.away,o.away,labAway)}
           </div>
         </div>`;
       }

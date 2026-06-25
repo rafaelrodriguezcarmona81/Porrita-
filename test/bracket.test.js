@@ -628,3 +628,21 @@ test("renderBracket: con un grupo cerrado y rivales pendientes, coloca su equipo
   assert.match(html, /Brasil/);               // 1ºC ya colocado
   assert.match(html, /Mejor 3º|2º Grupo F/);  // su rival sigue como pendiente
 });
+
+test("renderBracket: en un cruce pendiente, el equipo ya resuelto se pinta con bandera (no placeholder gris)", () => {
+  const app = loadApp();
+  const { standings, groupResults } = groupEAlemaniaClinch(); // Alemania 1ºE asegurada; rival (3º) pendiente
+  Object.assign(app.S, {
+    user: "Ana",
+    players: [{ nombre: "Ana", bracket_predictions: {} }],
+    groupStandings: standings,
+    groupResults,
+    koFixtures: {},
+    koResults: {},
+  });
+  const html = app.renderBracket();
+  // M74 = 1ºE (Alemania, resuelto) vs mejor 3º (pendiente).
+  // Alemania debe ir como card fija con su bandera, NO como placeholder gris.
+  assert.match(html, /bracket-pick--fixed[^>]*>[^<]*🇩🇪[^<]*Alemania/);
+  assert.doesNotMatch(html, /bracket-pick--ph[^>]*>[^<]*Alemania/);
+});

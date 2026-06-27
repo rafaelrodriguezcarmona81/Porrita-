@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-27T02:05:05Z",
+  "updated": "2026-06-27T07:09:03Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -38,6 +38,7 @@
     "B_Bosnia y Herc._Catar": "1",
     "D_Turquía_Estados Unidos": "1",
     "I_Noruega_Francia": "2",
+    "G_Egipto_Irán": "X",
     "H_Cabo Verde_Arabia Saudí": "X",
     "H_Uruguay_España": "2",
     "A_México_Sudáfrica": "1",
@@ -64,7 +65,8 @@
     "G_Bélgica_Egipto": "X",
     "E_Ecuador_Curazao": "X",
     "B_Suiza_Canadá": "1",
-    "D_Paraguay_Australia": "X"
+    "D_Paraguay_Australia": "X",
+    "G_Nueva Zelanda_Bélgica": "2"
   },
   "scores": {
     "D_Australia_Turquía": "2-0",
@@ -104,6 +106,7 @@
     "B_Bosnia y Herc._Catar": "3-1",
     "D_Turquía_Estados Unidos": "3-2",
     "I_Noruega_Francia": "1-4",
+    "G_Egipto_Irán": "1-1",
     "H_Cabo Verde_Arabia Saudí": "0-0",
     "H_Uruguay_España": "0-1",
     "A_México_Sudáfrica": "2-0",
@@ -130,7 +133,8 @@
     "G_Bélgica_Egipto": "1-1",
     "E_Ecuador_Curazao": "0-0",
     "B_Suiza_Canadá": "2-1",
-    "D_Paraguay_Australia": "0-0"
+    "D_Paraguay_Australia": "0-0",
+    "G_Nueva Zelanda_Bélgica": "1-5"
   },
   "standings": {
     "D": [
@@ -641,47 +645,47 @@
     ],
     "G": [
       {
-        "team": "Egipto",
-        "mp": 2,
+        "team": "Bélgica",
+        "mp": 3,
         "w": 1,
-        "d": 1,
+        "d": 2,
         "l": 0,
-        "gf": 4,
+        "gf": 6,
         "ga": 2,
+        "gd": 4,
+        "pts": 5
+      },
+      {
+        "team": "Egipto",
+        "mp": 3,
+        "w": 1,
+        "d": 2,
+        "l": 0,
+        "gf": 5,
+        "ga": 3,
         "gd": 2,
-        "pts": 4
+        "pts": 5
       },
       {
         "team": "Irán",
-        "mp": 2,
+        "mp": 3,
         "w": 0,
-        "d": 2,
+        "d": 3,
         "l": 0,
-        "gf": 2,
-        "ga": 2,
+        "gf": 3,
+        "ga": 3,
         "gd": 0,
-        "pts": 2
-      },
-      {
-        "team": "Bélgica",
-        "mp": 2,
-        "w": 0,
-        "d": 2,
-        "l": 0,
-        "gf": 1,
-        "ga": 1,
-        "gd": 0,
-        "pts": 2
+        "pts": 3
       },
       {
         "team": "Nueva Zelanda",
-        "mp": 2,
+        "mp": 3,
         "w": 0,
         "d": 1,
-        "l": 1,
-        "gf": 3,
-        "ga": 5,
-        "gd": -2,
+        "l": 2,
+        "gf": 4,
+        "ga": 10,
+        "gd": -6,
         "pts": 1
       }
     ]

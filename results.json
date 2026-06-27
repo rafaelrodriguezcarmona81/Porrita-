@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-26T21:40:33Z",
+  "updated": "2026-06-27T02:05:05Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -38,6 +38,8 @@
     "B_Bosnia y Herc._Catar": "1",
     "D_Turquía_Estados Unidos": "1",
     "I_Noruega_Francia": "2",
+    "H_Cabo Verde_Arabia Saudí": "X",
+    "H_Uruguay_España": "2",
     "A_México_Sudáfrica": "1",
     "C_Brasil_Marruecos": "X",
     "F_Países Bajos_Japón": "X",
@@ -102,6 +104,8 @@
     "B_Bosnia y Herc._Catar": "3-1",
     "D_Turquía_Estados Unidos": "3-2",
     "I_Noruega_Francia": "1-4",
+    "H_Cabo Verde_Arabia Saudí": "0-0",
+    "H_Uruguay_España": "0-1",
     "A_México_Sudáfrica": "2-0",
     "C_Brasil_Marruecos": "1-1",
     "F_Países Bajos_Japón": "2-2",
@@ -454,47 +458,47 @@
     "H": [
       {
         "team": "España",
-        "mp": 2,
-        "w": 1,
+        "mp": 3,
+        "w": 2,
         "d": 1,
         "l": 0,
-        "gf": 4,
+        "gf": 5,
         "ga": 0,
-        "gd": 4,
-        "pts": 4
-      },
-      {
-        "team": "Uruguay",
-        "mp": 2,
-        "w": 0,
-        "d": 2,
-        "l": 0,
-        "gf": 3,
-        "ga": 3,
-        "gd": 0,
-        "pts": 2
+        "gd": 5,
+        "pts": 7
       },
       {
         "team": "Cabo Verde",
-        "mp": 2,
+        "mp": 3,
         "w": 0,
-        "d": 2,
+        "d": 3,
         "l": 0,
         "gf": 2,
         "ga": 2,
         "gd": 0,
+        "pts": 3
+      },
+      {
+        "team": "Uruguay",
+        "mp": 3,
+        "w": 0,
+        "d": 2,
+        "l": 1,
+        "gf": 3,
+        "ga": 4,
+        "gd": -1,
         "pts": 2
       },
       {
         "team": "Arabia Saudí",
-        "mp": 2,
+        "mp": 3,
         "w": 0,
-        "d": 1,
+        "d": 2,
         "l": 1,
         "gf": 1,
         "ga": 5,
         "gd": -4,
-        "pts": 1
+        "pts": 2
       }
     ],
     "J": [

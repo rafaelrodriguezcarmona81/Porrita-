@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-28T21:09:54Z",
+  "updated": "2026-06-28T22:06:15Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -701,5 +701,90 @@
         "pts": 1
       }
     ]
+  },
+  "koResults": {
+    "r32_M73": "Canadá"
+  },
+  "ko": {
+    "r32_M86": {
+      "key": "r32_M86",
+      "home": "Argentina",
+      "away": "Cabo Verde"
+    },
+    "r32_M88": {
+      "key": "r32_M88",
+      "home": "Australia",
+      "away": "Egipto"
+    },
+    "r32_M87": {
+      "key": "r32_M87",
+      "home": "Colombia",
+      "away": "Ghana"
+    },
+    "r32_M76": {
+      "key": "r32_M76",
+      "home": "Brasil",
+      "away": "Japón"
+    },
+    "r32_M83": {
+      "key": "r32_M83",
+      "home": "Portugal",
+      "away": "Croacia"
+    },
+    "r32_M85": {
+      "key": "r32_M85",
+      "home": "Suiza",
+      "away": "Argelia"
+    },
+    "r32_M73": {
+      "key": "r32_M73",
+      "home": "Sudáfrica",
+      "away": "Canadá"
+    },
+    "r32_M77": {
+      "key": "r32_M77",
+      "home": "Francia",
+      "away": "Suecia"
+    },
+    "r32_M84": {
+      "key": "r32_M84",
+      "home": "España",
+      "away": "Austria"
+    },
+    "r32_M74": {
+      "key": "r32_M74",
+      "home": "Alemania",
+      "away": "Paraguay"
+    },
+    "r32_M81": {
+      "key": "r32_M81",
+      "home": "Estados Unidos",
+      "away": "Bosnia y Herc."
+    },
+    "r32_M75": {
+      "key": "r32_M75",
+      "home": "Países Bajos",
+      "away": "Marruecos"
+    },
+    "r32_M78": {
+      "key": "r32_M78",
+      "home": "Costa de Marfil",
+      "away": "Noruega"
+    },
+    "r32_M79": {
+      "key": "r32_M79",
+      "home": "México",
+      "away": "Ecuador"
+    },
+    "r32_M80": {
+      "key": "r32_M80",
+      "home": "Inglaterra",
+      "away": "RD Congo"
+    },
+    "r32_M82": {
+      "key": "r32_M82",
+      "home": "Bélgica",
+      "away": "Senegal"
+    }
   }
 }

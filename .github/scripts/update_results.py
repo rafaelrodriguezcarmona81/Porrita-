@@ -168,11 +168,51 @@ for group, teams in standings.items():
 # Cuadro muestra los huecos como "pendiente". Por eso `output` se deja EXACTAMENTE
 # como estaba: sin claves "ko"/"koResults".
 
+# ─── ELIMINATORIAS (knockout / cuadro) ─────────────────────────────────
+# La API devuelve los partidos KO con `type` = "r32", "r16", "qf", "sf",
+# "third" o "final", y `id` = número oficial del partido ("73".."104").
+# Con eso construimos la match-key estable "{type}_M{id}" (ej: "r32_M73"),
+# determinamos el ganador por marcador y lo emitimos en `koResults`.
+# También emitimos `ko` con los cruces concretos (home/away resueltos)
+# para que el cliente no tenga que inferirlos desde standings.
+
+KO_TYPES = {"r32", "r16", "qf", "sf", "third", "final"}
+
+ko_results = {}   # match-key → equipo que avanzó (en español)
+ko_fixtures = {}  # match-key → {key, home, away}  (cruces concretos)
+
+for g in data.get("games", []):
+  gtype = g.get("type", "").lower()
+  if gtype not in KO_TYPES:
+    continue
+  match_id = g.get("id", "")
+  if not match_id:
+    continue
+  key = f"{gtype}_M{match_id}"   # ej: "r32_M73"
+  home = translate(g.get("home_team_name_en", ""))
+  away = translate(g.get("away_team_name_en", ""))
+  # Guardar el cruce concreto siempre (aunque no haya terminado,
+  # sirve para que el cliente muestre los emparejamientos reales).
+  if home and away:
+    ko_fixtures[key] = {"key": key, "home": home, "away": away}
+  # Resultado solo cuando el partido ha terminado.
+  if g.get("finished", "FALSE") != "TRUE":
+    continue
+  try:
+    home_score = int(g.get("home_score", 0))
+    away_score = int(g.get("away_score", 0))
+  except (ValueError, TypeError):
+    continue
+  winner = home if home_score > away_score else away
+  ko_results[key] = winner
+
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "results": results,
   "scores": scores,
   "standings": standings_out,
+  "koResults": ko_results,
+  "ko": ko_fixtures,
 }
 
 out_path = "results.json"

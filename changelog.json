@@ -1,5 +1,12 @@
 [
   {
+    "id": "2026-06-29b",
+    "fecha": "2026-06-29",
+    "items": [
+      "La pestaña Hoy ahora muestra los partidos de eliminatorias del día, igual que hacía con los de grupos: aparecen con la ronda, hora, sede y el equipo que avanza si el partido ya ha terminado."
+    ]
+  },
+  {
     "id": "2026-06-29",
     "fecha": "2026-06-29",
     "items": [

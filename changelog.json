@@ -3,7 +3,10 @@
     "id": "2026-06-29",
     "fecha": "2026-06-29",
     "items": [
-      "La pestaña Hoy ya incluye los partidos de eliminatorias del día y el bloque «Tu jornada» cuenta sus aciertos y puntos cuando hay resultado oficial."
+      "La pestaña Hoy ya incluye los partidos de eliminatorias del día y el bloque «Tu jornada» cuenta sus aciertos y puntos cuando hay resultado oficial.",
+      "La pestaña Hoy ahora muestra los partidos de eliminatorias del día, igual que hacía con los de grupos: aparecen con la ronda, hora, sede y el equipo que avanza si el partido ya ha terminado.",
+      "Los resultados de los cruces de eliminatorias ya se actualizan automáticamente: en cuanto acaba un partido, el cuadro muestra qué equipo avanza.",
+      "El pronóstico del pódium está bloqueado: ya no se puede modificar ahora que ha empezado la fase eliminatoria."
     ]
   },
   {

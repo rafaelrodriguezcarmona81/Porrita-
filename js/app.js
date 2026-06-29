@@ -168,6 +168,13 @@ function isLocked(key){
   if(ko==null)return false;
   return Date.now()>=ko-60*60*1000;
 }
+// El pódium se bloquea 1h antes del primer partido KO (M73) y ya no puede
+// modificarse. Es irreversible: una vez arrancada la fase eliminatoria, el
+// pronóstico queda fijo independientemente de lo que pase después.
+function isPodiumLocked(){
+  const first=Math.min(...Object.values(KO_SCHEDULE).map(s=>new Date(s.utc).getTime()));
+  return Date.now()>=first-60*60*1000;
+}
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let S={
@@ -1010,6 +1017,27 @@ function renderToday(){
 function renderPodium(){
   const me=S.players.find(p=>p.nombre===S.user);
   const saved=me?.podium||null;
+  // El pódium queda bloqueado 1h antes del primer partido KO (isPodiumLocked).
+  // Una vez bloqueado solo se muestra el pronóstico guardado (o aviso si no se
+  // guardó ninguno). El bloqueo es IRREVERSIBLE: no hay forma de editarlo de nuevo.
+  if(isPodiumLocked()){
+    const lockMsg=`<p class="podium-locked-msg">🔒 El pódium está bloqueado — ya no puede modificarse una vez empezada la fase eliminatoria.</p>`;
+    const podContent=saved
+      ?`<div class="podium-preview">${saved.map((t,i)=>`<div class="podium-preview-item"><p class="podium-preview-medal">${["🥇","🥈","🥉"][i]}</p><p class="podium-preview-team">${fl(t)} ${esc(t)}</p></div>`).join("")}</div>${lockMsg}`
+      :`<p class="podium-empty">⚠️ No guardaste tu pronóstico de pódium antes de que empezaran las eliminatorias.</p>${lockMsg}`;
+    const others=S.players.filter(p=>p.nombre!==S.user).map(p=>`
+      <div class="player-row">
+        <div class="avatar">${esc((p.nombre[0]||"?").toUpperCase())}</div>
+        <div class="grow"><p class="player-name">${esc(p.nombre)}</p>
+          ${p.podium?`<p class="player-podium">🥇${esc(p.podium[0])} · 🥈${esc(p.podium[1])} · 🥉${esc(p.podium[2])}</p>`:`<p class="player-empty">Sin pronóstico</p>`}
+        </div></div>`).join("");
+    return`
+    ${card(`<h2 class="podium-title">Mi Pronóstico de Pódium</h2>
+      <p class="podium-sub">Bonus final: 🥇+5pts · 🥈+3pts · 🥉+2pts</p>
+      ${podContent}`)}
+    ${card(`<h3 class="card-title">Pódiums del grupo (${S.players.length})</h3>
+      <div class="list">${others||'<p class="list-empty">Aún no hay otros participantes</p>'}</div>`)}`;
+  }
   const form=S.pendingPodium||(saved?[...saved]:["","",""]);
   const used=form.filter(Boolean);
   const isSaved=saved&&!S.pendingPodium;

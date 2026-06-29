@@ -1,5 +1,13 @@
 [
   {
+    "id": "2026-06-29",
+    "fecha": "2026-06-29",
+    "items": [
+      "Los resultados de los cruces de eliminatorias ya se actualizan automáticamente: en cuanto acaba un partido, el cuadro muestra qué equipo avanza.",
+      "El pronóstico del pódium está bloqueado: ya no se puede modificar ahora que ha empezado la fase eliminatoria."
+    ]
+  },
+  {
     "id": "2026-06-25",
     "fecha": "2026-06-25",
     "items": [

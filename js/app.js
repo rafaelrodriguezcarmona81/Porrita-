@@ -921,7 +921,7 @@ function renderGrupos(){
 // desplazado +02:00 y leído con getters UTC, para que sea determinista en tests
 // (opts.now) y para no dejar que la zona horaria local de Node/navegador falsee
 // el día (mismo cuidado que el bug de fechas ya conocido en este repo).
-function todayKeysCEST(){
+function todayGroupKeysCEST(){
   const n=new Date(Date.now()+2*3600*1000);
   const today=n.getUTCFullYear()+"-"+
     String(n.getUTCMonth()+1).padStart(2,"0")+"-"+
@@ -939,17 +939,45 @@ function todayKeysCEST(){
   return keys;
 }
 // "Tu jornada": resumen diario del usuario sobre los partidos de HOY que ya
-// tienen resultado oficial. Cuenta aciertos y puntos ganados hoy (1pt por cada
-// 1/X/2 acertado) y muestra el cambio de puesto en la clasificación (reusa
+// tienen resultado oficial. Cuenta aciertos y puntos ganados hoy (1 punto en grupos y la base de ronda en eliminatorias) y muestra el cambio de puesto en la clasificación (reusa
 // S.rankChange, que loadData calcula respecto a la carga anterior).
 // `keys` son las claves de los partidos de hoy (de todayKeysCEST).
+function todayKOKeysCEST(){
+  const n=new Date(Date.now()+2*3600*1000);
+  const today=n.getUTCFullYear()+"-"+
+    String(n.getUTCMonth()+1).padStart(2,"0")+"-"+
+    String(n.getUTCDate()).padStart(2,"0");
+  return KO_BRACKET.filter(b=>{
+    const sch=KO_SCHEDULE[b.m];
+    if(!sch)return false;
+    const c=new Date(new Date(sch.utc).getTime()+2*3600*1000);
+    const d=c.getUTCFullYear()+"-"+String(c.getUTCMonth()+1).padStart(2,"0")+"-"+String(c.getUTCDate()).padStart(2,"0");
+    return d===today;
+  }).map(b=>b.key).sort((a,b)=>kickoffMs(a)-kickoffMs(b));
+}
+function todayKeysCEST(){
+  return [...todayGroupKeysCEST(),...todayKOKeysCEST()].sort((a,b)=>kickoffMs(a)-kickoffMs(b));
+}
+function todayKeyType(k){return koMatchNum(k)!=null?"ko":"group";}
+function todayRoundBase(k){
+  const b=KO_BRACKET.find(x=>x.key===k);
+  const r=b&&KO_ROUNDS.find(x=>x.key===b.round);
+  return r?r.base:1;
+}
+function todayPred(preds,k){return todayKeyType(k)==="ko"?preds.bracket[k]:preds.group[k];}
+function todayResult(k){return todayKeyType(k)==="ko"?S.koResults[k]:S.groupResults[k];}
+function todayLabel(k){
+  const b=KO_BRACKET.find(x=>x.key===k);
+  const r=b&&KO_ROUNDS.find(x=>x.key===b.round);
+  return b&&r?`${r.label} · M${b.m}`:`Grupo ${k[0]}`;
+}
 function renderTuJornada(keys){
   const me=S.players.find(p=>p.nombre===S.user);
-  const preds=(me&&me.group_predictions)||{};
+  const preds={group:(me&&me.group_predictions)||{},bracket:{...(me&&me.bracket_predictions)||{},...S.pendingBracket}};
   // ¿Tengo hechas mis apuestas de hoy? (sobre todos los partidos del día)
   const total=keys.length;
-  const hechos=keys.filter(k=>preds[k]).length;
-  const faltanAbiertos=keys.filter(k=>!preds[k]&&!isLocked(k)).length;
+  const hechos=keys.filter(k=>todayPred(preds,k)).length;
+  const faltanAbiertos=keys.filter(k=>!todayPred(preds,k)&&!isLocked(k)).length;
   let estado;
   if(hechos===total)
     estado=`<p class="tujornada-status tujornada-status--ok">✅ Tienes todas tus apuestas de hoy hechas</p>`;
@@ -957,15 +985,17 @@ function renderTuJornada(keys){
     estado=`<p class="tujornada-status tujornada-status--warn">⚠️ Te faltan ${faltanAbiertos} por pronosticar · ¡aún estás a tiempo!</p>`;
   else
     estado=`<p class="tujornada-status">Te quedaron ${total-hechos} sin pronosticar</p>`;
-  // Aciertos/puntos: solo sobre partidos de hoy con resultado oficial.
-  const playedKeys=keys.filter(k=>S.groupResults[k]);
+  // Aciertos/puntos: solo sobre partidos de hoy con resultado oficial. En KO,
+  // cada acierto suma la base de su ronda (2/4/8/16/24/32), no 1 punto.
+  const playedKeys=keys.filter(k=>todayResult(k));
   let statsHtml;
   if(playedKeys.length){
-    const todayResults={};
-    for(const k of playedKeys)todayResults[k]=S.groupResults[k];
-    const pts=gPts(preds,todayResults); // 1pt = 1 acierto en fase de grupos
+    let aciertos=0,pts=0;
+    for(const k of playedKeys){
+      if(todayPred(preds,k)===todayResult(k)){aciertos++;pts+=todayRoundBase(k);}
+    }
     statsHtml=`<div class="tujornada-stats">
-      <div class="tujornada-stat"><p class="tujornada-num">${pts}/${playedKeys.length}</p><p class="tujornada-lbl">Aciertos hoy</p></div>
+      <div class="tujornada-stat"><p class="tujornada-num">${aciertos}/${playedKeys.length}</p><p class="tujornada-lbl">Aciertos hoy</p></div>
       <div class="tujornada-stat"><p class="tujornada-num">${pts}</p><p class="tujornada-lbl">Puntos hoy</p></div>
     </div>`;
   }else{
@@ -980,7 +1010,33 @@ function renderToday(){
   if(!keys.length)
     return card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2></div>
       <p class="today-empty">No hay partidos hoy 🌙</p>`);
+  const me=S.players.find(p=>p.nombre===S.user);
+  const bracketPicks={...(me&&me.bracket_predictions)||{},...S.pendingBracket};
+  const resolved=resolveBracketTeams(S.groupStandings||{},S.koResults||{},S.koFixtures||{},S.groupResults||{});
   const rows=keys.map(key=>{
+    if(todayKeyType(key)==="ko"){
+      const b=KO_BRACKET.find(x=>x.key===key);
+      const o=resolved[key]||{};
+      const home=o.home||slotLabel(b.home,o.home);
+      const away=o.away||slotLabel(b.away,o.away);
+      const res=S.koResults[key];
+      const pick=bracketPicks[key];
+      const badge=res
+        ?`<span class="bracket-badge badge ${pick&&pick===res?'badge--correct':pick?'badge--wrong':'badge--neutral'}">${pick&&pick===res?'+'+todayRoundBase(key)+'✓':pick?'✗':'—'}</span>`
+        :isLocked(key)?'<span class="bracket-badge badge badge--locked">🔒</span>':'';
+      const center=res
+        ?`<span class="today-score">Pasa ${fl(res)} ${esc(res)}</span>`
+        :`<span class="today-vs">vs</span>`;
+      return`<div class="today-match">
+        ${badge}
+        <div class="match-meta"><span class="today-group">${esc(todayLabel(key))}</span> · ${fmtKO(b.m)} · ${fl(venueCountry(KO_SCHEDULE[b.m].venue))} ${esc(KO_SCHEDULE[b.m].venue)}</div>
+        <div class="today-row">
+          <span class="team">${o.home?fl(o.home):""} ${esc(home)}</span>
+          ${center}
+          <span class="team team--away">${o.away?fl(o.away):""} ${esc(away)}</span>
+        </div>
+      </div>`;
+    }
     // key = "{GRUPO}_{LOCAL}_{VISITANTE}". Recuperamos local/visitante de GM por la
     // letra de grupo (los nombres pueden contener "_", así que no hacemos split).
     const [home,away]=GM[key[0]].find(m=>(key[0]+"_"+m[0]+"_"+m[1])===key)||["",""];

@@ -338,7 +338,7 @@ test("renderToday: sin resultado muestra 'vs' en vez de marcador", () => {
 
 test("renderToday: estado vacío cuando no hay partidos hoy", () => {
   const app = withState({ user: "Ana", players: [] },
-    { now: Date.parse("2026-07-01T12:00:00+02:00") });
+    { now: Date.parse("2026-07-08T12:00:00+02:00") });
   const html = app.renderToday();
   assert.match(html, /No hay partidos hoy/);
   assert.doesNotMatch(html, /today-match/);
@@ -463,6 +463,60 @@ test("renderToday: incluye el bloque 'Tu jornada' por encima de la lista de part
   assert.match(html, /Partidos de hoy/);
   // El resumen va antes que la lista de partidos.
   assert.ok(html.indexOf("Tu jornada") < html.indexOf("Partidos de hoy"));
+});
+
+
+test("renderTuJornada: cuenta aciertos y puntos de eliminatorias de hoy", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", bracket_predictions: { "r32_M76": "Brasil", "r32_M74": "Alemania" } }],
+      koResults: { "r32_M76": "Brasil", "r32_M74": "Marruecos" },
+    },
+    { now: Date.parse("2026-06-29T23:30:00+02:00") });
+  const html = app.renderTuJornada(["r32_M76", "r32_M74"]);
+  assert.match(html, /1\/2/);
+  assert.match(html, /tujornada-num">2<\/p><p class="tujornada-lbl">Puntos hoy/);
+  assert.doesNotMatch(html, /Aún no hay resultados oficiales de hoy/);
+});
+
+test("renderToday: incluye eliminatorias de hoy y marca acierto/fallo", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", bracket_predictions: { "r32_M76": "Brasil", "r32_M74": "Alemania" } }],
+      koFixtures: { r32: [
+        { key: "r32_M76", home: "Brasil", away: "Japón" },
+        { key: "r32_M74", home: "Alemania", away: "Marruecos" },
+      ] },
+      koResults: { "r32_M76": "Brasil", "r32_M74": "Marruecos" },
+    },
+    { now: Date.parse("2026-06-29T23:30:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /Dieciseisavos · M76/);
+  assert.match(html, /Dieciseisavos · M74/);
+  assert.match(html, /Pasa 🇧🇷 Brasil/);
+  assert.match(html, /badge--correct/);
+  assert.match(html, /badge--wrong/);
+  assert.match(html, /1\/2/);
+});
+
+
+test("renderToday: un resultado KO oficial cuenta aunque no haya pronóstico", () => {
+  const app = withState(
+    {
+      user: "Ana",
+      players: [{ nombre: "Ana", bracket_predictions: {} }],
+      koFixtures: { r32: [{ key: "r32_M76", home: "Brasil", away: "Japón" }] },
+      koResults: { "r32_M76": "Brasil" },
+    },
+    { now: Date.parse("2026-06-29T21:30:00+02:00") });
+  const html = app.renderToday();
+  assert.match(html, /0\/1/);
+  assert.match(html, /Pasa 🇧🇷 Brasil/);
+  assert.doesNotMatch(html, /0\/0 apuestas/);
+  assert.doesNotMatch(html, /Tienes todas tus apuestas de hoy hechas/);
+  assert.doesNotMatch(html, /Aún no hay resultados oficiales de hoy/);
 });
 
 test("renderHeader: incluye la pestaña Hoy como primera", () => {

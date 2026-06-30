@@ -79,8 +79,9 @@ const shots = {
 </div>`),
   },
 
-  // PR #34 — vista mapa del cuadro de eliminatorias
-  // Nota: usa el CSS de la rama feat/bracket-map-view hasta que sea mergeada.
+  // PR #34/#fix — vista mapa del cuadro de eliminatorias con lados correctos
+  // Izquierda: M81-M88 (Portugal/Croacia M83 abajo-izq, igual que el cuadro oficial)
+  // Derecha:   M73-M80
   'bracket-map': {
     out: '/tmp/bracket-map.png',
     w: 1300,
@@ -96,30 +97,30 @@ const shots = {
     <div class="bmap-tree">
 
       ${col('Dieciseisavos', [
-        match('M73','28/06 21:00','🇿🇦 Sudáfrica','🇨🇦 Canadá'),
-        match('M74','28/06 21:00','🇸🇪 Suecia','🇵🇾 Paraguay'),
-        match('M75','29/06 18:00','🇲🇽 México','🇵🇱 Polonia'),
-        match('M76','29/06 18:00','🇦🇷 Argentina','🇳🇬 Nigeria'),
-        match('M77','30/06 21:00','🇪🇸 España','🇳🇱 Países Bajos'),
-        match('M78','30/06 21:00','🇵🇹 Portugal','🇭🇷 Croacia'),
-        match('M79','01/07 18:00','🇺🇸 Estados Unidos','🇷🇴 Rumanía'),
-        match('M80','01/07 21:00','🇧🇷 Brasil','🇨🇴 Colombia'),
+        match('M85','04/07 18:00','🇨🇭 Suiza','🇩🇿 Argelia'),
+        match('M87','05/07 18:00','🇨🇴 Colombia','🇬🇭 Ghana'),
+        match('M86','04/07 21:00','🇦🇷 Argentina','🇨🇻 Cabo Verde'),
+        match('M88','05/07 21:00','🇦🇺 Australia','🇪🇬 Egipto'),
+        match('M81','02/07 18:00','🇺🇸 Estados Unidos','🇧🇦 Bosnia'),
+        match('M82','02/07 21:00','🇧🇪 Bélgica','🇸🇳 Senegal'),
+        match('M83','02/07 21:00','🇵🇹 Portugal','🇭🇷 Croacia'),
+        match('M84','03/07 18:00','🇪🇸 España','🇦🇹 Austria'),
       ])}
 
       ${col('Octavos', [
-        match('M89','','?','?'),
-        match('M90','','?','?'),
-        match('M91','','?','?'),
-        match('M92','','?','?'),
+        match('M96','','?','?'),
+        match('M95','','?','?'),
+        match('M94','','?','?'),
+        match('M93','','?','?'),
       ])}
 
       ${col('Cuartos', [
-        match('M97','','?','?'),
-        match('M99','','?','?'),
+        match('M100','','?','?'),
+        match('M98','','?','?'),
       ])}
 
       ${col('Semis', [
-        match('M101','','?','?'),
+        match('M102','','?','?'),
       ])}
 
       <!-- Final + 3er puesto -->
@@ -143,30 +144,30 @@ const shots = {
       </div>
 
       ${col('Semis', [
-        match('M102','','?','?'),
+        match('M101','','?','?'),
       ])}
 
       ${col('Cuartos', [
-        match('M98','','?','?'),
-        match('M100','','?','?'),
+        match('M99','','?','?'),
+        match('M97','','?','?'),
       ])}
 
       ${col('Octavos', [
-        match('M93','','?','?'),
-        match('M94','','?','?'),
-        match('M95','','?','?'),
-        match('M96','','?','?'),
+        match('M91','','?','?'),
+        match('M92','','?','?'),
+        match('M89','','?','?'),
+        match('M90','','?','?'),
       ])}
 
       ${col('Dieciseisavos', [
-        match('M81','02/07 18:00','🇩🇪 Alemania','🇯🇵 Japón'),
-        match('M82','02/07 21:00','🇫🇷 Francia','🇲🇦 Marruecos'),
-        match('M83','03/07 18:00','🇬🇧 Inglaterra','🇸🇳 Senegal'),
-        match('M84','03/07 21:00','🇧🇪 Bélgica','🇺🇾 Uruguay'),
-        match('M85','04/07 18:00','🇵🇹 Portugal','🇨🇭 Suiza'),
-        match('M86','04/07 21:00','🇳🇱 Países Bajos','🇺🇸 Estados Unidos'),
-        match('M87','05/07 18:00','🇨🇷 Costa Rica','🇰🇷 Corea del Sur'),
-        match('M88','05/07 21:00','🇦🇺 Australia','🇩🇰 Dinamarca'),
+        match('M76','29/06 18:00','🇧🇷 Brasil','🇲🇦 Marruecos'),
+        match('M78','30/06 21:00','🇨🇮 Costa de Marfil','🇳🇴 Noruega'),
+        match('M79','01/07 18:00','🇲🇽 México','🇪🇨 Ecuador'),
+        match('M80','01/07 21:00','🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra','🇨🇩 Congo RD'),
+        match('M74','28/06 21:00','🇩🇪 Alemania','🇵🇾 Paraguay'),
+        match('M77','30/06 21:00','🇫🇷 Francia','🇸🇪 Suecia'),
+        match('M73','28/06 21:00','🇿🇦 Sudáfrica','🇨🇦 Canadá'),
+        match('M75','29/06 18:00','🇳🇱 Países Bajos','🇯🇵 Japón'),
       ])}
 
     </div>

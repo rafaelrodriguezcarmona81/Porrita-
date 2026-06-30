@@ -1012,25 +1012,9 @@ function renderTuJornada(keys){
     ${estado}
     ${statsHtml}`);
 }
-// Partidos KO cuyo saque cae en el día de hoy en CEST (mismo criterio que
-// todayKeysCEST pero sobre KO_BRACKET + KO_SCHEDULE en lugar de GM + MATCH_TIMES).
-function todayKOKeys(){
-  const n=new Date(Date.now()+2*3600*1000);
-  const today=n.getUTCFullYear()+"-"+
-    String(n.getUTCMonth()+1).padStart(2,"0")+"-"+
-    String(n.getUTCDate()).padStart(2,"0");
-  return KO_BRACKET.filter(b=>{
-    const sch=KO_SCHEDULE[b.m];
-    if(!sch)return false;
-    const c=new Date(new Date(sch.utc).getTime()+2*60*60*1000); // a CEST
-    const d=c.getUTCFullYear()+"-"+String(c.getUTCMonth()+1).padStart(2,"0")+"-"+String(c.getUTCDate()).padStart(2,"0");
-    return d===today;
-  }).sort((a,b)=>new Date(KO_SCHEDULE[a.m].utc)-new Date(KO_SCHEDULE[b.m].utc));
-}
 function renderToday(){
   const keys=todayKeysCEST();
-  const koMatches=todayKOKeys();
-  if(!keys.length&&!koMatches.length)
+  if(!keys.length)
     return card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2></div>
       <p class="today-empty">No hay partidos hoy 🌙</p>`);
   const me=S.players.find(p=>p.nombre===S.user);
@@ -1079,33 +1063,10 @@ function renderToday(){
     </div>`;
   }).join("");
   // Bloque "Tu jornada" (resumen diario del usuario) encima de la lista.
-  // Filas de partidos KO del día: mismo estilo visual que los de grupos pero
-  // mostrando ronda, sede y los equipos resueltos (o placeholder si aún no se
-  // conoce el rival). Si el partido ya tiene resultado KO, se indica el avanzado.
-  const koRows=koMatches.map(b=>{
-    const sch=KO_SCHEDULE[b.m];
-    const resolved=resolveBracketTeams(S.groupStandings||{},S.koResults||{},S.koFixtures||{},S.groupResults||{});
-    const o=resolved[b.key]||{home:null,away:null};
-    const home=o.home!=null?o.home:slotLabel(b.home,null);
-    const away=o.away!=null?o.away:slotLabel(b.away,null);
-    const koRes=S.koResults&&S.koResults[b.key];
-    const center=koRes
-      ?`<span class="today-score">${fl(koRes)} ${esc(koRes)} avanza</span>`
-      :`<span class="today-vs">vs</span>`;
-    const ronda=KO_ROUNDS.find(r=>r.key===b.round);
-    return`<div class="today-match">
-      <div class="match-meta"><span class="today-group">${esc(ronda&&ronda.label||b.round)} · M${b.m}</span> · ${fmtKO(b.m)} · ${fl(venueCountry(sch.venue))} ${esc(sch.venue)}</div>
-      <div class="today-row">
-        <span class="team">${fl(home)} ${esc(home)}</span>
-        ${center}
-        <span class="team team--away">${fl(away)} ${esc(away)}</span>
-      </div>
-    </div>`;
-  }).join("");
   return renderTuJornada(keys)+
-    card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2>${pill(keys.length+koMatches.length,"blue")}</div>
+    card(`<div class="section-head"><h2 class="title">Partidos de hoy</h2>${pill(keys.length,"blue")}</div>
     <p class="hint">Solo informativo · horarios CEST · dónde verlo por TV</p>
-    <div class="today-list">${rows}${koRows}</div>`);
+    <div class="today-list">${rows}</div>`);
 }
 
 // ─── PÓDIUM ───────────────────────────────────────────────────────────────────

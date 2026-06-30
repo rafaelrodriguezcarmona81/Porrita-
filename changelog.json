@@ -6,8 +6,7 @@
       "Los partidos de eliminatorias ya muestran el marcador del partido (no solo el equipo que avanza), tanto en la pestaña Hoy como en el Cuadro.",
       "El menú de navegación es ahora adaptativo: en fase eliminatoria, «Cuadro» pasa a ser la pestaña principal (aparece antes), y «Grupos» queda como histórico con una etiqueta diferente. Si estabas en «Grupos» al arrancar la fase KO, la app te lleva automáticamente al Cuadro.",
       "El cuadro de eliminatorias estrena una vista en árbol: pulsa el botón «🗺️ Mapa» para ver todos los cruces dispuestos visualmente de dieciseisavos hasta la final, con fechas y marcadores. El botón «📋 Lista» recupera la vista clásica con la que puedes hacer tus pronósticos.",
-      "Corregido el orden visual de los dieciseisavos en la vista mapa: cada partido aparece ahora alineado con el cruce de octavos al que alimenta.",
-      "La vista mapa del cuadro de eliminatorias ya muestra líneas conectoras entre los partidos, para que se vea claramente qué cruces se unen en la siguiente ronda."
+      "La vista mapa ha mejorado: los dieciseisavos aparecen alineados con el cruce de octavos que alimentan, y se han añadido líneas conectoras entre partidos para ver claramente el camino de cada equipo hasta la final."
     ]
   },
   {

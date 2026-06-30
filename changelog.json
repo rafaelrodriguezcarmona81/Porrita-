@@ -3,7 +3,8 @@
     "id": "2026-06-30",
     "fecha": "2026-06-30",
     "items": [
-      "Los partidos de eliminatorias ya muestran el marcador del partido (no solo el equipo que avanza), tanto en la pestaña Hoy como en el Cuadro."
+      "Los partidos de eliminatorias ya muestran el marcador del partido (no solo el equipo que avanza), tanto en la pestaña Hoy como en el Cuadro.",
+      "El menú de navegación es ahora adaptativo: en fase eliminatoria, «Cuadro» pasa a ser la pestaña principal (aparece antes), y «Grupos» queda como histórico con una etiqueta diferente. Si estabas en «Grupos» al arrancar la fase KO, la app te lleva automáticamente al Cuadro."
     ]
   },
   {

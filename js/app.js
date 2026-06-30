@@ -604,7 +604,10 @@ async function loadData(){
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,groupScores,groupStandings,koFixtures,koResults,koScores,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    // Si acaba de arrancar la fase KO (hay cruces concretos) y el usuario estaba
+    // en "grupos", le redirigimos al cuadro automáticamente.
+    const newTab=(Object.keys(koFixtures).length>0&&S.tab==="grupos")?"bracket":S.tab;
+    ss({players,groupResults,groupScores,groupStandings,koFixtures,koResults,koScores,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null,tab:newTab});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -686,6 +689,14 @@ async function saveName(newName){
   // Actualiza la propia fila en S.players y S.user (acoplados por `nombre`).
   const players=S.players.map(p=>p.user_id===S.userId||p.nombre===S.user?{...p,nombre:v.value}:p);
   ss({players,user:v.value,editingName:false,pendingName:"",savingName:false,nameError:null,lastRank:null});
+}
+
+// ─── FASE KO ──────────────────────────────────────────────────────────────────
+// Devuelve true cuando hay datos de la fase eliminatoria (al menos un cruce
+// concreto con equipos conocidos en S.koFixtures). Durante la fase de grupos
+// koFixtures está vacío → devuelve false.
+function isKOPhase(){
+  return Object.keys(S.koFixtures||{}).length>0;
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -773,7 +784,27 @@ function renderHeader(){
   const me=S.players.find(p=>p.nombre===S.user);
   const myPts=gPts(me?.group_predictions||{},S.groupResults);
   const rc=Object.keys(S.groupResults).length;
-  const tabs=[["hoy","📅 Hoy"],["grupos","⚽ Grupos"],["bracket","🏆 Cuadro"],["podium","🏆 Pódium"],["marcador","📊 Ranking"],["admin","🔧 Admin"]];
+  // Pestañas adaptativas según la fase del torneo.
+  // - Fase de grupos: orden normal, "Grupos" pestaña principal.
+  // - Fase KO: "Cuadro" se mueve antes de "Grupos"; "Grupos" pasa a histórico.
+  const ko=isKOPhase();
+  const tabsBase=[
+    ["hoy","📅 Hoy",false],
+    ["bracket","🏆 Cuadro",false],
+    ["grupos",ko?"📁 Grupos (hist.)":"⚽ Grupos",ko],
+    ["podium","🏆 Pódium",false],
+    ["marcador","📊 Ranking",false],
+    ["admin","🔧 Admin",false]
+  ];
+  // En fase de grupos, "Cuadro" va detrás de "Grupos" (orden original).
+  const tabs=ko?tabsBase:[
+    ["hoy","📅 Hoy",false],
+    ["grupos","⚽ Grupos",false],
+    ["bracket","🏆 Cuadro",false],
+    ["podium","🏆 Pódium",false],
+    ["marcador","📊 Ranking",false],
+    ["admin","🔧 Admin",false]
+  ];
   const rankBanner=S.rankChange!==null?`<div class="rank-banner ${S.rankChange>0?'rank-banner--up':'rank-banner--down'}">
     ${S.rankChange>0?'🔼 Has subido '+S.rankChange+' puesto'+(S.rankChange>1?'s':'')+'!':'🔽 Has bajado '+Math.abs(S.rankChange)+' puesto'+(Math.abs(S.rankChange)>1?'s':'')}
   </div>`:"";
@@ -795,7 +826,7 @@ function renderHeader(){
     ${renderProfileEditor()}
     ${rankBanner}
     <div class="tabs">
-      ${tabs.map(([id,label])=>`<button onclick="setTab('${id}')" class="tab${S.tab===id?' tab--active':''}">${label}</button>`).join("")}
+      ${tabs.map(([id,label,hist])=>`<button onclick="setTab('${id}')" class="tab${S.tab===id?' tab--active':''}${hist?' tab--hist':''}">${label}</button>`).join("")}
     </div>
   </div>`;
 }

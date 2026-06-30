@@ -744,3 +744,64 @@ test("render: usuario logado pinta header + contenido de la pestaña", () => {
   assert.match(app.appEl.innerHTML, /class="app-main"/);
   assert.match(app.appEl.innerHTML, /Fase de Grupos/);
 });
+
+// ─── isKOPhase / navegación adaptativa ───────────────────────────────────────
+const KO_FIXTURES_SAMPLE = {
+  "r32_M73": { key: "r32_M73", home: "Sudáfrica", away: "Canadá" },
+  "r32_M74": { key: "r32_M74", home: "Alemania", away: "Paraguay" },
+};
+
+test("isKOPhase: devuelve false cuando koFixtures está vacío (fase de grupos)", () => {
+  const app = withState({ koFixtures: {} });
+  assert.equal(app.isKOPhase(), false);
+});
+
+test("isKOPhase: devuelve true cuando hay cruces concretos (fase KO)", () => {
+  const app = withState({ koFixtures: KO_FIXTURES_SAMPLE });
+  assert.equal(app.isKOPhase(), true);
+});
+
+test("renderHeader (fase grupos): 'Grupos' aparece antes que 'Cuadro' y sin clase tab--hist", () => {
+  const app = withState({
+    user: "Ana", players: [], groupResults: {},
+    koFixtures: {}, // fase de grupos
+  });
+  const html = app.renderHeader();
+  // "Grupos" no lleva clase histórico
+  assert.doesNotMatch(html, /tab--hist/);
+  // "Grupos" aparece antes que "Cuadro" en el HTML
+  assert.ok(html.indexOf("setTab('grupos')") < html.indexOf("setTab('bracket')"),
+    "'Grupos' debe ir antes que 'Cuadro' en fase de grupos");
+  // La etiqueta de "Grupos" no menciona histórico
+  assert.match(html, /⚽ Grupos/);
+  assert.doesNotMatch(html, /hist/i);
+});
+
+test("renderHeader (fase KO): 'Cuadro' aparece antes que 'Grupos' y 'Grupos' lleva tab--hist", () => {
+  const app = withState({
+    user: "Ana", players: [], groupResults: {},
+    koFixtures: KO_FIXTURES_SAMPLE, // fase KO
+  });
+  const html = app.renderHeader();
+  // "Cuadro" debe preceder a "Grupos"
+  assert.ok(html.indexOf("setTab('bracket')") < html.indexOf("setTab('grupos')"),
+    "'Cuadro' debe ir antes que 'Grupos' en fase KO");
+  // La pestaña de "Grupos" lleva la clase histórico
+  assert.match(html, /tab--hist/);
+  // La etiqueta indica que es histórico
+  assert.match(html, /Grupos \(hist\.\)/);
+});
+
+test("renderHeader (fase KO): 'Cuadro' activo no lleva tab--hist", () => {
+  const app = withState({
+    user: "Ana", players: [], groupResults: {},
+    koFixtures: KO_FIXTURES_SAMPLE,
+    tab: "bracket",
+  });
+  const html = app.renderHeader();
+  // El botón activo es "bracket" con tab--active pero sin tab--hist
+  assert.match(html, /setTab\('bracket'\)" class="tab tab--active"/);
+  // "Grupos" lleva tab--hist pero no tab--active
+  assert.match(html, /tab--hist/);
+  assert.doesNotMatch(html, /tab--active tab--hist|tab--hist tab--active/);
+});

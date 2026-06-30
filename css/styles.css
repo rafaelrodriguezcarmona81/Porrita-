@@ -1273,7 +1273,7 @@ body {
 
 .bmap-col--center .bmap-col-matches {
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: .5rem;
 }
 

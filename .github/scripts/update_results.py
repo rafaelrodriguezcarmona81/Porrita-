@@ -180,6 +180,7 @@ KO_TYPES = {"r32", "r16", "qf", "sf", "third", "final"}
 
 ko_results = {}   # match-key → equipo que avanzó (en español)
 ko_fixtures = {}  # match-key → {key, home, away}  (cruces concretos)
+ko_scores = {}    # match-key → marcador "home_score-away_score" (mismo estilo que scores)
 
 for g in data.get("games", []):
   gtype = g.get("type", "").lower()
@@ -205,6 +206,7 @@ for g in data.get("games", []):
     continue
   winner = home if home_score > away_score else away
   ko_results[key] = winner
+  ko_scores[key] = f"{home_score}-{away_score}"
 
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -213,6 +215,7 @@ output = {
   "standings": standings_out,
   "koResults": ko_results,
   "ko": ko_fixtures,
+  "koScores": ko_scores,
 }
 
 out_path = "results.json"

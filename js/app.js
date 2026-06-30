@@ -183,7 +183,7 @@ let S={
   savingGroup:false,savingPodium:false,savingBracket:false,
   editingName:false,pendingName:"",savingName:false,nameError:null,
   pendingPreds:{},pendingPodium:null,pendingBracket:{},
-  koFixtures:{},koResults:{},
+  koFixtures:{},koResults:{},koScores:{},
   refreshing:false,rankChange:null,lastRank:null,
   inviteToken:null,accessDenied:false,accessError:null,
   adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
@@ -596,6 +596,7 @@ async function loadData(){
     // NO existen → por defecto vacíos (la UI del cuadro muestra estado bloqueado).
     const koFixtures=resJson.ko||resJson.bracket||{};
     const koResults=resJson.koResults||{};
+    const koScores=resJson.koScores||{};
     const changelog=Array.isArray(clJson)?clJson:[];
     let rankChange=null,newRank=null;
     if(S.user){
@@ -603,7 +604,7 @@ async function loadData(){
       newRank=sorted.findIndex(p=>p.name===S.user)+1||null;
       if(newRank&&S.lastRank&&newRank!==S.lastRank)rankChange=S.lastRank-newRank;
     }
-    ss({players,groupResults,groupScores,groupStandings,koFixtures,koResults,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
+    ss({players,groupResults,groupScores,groupStandings,koFixtures,koResults,koScores,changelog,loading:false,refreshing:false,rankChange,lastRank:newRank||S.lastRank||null});
     if(rankChange!==null)setTimeout(()=>ss({rankChange:null}),4000);
   }catch(e){console.error(e);ss({loading:false,refreshing:false});}
 }
@@ -973,6 +974,8 @@ function todayRoundBase(k){
 }
 function todayPred(preds,k){return todayKeyType(k)==="ko"?preds.bracket[k]:preds.group[k];}
 function todayResult(k){return todayKeyType(k)==="ko"?S.koResults[k]:S.groupResults[k];}
+// Marcador del partido KO (p.ej. "0-1"), si ya existe en S.koScores.
+function koScore(k){return(S.koScores||{})[k]||null;}
 function todayLabel(k){
   const b=KO_BRACKET.find(x=>x.key===k);
   const r=b&&KO_ROUNDS.find(x=>x.key===b.round);
@@ -1032,7 +1035,7 @@ function renderToday(){
         ?`<span class="bracket-badge badge ${pick&&pick===res?'badge--correct':pick?'badge--wrong':'badge--neutral'}">${pick&&pick===res?'+'+todayRoundBase(key)+'✓':pick?'✗':'—'}</span>`
         :isLocked(key)?'<span class="bracket-badge badge badge--locked">🔒</span>':'';
       const center=res
-        ?`<span class="today-score">Pasa ${fl(res)} ${esc(res)}</span>`
+        ?`<span class="today-score">${koScore(key)?esc(koScore(key))+' · ':''}Pasa ${fl(res)} ${esc(res)}</span>`
         :`<span class="today-vs">vs</span>`;
       return`<div class="today-match">
         ${badge}
@@ -1222,7 +1225,8 @@ function renderBracket(){
       // Chip con el ID del propio partido (M73..M104) — permite cruzar las
       // referencias "Ganador M74" que aparecen en las rondas siguientes.
       const mid=`<span class="bracket-mid">M${b.m}</span>`;
-      const venue=sch?` ${fmtKO(b.m)} · ${fl(venueCountry(sch.venue))} ${esc(sch.venue)}`:"";
+      const score=S.koScores&&S.koScores[key];
+      const venue=sch?` ${fmtKO(b.m)} · ${fl(venueCountry(sch.venue))} ${esc(sch.venue)}${score?' · 🔢 '+esc(score):''}`:"";
       const meta=`<div class="match-meta bracket-meta">${mid}${venue}</div>`;
       // El "vs" va ENTRE las dos cards de equipo, nunca dentro de ellas.
       const sep=`<span class="bracket-vs-sep">vs</span>`;

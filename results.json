@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-30T05:26:10Z",
+  "updated": "2026-06-30T05:52:31Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -794,5 +794,11 @@
       "home": "Bélgica",
       "away": "Senegal"
     }
+  },
+  "koScores": {
+    "r32_M76": "2-1",
+    "r32_M73": "0-1",
+    "r32_M74": "1-1",
+    "r32_M75": "1-1"
   }
 }

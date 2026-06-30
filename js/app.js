@@ -1242,19 +1242,19 @@ function renderBracketMap(){
   }
 
   // Columnas de la mitad izquierda (orden de arriba a abajo por ronda)
-  // Cada par consecutivo de R32 alimenta visualmente el partido de R16 correspondiente:
-  // M74+M77→M89, M73+M75→M90, M76+M78→M91, M79+M80→M92
-  const leftR32 =[74,77,73,75,76,78,79,80];
-  const leftR16 =[89,90,91,92];
-  const leftQF  =[97,99];
-  const leftSF  =[101];
+  // M85+M87→M96, M86+M88→M95, M81+M82→M94, M83+M84→M93
+  // M83 (Portugal/Croacia) queda abajo-izquierda, igual que en el cuadro oficial
+  const leftR32 =[85,87,86,88,81,82,83,84];
+  const leftR16 =[96,95,94,93];
+  const leftQF  =[100,98];
+  const leftSF  =[102];
 
   // Columnas de la mitad derecha (orden de arriba a abajo por ronda)
-  // M83+M84→M93, M81+M82→M94, M86+M88→M95, M85+M87→M96
-  const rightSF =[102];
-  const rightQF =[98,100];
-  const rightR16=[93,94,95,96];
-  const rightR32=[83,84,81,82,86,88,85,87];
+  // M76+M78→M91, M79+M80→M92, M74+M77→M89, M73+M75→M90
+  const rightSF =[101];
+  const rightQF =[99,97];
+  const rightR16=[91,92,89,90];
+  const rightR32=[76,78,79,80,74,77,73,75];
 
   function col(matches,label,extraClass=''){
     const paired=matches.length>1;

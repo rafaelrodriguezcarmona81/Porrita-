@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-30T16:32:52Z",
+  "updated": "2026-06-30T19:26:53Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -706,7 +706,8 @@
     "r32_M76": "Brasil",
     "r32_M73": "Canadá",
     "r32_M74": "Paraguay",
-    "r32_M75": "Marruecos"
+    "r32_M75": "Marruecos",
+    "r32_M78": "Noruega"
   },
   "ko": {
     "r32_M86": {
@@ -759,6 +760,11 @@
       "home": "Canadá",
       "away": "Marruecos"
     },
+    "r16_M91": {
+      "key": "r16_M91",
+      "home": "Brasil",
+      "away": "Noruega"
+    },
     "r32_M74": {
       "key": "r32_M74",
       "home": "Alemania",
@@ -799,6 +805,7 @@
     "r32_M76": "2-1",
     "r32_M73": "0-1",
     "r32_M74": "1-1",
-    "r32_M75": "1-1"
+    "r32_M75": "1-1",
+    "r32_M78": "1-2"
   }
 }

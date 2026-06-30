@@ -189,7 +189,8 @@ let S={
   adminUnlocked:false,adminKey:"",adminGateBusy:false,adminGateError:false,
   adminTriggering:false,adminTriggerMsg:null,adminTriggerOk:false,
   adminInviteBusy:false,adminInviteUrl:null,
-  adminRemoveBusy:false,adminRemoveMsg:null,adminRemoveOk:false
+  adminRemoveBusy:false,adminRemoveMsg:null,adminRemoveOk:false,
+  bracketView:"lista"
 };
 function ss(p){Object.assign(S,p);render();}
 
@@ -1196,6 +1197,82 @@ function renderRanking(){
     <div class="rules">${rules.map(([l,r])=>`<div class="rule"><span class="rule-label">${l}</span><span class="rule-value">${r}</span></div>`).join("")}</div>`)}`;
 }
 
+// ─── CUADRO / ELIMINATORIAS — vista mapa (árbol visual) ──────────────────────
+// La estructura del árbol sigue la progresión oficial:
+//   Mitad izquierda: R32 M73-M80 → R16 M89-M92 → QF M97,M99 → SF M101
+//   Mitad derecha:   R32 M81-M88 → R16 M93-M96 → QF M98,M100 → SF M102
+//   Centro: Final M104, 3er puesto M103 debajo
+// La vista es solo lectura (sin predicciones ni badges de gamificación).
+function renderBracketMap(){
+  const koResults=S.koResults||{};
+  const resolved=resolveBracketTeams(S.groupStandings||{},koResults,S.koFixtures||{},S.groupResults||{});
+  const byM={};for(const b of KO_BRACKET)byM[b.m]=b;
+
+  // Renderiza una celda de partido para la vista mapa (solo lectura).
+  function mapMatch(m){
+    const b=byM[m];
+    if(!b)return'<div class="bmap-match bmap-match--empty"></div>';
+    const o=resolved[b.key]||{home:null,away:null};
+    const score=S.koScores&&S.koScores[b.key];
+    const sch=KO_SCHEDULE[m];
+    const dateStr=sch?fmtKO(m):"";
+    const homeLabel=o.home!=null?`${fl(o.home)} ${esc(o.home)}`:'<span class="bmap-unknown">?</span>';
+    const awayLabel=o.away!=null?`${fl(o.away)} ${esc(o.away)}`:'<span class="bmap-unknown">?</span>';
+    const scoreStr=score?`<div class="bmap-score">${esc(score)}</div>`:'';
+    return`<div class="bmap-match">
+      <div class="bmap-match-id">M${m}</div>
+      ${dateStr?`<div class="bmap-date">${esc(dateStr)}</div>`:''}
+      <div class="bmap-team bmap-team--home">${homeLabel}</div>
+      ${scoreStr}
+      <div class="bmap-team bmap-team--away">${awayLabel}</div>
+    </div>`;
+  }
+
+  // Columnas de la mitad izquierda (orden de arriba a abajo por ronda)
+  const leftR32 =[73,74,75,76,77,78,79,80];
+  const leftR16 =[89,90,91,92];
+  const leftQF  =[97,99];
+  const leftSF  =[101];
+
+  // Columnas de la mitad derecha (orden de arriba a abajo por ronda)
+  const rightSF =[102];
+  const rightQF =[98,100];
+  const rightR16=[93,94,95,96];
+  const rightR32=[81,82,83,84,85,86,87,88];
+
+  function col(matches,label,extraClass=''){
+    const cells=matches.map(m=>mapMatch(m)).join('');
+    return`<div class="bmap-col${extraClass?(' '+extraClass):''}">
+      <div class="bmap-col-label">${esc(label)}</div>
+      <div class="bmap-col-matches">${cells}</div>
+    </div>`;
+  }
+
+  const finalMatch=mapMatch(104);
+  const thirdMatch=mapMatch(103);
+
+  return`<div class="bmap-scroll">
+    <div class="bmap-tree">
+      ${col(leftR32,'Dieciseisavos','bmap-col--r32')}
+      ${col(leftR16,'Octavos','bmap-col--r16')}
+      ${col(leftQF,'Cuartos','bmap-col--qf')}
+      ${col(leftSF,'Semifinales','bmap-col--sf')}
+      <div class="bmap-col bmap-col--center">
+        <div class="bmap-col-label">Final</div>
+        <div class="bmap-col-matches">
+          ${finalMatch}
+          <div class="bmap-third-label">3er/4º puesto</div>
+          ${thirdMatch}
+        </div>
+      </div>
+      ${col(rightSF,'Semifinales','bmap-col--sf')}
+      ${col(rightQF,'Cuartos','bmap-col--qf')}
+      ${col(rightR16,'Octavos','bmap-col--r16')}
+      ${col(rightR32,'Dieciseisavos','bmap-col--r32')}
+    </div>
+  </div>`;
+}
+
 // ─── CUADRO / ELIMINATORIAS (knockout bracket) ─────────────────────────────────
 // La PLANTILLA de cruces es fija y pública (KO_BRACKET, M73..M104). Los equipos de
 // cada hueco se resuelven con resolveBracketTeams() contra S.groupStandings (1º/2º
@@ -1208,6 +1285,21 @@ function renderRanking(){
 // determinar), se muestra "pendiente". isLocked(key) bloquea cerca del saque (CEST)
 // y, si hay resultado (S.koResults), se marca el acierto/fallo y el equipo que avanzó.
 function renderBracket(){
+  // Toggle de vista lista/mapa — aparece siempre (incluso en estado vacío).
+  const view=S.bracketView||"lista";
+  const toggleHtml=`<div class="bracket-view-toggle">
+    <button onclick="setBracketView('lista')" class="bracket-view-btn${view==='lista'?' bracket-view-btn--active':''}">📋 Lista</button>
+    <button onclick="setBracketView('mapa')" class="bracket-view-btn${view==='mapa'?' bracket-view-btn--active':''}">🗺️ Mapa</button>
+  </div>`;
+
+  // Si la vista activa es mapa, delegar completamente.
+  if(view==="mapa"){
+    return`
+    ${card(`<div class="section-head"><h2 class="title">Cuadro de eliminatorias</h2></div>
+      ${toggleHtml}`)}
+    ${card(renderBracketMap())}`;
+  }
+
   const me=S.players.find(p=>p.nombre===S.user);
   const saved=(me&&me.bracket_predictions)||{};
   const picks={...saved,...S.pendingBracket};
@@ -1227,6 +1319,7 @@ function renderBracket(){
     </div>`).join("");
     return`
     ${card(`<div class="section-head"><h2 class="title">Cuadro de eliminatorias</h2></div>
+      ${toggleHtml}
       <p class="bracket-locked">🔒 El cuadro se desbloqueará cuando termine la fase de grupos. Cada cruce se irá rellenando a medida que se conozcan los clasificados.</p>`)}
     ${card(`<h3 class="card-title">📋 Puntuación por ronda</h3>
       <div class="bracket-rounds">${roundsInfo}</div>`)}`;
@@ -1307,6 +1400,7 @@ function renderBracket(){
 
   return`
   ${card(`<div class="section-head"><h2 class="title">Cuadro de eliminatorias</h2></div>
+    ${toggleHtml}
     <p class="hint">Elige el equipo que avanza en cada cruce · 🔒=bloqueado 1h antes</p>`)}
   ${sections}
   ${card(saveBtn)}`;
@@ -1370,6 +1464,8 @@ window.setPodiumPos=(idx,val)=>{const me=S.players.find(p=>p.nombre===S.user);co
 window.doSavePodium=()=>{if(!S.savingPodium&&S.pendingPodium&&S.pendingPodium[0]&&S.pendingPodium[1]&&S.pendingPodium[2])savePodium(S.pendingPodium);};
 // Cuadro de eliminatorias: selecciona el equipo que avanza en un cruce y guarda.
 window.setBracketPick=(key,team)=>ss({pendingBracket:{...S.pendingBracket,[key]:team}});
+// Alterna entre la vista lista y la vista mapa del cuadro.
+window.setBracketView=v=>ss({bracketView:v});
 window.doSaveBracket=()=>{
   if(S.savingBracket||!Object.keys(S.pendingBracket||{}).length)return;
   const me=S.players.find(p=>p.nombre===S.user);

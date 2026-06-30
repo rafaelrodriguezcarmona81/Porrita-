@@ -1269,6 +1269,11 @@ body {
   justify-content: space-around;
   flex: 1;
   gap: .3rem;
+  overflow: visible;
+}
+
+.bmap-col-matches--paired {
+  gap: 0;
 }
 
 .bmap-col--center .bmap-col-matches {
@@ -1334,6 +1339,79 @@ body {
 .bmap-unknown {
   color: #9ca3af;
   font-weight: 600;
+}
+
+/* ─── Líneas conectoras entre partidos del bracket ─────────────────────────── */
+.bmap-pair {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  justify-content: space-around;
+  gap: .3rem;
+  overflow: visible;
+}
+
+/* Lado izquierdo: líneas hacia la derecha */
+.bmap-col--left .bmap-pair {
+  padding-right: .55rem;
+}
+
+/* C-bracket: brazo superior + barra vertical + brazo inferior */
+.bmap-col--left .bmap-pair::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  bottom: 25%;
+  width: .55rem;
+  border-top: 1px solid #93c5fd;
+  border-right: 1px solid #93c5fd;
+  border-bottom: 1px solid #93c5fd;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* Línea horizontal de salida desde el centro de la barra vertical */
+.bmap-col--left .bmap-pair::after {
+  content: '';
+  position: absolute;
+  right: -.45rem;
+  top: calc(50% - 1px);
+  width: .45rem;
+  height: 1px;
+  background: #93c5fd;
+  pointer-events: none;
+}
+
+/* Lado derecho: espejo */
+.bmap-col--right .bmap-pair {
+  padding-left: .55rem;
+}
+
+.bmap-col--right .bmap-pair::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: .55rem;
+  border-top: 1px solid #93c5fd;
+  border-left: 1px solid #93c5fd;
+  border-bottom: 1px solid #93c5fd;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.bmap-col--right .bmap-pair::after {
+  content: '';
+  position: absolute;
+  left: -.45rem;
+  top: calc(50% - 1px);
+  width: .45rem;
+  height: 1px;
+  background: #93c5fd;
+  pointer-events: none;
 }
 
 .bmap-third-label {

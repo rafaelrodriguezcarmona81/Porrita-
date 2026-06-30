@@ -1244,10 +1244,19 @@ function renderBracketMap(){
   const rightR32=[83,84,81,82,86,88,85,87];
 
   function col(matches,label,extraClass=''){
-    const cells=matches.map(m=>mapMatch(m)).join('');
+    const paired=matches.length>1;
+    let cells;
+    if(paired){
+      const pairs=[];
+      for(let i=0;i<matches.length;i+=2)
+        pairs.push(`<div class="bmap-pair">${mapMatch(matches[i])}${mapMatch(matches[i+1])}</div>`);
+      cells=pairs.join('');
+    }else{
+      cells=matches.map(m=>mapMatch(m)).join('');
+    }
     return`<div class="bmap-col${extraClass?(' '+extraClass):''}">
       <div class="bmap-col-label">${esc(label)}</div>
-      <div class="bmap-col-matches">${cells}</div>
+      <div class="bmap-col-matches${paired?' bmap-col-matches--paired':''}">${cells}</div>
     </div>`;
   }
 
@@ -1256,9 +1265,9 @@ function renderBracketMap(){
 
   return`<div class="bmap-scroll">
     <div class="bmap-tree">
-      ${col(leftR32,'Dieciseisavos','bmap-col--r32')}
-      ${col(leftR16,'Octavos','bmap-col--r16')}
-      ${col(leftQF,'Cuartos','bmap-col--qf')}
+      ${col(leftR32,'Dieciseisavos','bmap-col--r32 bmap-col--left')}
+      ${col(leftR16,'Octavos','bmap-col--r16 bmap-col--left')}
+      ${col(leftQF,'Cuartos','bmap-col--qf bmap-col--left')}
       ${col(leftSF,'Semifinales','bmap-col--sf')}
       <div class="bmap-col bmap-col--center">
         <div class="bmap-col-label">Final</div>
@@ -1269,9 +1278,9 @@ function renderBracketMap(){
         </div>
       </div>
       ${col(rightSF,'Semifinales','bmap-col--sf')}
-      ${col(rightQF,'Cuartos','bmap-col--qf')}
-      ${col(rightR16,'Octavos','bmap-col--r16')}
-      ${col(rightR32,'Dieciseisavos','bmap-col--r32')}
+      ${col(rightQF,'Cuartos','bmap-col--qf bmap-col--right')}
+      ${col(rightR16,'Octavos','bmap-col--r16 bmap-col--right')}
+      ${col(rightR32,'Dieciseisavos','bmap-col--r32 bmap-col--right')}
     </div>
   </div>`;
 }

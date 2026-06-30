@@ -15,6 +15,8 @@ const EXPOSED = [
   "KO_BRACKET", "KO_SCHEDULE", "venueCountry", "resolveBracketTeams", "isGroupComplete", "clinchedPositions", "bestThirdsFrom", "assignThirdSlots", "slotLabel",
   // estado + setState
   "S", "ss",
+  // fase KO
+  "isKOPhase",
   // render (devuelven strings HTML)
   "render", "renderLogin", "renderAccessDenied", "renderHeader", "renderProfileEditor",
   "renderToday", "renderTuJornada", "renderGrupos", "renderStandings", "bestThirdTeams", "renderChangelogBanner",

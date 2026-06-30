@@ -1241,20 +1241,27 @@ function renderBracketMap(){
     </div>`;
   }
 
-  // Columnas de la mitad izquierda (orden de arriba a abajo por ronda)
-  // M85+M87→M96, M86+M88→M95, M81+M82→M94, M83+M84→M93
-  // M83 (Portugal/Croacia) queda abajo-izquierda, igual que en el cuadro oficial
-  const leftR32 =[85,87,86,88,81,82,83,84];
-  const leftR16 =[96,95,94,93];
-  const leftQF  =[100,98];
-  const leftSF  =[102];
+  // Disposición fiel al cuadro oficial FIFA 2026. Cada mitad del árbol alimenta
+  // SU semifinal real (según los W() de KO_BRACKET), de modo que los conectores
+  // no mienten:
+  //   Izquierda → M101 = ganadores de M97 (M89,M90) y M98 (M93,M94)
+  //   Derecha   → M102 = ganadores de M99 (M91,M92) y M100 (M95,M96)
+  //
+  // Mitad izquierda (arriba→abajo). Portugal/Croacia (M83) queda en la mitad
+  // inferior izquierda, igual que en la imagen oficial:
+  //   M74+M77→M89, M73+M75→M90, M83+M84→M93, M81+M82→M94
+  const leftR32 =[74,77,73,75,83,84,81,82];
+  const leftR16 =[89,90,93,94];
+  const leftQF  =[97,98];
+  const leftSF  =[101];
 
-  // Columnas de la mitad derecha (orden de arriba a abajo por ronda)
-  // M76+M78→M91, M79+M80→M92, M74+M77→M89, M73+M75→M90
-  const rightSF =[101];
-  const rightQF =[99,97];
-  const rightR16=[91,92,89,90];
-  const rightR32=[76,78,79,80,74,77,73,75];
+  // Mitad derecha (arriba→abajo). Argentina (M86) queda en la mitad inferior
+  // derecha, igual que en la imagen oficial:
+  //   M76+M78→M91, M79+M80→M92, M86+M88→M95, M85+M87→M96
+  const rightSF =[102];
+  const rightQF =[99,100];
+  const rightR16=[91,92,95,96];
+  const rightR32=[76,78,79,80,86,88,85,87];
 
   function col(matches,label,extraClass=''){
     const paired=matches.length>1;

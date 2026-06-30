@@ -7,7 +7,7 @@
       "El menú de navegación es ahora adaptativo: en fase eliminatoria, «Cuadro» pasa a ser la pestaña principal (aparece antes), y «Grupos» queda como histórico con una etiqueta diferente. Si estabas en «Grupos» al arrancar la fase KO, la app te lleva automáticamente al Cuadro.",
       "El cuadro de eliminatorias estrena una vista en árbol: pulsa el botón «🗺️ Mapa» para ver todos los cruces dispuestos visualmente de dieciseisavos hasta la final, con fechas y marcadores. El botón «📋 Lista» recupera la vista clásica con la que puedes hacer tus pronósticos.",
       "La vista mapa ha mejorado: los dieciseisavos aparecen alineados con el cruce de octavos que alimentan, se han añadido líneas conectoras entre partidos, y los huecos pendientes muestran su procedencia («Gan. M74», «1º Gr.E»…) en vez de simplemente «?».",
-      "Corregida la distribución del cuadro: cada mitad del árbol (izquierda y derecha) ahora coincide con el cuadro oficial FIFA 2026, con Portugal/Croacia correctamente situados en la parte inferior izquierda."
+      "Corregida la distribución del mapa del cuadro para que coincida exactamente con el cuadro oficial FIFA 2026: cada mitad del árbol alimenta su semifinal correcta, con Portugal/Croacia en la parte baja izquierda y Argentina en la parte baja derecha. Antes los conectores entre rondas no correspondían con el cruce real."
     ]
   },
   {

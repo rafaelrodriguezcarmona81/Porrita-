@@ -18,9 +18,8 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const ROOT      = dirname(dirname(fileURLToPath(import.meta.url)));
-const ROOT_BMAP = resolve(ROOT, '../Porrita-feat-bracket-map');
-const css  = (f, base = ROOT) => readFileSync(resolve(base, f), 'utf8');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const css  = (f) => readFileSync(resolve(ROOT, f), 'utf8');
 
 function wrap(styles, body, bgColor = '#f3f4f6') {
   return `<!DOCTYPE html>
@@ -85,7 +84,7 @@ const shots = {
   'bracket-map': {
     out: '/tmp/bracket-map.png',
     w: 1300,
-    html: wrap(css('css/styles.css', ROOT_BMAP), `
+    html: wrap(css('css/styles.css'), `
 <div style="padding:12px">
 
   <div class="bracket-view-toggle" style="max-width:300px;margin-bottom:12px">

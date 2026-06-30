@@ -1208,6 +1208,19 @@ function renderBracketMap(){
   const resolved=resolveBracketTeams(S.groupStandings||{},koResults,S.koFixtures||{},S.groupResults||{});
   const byM={};for(const b of KO_BRACKET)byM[b.m]=b;
 
+  // Etiqueta de un hueco cuando el equipo aún no está resuelto.
+  // Muestra la procedencia (Gan. M74, 1º Gr.A, 2º Gr.B, 3º A/B/C) en vez de "?".
+  function slotLabel(team,ref){
+    if(team!=null)return`${fl(team)} ${esc(team)}`;
+    if(!ref)return'<span class="bmap-unknown">?</span>';
+    if(ref.type==='matchWinner')return`<span class="bmap-unknown">Gan. M${ref.match}</span>`;
+    if(ref.type==='matchLoser') return`<span class="bmap-unknown">Per. M${ref.match}</span>`;
+    if(ref.type==='winner')     return`<span class="bmap-unknown">1º Gr.${ref.group}</span>`;
+    if(ref.type==='runner')     return`<span class="bmap-unknown">2º Gr.${ref.group}</span>`;
+    if(ref.type==='third')      return`<span class="bmap-unknown">3º ${ref.groups.join('/')}</span>`;
+    return'<span class="bmap-unknown">?</span>';
+  }
+
   // Renderiza una celda de partido para la vista mapa (solo lectura).
   function mapMatch(m){
     const b=byM[m];
@@ -1216,8 +1229,8 @@ function renderBracketMap(){
     const score=S.koScores&&S.koScores[b.key];
     const sch=KO_SCHEDULE[m];
     const dateStr=sch?fmtKO(m):"";
-    const homeLabel=o.home!=null?`${fl(o.home)} ${esc(o.home)}`:'<span class="bmap-unknown">?</span>';
-    const awayLabel=o.away!=null?`${fl(o.away)} ${esc(o.away)}`:'<span class="bmap-unknown">?</span>';
+    const homeLabel=slotLabel(o.home,b.home);
+    const awayLabel=slotLabel(o.away,b.away);
     const scoreStr=score?`<div class="bmap-score">${esc(score)}</div>`:'';
     return`<div class="bmap-match">
       <div class="bmap-match-id">M${m}</div>
@@ -1229,22 +1242,34 @@ function renderBracketMap(){
   }
 
   // Columnas de la mitad izquierda (orden de arriba a abajo por ronda)
-  const leftR32 =[73,74,75,76,77,78,79,80];
+  // Cada par consecutivo de R32 alimenta visualmente el partido de R16 correspondiente:
+  // M74+M77→M89, M73+M75→M90, M76+M78→M91, M79+M80→M92
+  const leftR32 =[74,77,73,75,76,78,79,80];
   const leftR16 =[89,90,91,92];
   const leftQF  =[97,99];
   const leftSF  =[101];
 
   // Columnas de la mitad derecha (orden de arriba a abajo por ronda)
+  // M83+M84→M93, M81+M82→M94, M86+M88→M95, M85+M87→M96
   const rightSF =[102];
   const rightQF =[98,100];
   const rightR16=[93,94,95,96];
-  const rightR32=[81,82,83,84,85,86,87,88];
+  const rightR32=[83,84,81,82,86,88,85,87];
 
   function col(matches,label,extraClass=''){
-    const cells=matches.map(m=>mapMatch(m)).join('');
+    const paired=matches.length>1;
+    let cells;
+    if(paired){
+      const pairs=[];
+      for(let i=0;i<matches.length;i+=2)
+        pairs.push(`<div class="bmap-pair">${mapMatch(matches[i])}${mapMatch(matches[i+1])}</div>`);
+      cells=pairs.join('');
+    }else{
+      cells=matches.map(m=>mapMatch(m)).join('');
+    }
     return`<div class="bmap-col${extraClass?(' '+extraClass):''}">
       <div class="bmap-col-label">${esc(label)}</div>
-      <div class="bmap-col-matches">${cells}</div>
+      <div class="bmap-col-matches${paired?' bmap-col-matches--paired':''}">${cells}</div>
     </div>`;
   }
 
@@ -1253,9 +1278,9 @@ function renderBracketMap(){
 
   return`<div class="bmap-scroll">
     <div class="bmap-tree">
-      ${col(leftR32,'Dieciseisavos','bmap-col--r32')}
-      ${col(leftR16,'Octavos','bmap-col--r16')}
-      ${col(leftQF,'Cuartos','bmap-col--qf')}
+      ${col(leftR32,'Dieciseisavos','bmap-col--r32 bmap-col--left')}
+      ${col(leftR16,'Octavos','bmap-col--r16 bmap-col--left')}
+      ${col(leftQF,'Cuartos','bmap-col--qf bmap-col--left')}
       ${col(leftSF,'Semifinales','bmap-col--sf')}
       <div class="bmap-col bmap-col--center">
         <div class="bmap-col-label">Final</div>
@@ -1266,9 +1291,9 @@ function renderBracketMap(){
         </div>
       </div>
       ${col(rightSF,'Semifinales','bmap-col--sf')}
-      ${col(rightQF,'Cuartos','bmap-col--qf')}
-      ${col(rightR16,'Octavos','bmap-col--r16')}
-      ${col(rightR32,'Dieciseisavos','bmap-col--r32')}
+      ${col(rightQF,'Cuartos','bmap-col--qf bmap-col--right')}
+      ${col(rightR16,'Octavos','bmap-col--r16 bmap-col--right')}
+      ${col(rightR32,'Dieciseisavos','bmap-col--r32 bmap-col--right')}
     </div>
   </div>`;
 }

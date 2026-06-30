@@ -767,12 +767,9 @@ test("renderHeader (fase grupos): 'Grupos' aparece antes que 'Cuadro' y sin clas
     koFixtures: {}, // fase de grupos
   });
   const html = app.renderHeader();
-  // "Grupos" no lleva clase histórico
   assert.doesNotMatch(html, /tab--hist/);
-  // "Grupos" aparece antes que "Cuadro" en el HTML
   assert.ok(html.indexOf("setTab('grupos')") < html.indexOf("setTab('bracket')"),
     "'Grupos' debe ir antes que 'Cuadro' en fase de grupos");
-  // La etiqueta de "Grupos" no menciona histórico
   assert.match(html, /⚽ Grupos/);
   assert.doesNotMatch(html, /hist/i);
 });
@@ -780,15 +777,12 @@ test("renderHeader (fase grupos): 'Grupos' aparece antes que 'Cuadro' y sin clas
 test("renderHeader (fase KO): 'Cuadro' aparece antes que 'Grupos' y 'Grupos' lleva tab--hist", () => {
   const app = withState({
     user: "Ana", players: [], groupResults: {},
-    koFixtures: KO_FIXTURES_SAMPLE, // fase KO
+    koFixtures: KO_FIXTURES_SAMPLE,
   });
   const html = app.renderHeader();
-  // "Cuadro" debe preceder a "Grupos"
   assert.ok(html.indexOf("setTab('bracket')") < html.indexOf("setTab('grupos')"),
     "'Cuadro' debe ir antes que 'Grupos' en fase KO");
-  // La pestaña de "Grupos" lleva la clase histórico
   assert.match(html, /tab--hist/);
-  // La etiqueta indica que es histórico
   assert.match(html, /Grupos \(hist\.\)/);
 });
 
@@ -799,9 +793,136 @@ test("renderHeader (fase KO): 'Cuadro' activo no lleva tab--hist", () => {
     tab: "bracket",
   });
   const html = app.renderHeader();
-  // El botón activo es "bracket" con tab--active pero sin tab--hist
   assert.match(html, /setTab\('bracket'\)" class="tab tab--active"/);
-  // "Grupos" lleva tab--hist pero no tab--active
   assert.match(html, /tab--hist/);
   assert.doesNotMatch(html, /tab--active tab--hist|tab--hist tab--active/);
+});
+
+// ─── toggle lista/mapa del cuadro de eliminatorias ────────────────────────────
+test("renderBracket: incluye el toggle lista/mapa con ambos botones", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+    bracketView: "lista",
+  });
+  const html = app.renderBracket();
+  assert.match(html, /bracket-view-toggle/);
+  assert.match(html, /setBracketView\('lista'\)/);
+  assert.match(html, /setBracketView\('mapa'\)/);
+  assert.match(html, /📋 Lista/);
+  assert.match(html, /🗺️ Mapa/);
+});
+
+test("renderBracket: en vista lista el botón 'Lista' lleva la clase activa", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+    bracketView: "lista",
+  });
+  const html = app.renderBracket();
+  // El botón de lista activo debe tener bracket-view-btn--active
+  assert.match(html, /setBracketView\('lista'\)" class="bracket-view-btn bracket-view-btn--active"/);
+  // El botón de mapa no debe tenerla
+  assert.doesNotMatch(html, /setBracketView\('mapa'\)" class="bracket-view-btn bracket-view-btn--active"/);
+});
+
+test("renderBracket: en vista mapa el botón 'Mapa' lleva la clase activa", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+    bracketView: "mapa",
+  });
+  const html = app.renderBracket();
+  assert.match(html, /setBracketView\('mapa'\)" class="bracket-view-btn bracket-view-btn--active"/);
+  assert.doesNotMatch(html, /setBracketView\('lista'\)" class="bracket-view-btn bracket-view-btn--active"/);
+});
+
+// ─── renderBracketMap (vista árbol visual) ────────────────────────────────────
+test("renderBracketMap: contiene la estructura del árbol con columnas de rondas", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+  });
+  const html = app.renderBracketMap();
+  // Contenedor scrollable y árbol
+  assert.match(html, /class="bmap-scroll"/);
+  assert.match(html, /class="bmap-tree"/);
+  // Etiquetas de rondas
+  assert.match(html, /Dieciseisavos/);
+  assert.match(html, /Octavos/);
+  assert.match(html, /Cuartos/);
+  assert.match(html, /Semifinales/);
+  assert.match(html, /Final/);
+  assert.match(html, /3er\/4º puesto/);
+});
+
+test("renderBracketMap: muestra los IDs de partido de la Final y 3er puesto", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+  });
+  const html = app.renderBracketMap();
+  // La Final es M104 y el 3er puesto es M103
+  assert.match(html, /M104/);
+  assert.match(html, /M103/);
+});
+
+test("renderBracketMap: no muestra botones de predicción ni badges de puntuación", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+  });
+  const html = app.renderBracketMap();
+  // Vista solo lectura: sin handlers de pick ni elementos de gamificación
+  assert.doesNotMatch(html, /setBracketPick/);
+  assert.doesNotMatch(html, /badge--correct/);
+  assert.doesNotMatch(html, /badge--wrong/);
+  assert.doesNotMatch(html, /GUARDAR CUADRO/);
+});
+
+test("renderBracketMap: muestra el marcador cuando hay resultado", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+    koFixtures: { r32: [{ key: "r32_M73", home: "España", away: "Francia" }] },
+    koResults: { "r32_M73": "España" },
+    koScores: { "r32_M73": "2-1" },
+  });
+  const html = app.renderBracketMap();
+  assert.match(html, /bmap-score/);
+  assert.match(html, /2-1/);
+});
+
+test("renderBracketMap: muestra '?' para equipos aún desconocidos", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+    koFixtures: {},
+    koResults: {},
+    koScores: {},
+    groupStandings: {},
+  });
+  const html = app.renderBracketMap();
+  assert.match(html, /bmap-unknown/);
+});
+
+test("renderBracket: en vista mapa llama a renderBracketMap (contiene bmap-tree)", () => {
+  const app = withState({
+    user: "Ana",
+    players: [{ nombre: "Ana", group_predictions: {}, podium: null }],
+    groupResults: {},
+    bracketView: "mapa",
+  });
+  const html = app.renderBracket();
+  assert.match(html, /bmap-tree/);
+  // La vista mapa no muestra el botón de guardar del modo lista
+  assert.doesNotMatch(html, /GUARDAR CUADRO/);
 });

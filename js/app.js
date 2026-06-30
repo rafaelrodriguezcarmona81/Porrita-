@@ -1208,6 +1208,19 @@ function renderBracketMap(){
   const resolved=resolveBracketTeams(S.groupStandings||{},koResults,S.koFixtures||{},S.groupResults||{});
   const byM={};for(const b of KO_BRACKET)byM[b.m]=b;
 
+  // Etiqueta de un hueco cuando el equipo aún no está resuelto.
+  // Muestra la procedencia (Gan. M74, 1º Gr.A, 2º Gr.B, 3º A/B/C) en vez de "?".
+  function slotLabel(team,ref){
+    if(team!=null)return`${fl(team)} ${esc(team)}`;
+    if(!ref)return'<span class="bmap-unknown">?</span>';
+    if(ref.type==='matchWinner')return`<span class="bmap-unknown">Gan. M${ref.match}</span>`;
+    if(ref.type==='matchLoser') return`<span class="bmap-unknown">Per. M${ref.match}</span>`;
+    if(ref.type==='winner')     return`<span class="bmap-unknown">1º Gr.${ref.group}</span>`;
+    if(ref.type==='runner')     return`<span class="bmap-unknown">2º Gr.${ref.group}</span>`;
+    if(ref.type==='third')      return`<span class="bmap-unknown">3º ${ref.groups.join('/')}</span>`;
+    return'<span class="bmap-unknown">?</span>';
+  }
+
   // Renderiza una celda de partido para la vista mapa (solo lectura).
   function mapMatch(m){
     const b=byM[m];
@@ -1216,8 +1229,8 @@ function renderBracketMap(){
     const score=S.koScores&&S.koScores[b.key];
     const sch=KO_SCHEDULE[m];
     const dateStr=sch?fmtKO(m):"";
-    const homeLabel=o.home!=null?`${fl(o.home)} ${esc(o.home)}`:'<span class="bmap-unknown">?</span>';
-    const awayLabel=o.away!=null?`${fl(o.away)} ${esc(o.away)}`:'<span class="bmap-unknown">?</span>';
+    const homeLabel=slotLabel(o.home,b.home);
+    const awayLabel=slotLabel(o.away,b.away);
     const scoreStr=score?`<div class="bmap-score">${esc(score)}</div>`:'';
     return`<div class="bmap-match">
       <div class="bmap-match-id">M${m}</div>

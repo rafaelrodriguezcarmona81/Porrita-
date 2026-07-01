@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-30T20:13:26Z",
+  "updated": "2026-07-01T05:33:56Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -705,9 +705,11 @@
   "koResults": {
     "r32_M76": "Brasil",
     "r32_M73": "Canadá",
+    "r32_M77": "Francia",
     "r32_M74": "Paraguay",
     "r32_M75": "Marruecos",
-    "r32_M78": "Noruega"
+    "r32_M78": "Noruega",
+    "r32_M79": "México"
   },
   "ko": {
     "r32_M86": {
@@ -799,13 +801,20 @@
       "key": "r32_M82",
       "home": "Bélgica",
       "away": "Senegal"
+    },
+    "r16_M89": {
+      "key": "r16_M89",
+      "home": "Paraguay",
+      "away": "Francia"
     }
   },
   "koScores": {
     "r32_M76": "2-1",
     "r32_M73": "0-1",
+    "r32_M77": "3-0",
     "r32_M74": "1-1",
     "r32_M75": "1-1",
-    "r32_M78": "1-2"
+    "r32_M78": "1-2",
+    "r32_M79": "2-0"
   }
 }

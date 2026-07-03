@@ -277,3 +277,56 @@ test("matchHitStats: funciona con bracket_predictions y equipos", () => {
   ];
   assert.deepEqual(matchHitStats(players, "bracket_predictions", "K", "España"), { aciertos: 1, total: 2, pct: 50 });
 });
+
+// ─── phasePoints ────────────────────────────────────────────────────────────
+test("phasePoints: sin resultados → todas las fases a 0", () => {
+  const { phasePoints, KO_ROUNDS } = loadApp();
+  const ph = phasePoints({ group_predictions: { "A_X_Y": "1" }, bracket_predictions: { "r16_A_B": "A" } }, {}, {});
+  assert.equal(ph.grupos, 0);
+  for (const r of KO_ROUNDS) assert.equal(ph[r.key], 0);
+});
+
+test("phasePoints: solo grupos", () => {
+  const { phasePoints, KO_ROUNDS } = loadApp();
+  const ph = phasePoints({ group_predictions: { "A_X_Y": "1", "A_P_Q": "2" } }, { "A_X_Y": "1", "A_P_Q": "2" }, {});
+  assert.equal(ph.grupos, 2);
+  for (const r of KO_ROUNDS) assert.equal(ph[r.key], 0);
+});
+
+test("phasePoints: KO por ronda (r32=2×aciertos, qf=8×aciertos)", () => {
+  const { phasePoints } = loadApp();
+  const preds = { "r32_A_B": "A", "r32_C_D": "C", "qf_E_F": "E" };
+  const ko = { "r32_A_B": "A", "r32_C_D": "C", "qf_E_F": "E" };
+  const ph = phasePoints({ bracket_predictions: preds }, {}, ko);
+  assert.equal(ph.r32, 4); // 2 aciertos × base 2
+  assert.equal(ph.qf, 8);  // 1 acierto × base 8
+  assert.equal(ph.grupos, 0);
+});
+
+test("phasePoints: invariante de cuadre (grupos + Σ fases KO === gPts + bracketPts)", () => {
+  const { phasePoints, gPts, bracketPts, KO_ROUNDS } = loadApp();
+  const player = {
+    group_predictions: { "A_X_Y": "1", "A_P_Q": "X", "B_M_N": "2" },
+    bracket_predictions: { "r32_A_B": "A", "r16_C_D": "C", "final_E_F": "E" }
+  };
+  const groupResults = { "A_X_Y": "1", "A_P_Q": "X", "B_M_N": "1" };
+  const koResults = { "r32_A_B": "A", "r16_C_D": "D", "final_E_F": "E" };
+  const ph = phasePoints(player, groupResults, koResults);
+  const sumaFases = ph.grupos + KO_ROUNDS.reduce((s, r) => s + ph[r.key], 0);
+  const esperado = gPts(player.group_predictions, groupResults) + bracketPts(player.bracket_predictions, koResults);
+  assert.equal(sumaFases, esperado);
+});
+
+test("phasePoints: tolera null/ausentes", () => {
+  const { phasePoints, KO_ROUNDS } = loadApp();
+  const ph = phasePoints(null, null, null);
+  assert.equal(ph.grupos, 0);
+  for (const r of KO_ROUNDS) assert.equal(ph[r.key], 0);
+});
+
+test("phasePoints: ignora rondas desconocidas", () => {
+  const { phasePoints, KO_ROUNDS } = loadApp();
+  const ph = phasePoints({ bracket_predictions: { "zzz_A_B": "A" } }, {}, { "zzz_A_B": "A" });
+  assert.equal(ph.grupos, 0);
+  for (const r of KO_ROUNDS) assert.equal(ph[r.key], 0);
+});

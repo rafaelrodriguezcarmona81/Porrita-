@@ -566,18 +566,37 @@ function podiumBonus(pod,fin){if(!pod||!fin)return 0;let p=0;if(pod[0]===fin[0])
 // suma a través de las rondas usando el prefijo de ronda de cada clave
 // ("{RONDA}_..."). Devuelve 0 cuando no hay resultados KO (fase de grupos →
 // inerte, igual que podiumBonus es 0 hasta la final). Tolera entradas vacías.
-function bracketPts(bracketPreds,koResults){
-  if(!bracketPreds||!koResults)return 0;
-  // base por ronda, indexada por la `key` de KO_ROUNDS.
+// Puntos KO desglosados por ronda. Devuelve un mapa {key de ronda → pts},
+// inicializando TODAS las rondas de KO_ROUNDS a 0. Suma `base` por cada acierto
+// (equipo pronosticado que realmente avanzó). Es la fuente única de verdad para
+// `bracketPts` (que suma sus valores) y para `phasePoints` (que lo mezcla),
+// garantizando que ambos nunca diverjan. Tolera entradas vacías/nulas.
+function koPointsByRound(bracketPreds,koResults){
+  const out={};for(const r of KO_ROUNDS)out[r.key]=0;
+  if(!bracketPreds||!koResults)return out;
   const baseByRound={};for(const r of KO_ROUNDS)baseByRound[r.key]=r.base;
-  let pts=0;
   for(const k in koResults){
     const round=k.split("_")[0]; // "{RONDA}_{LOCAL}_{VISITANTE}" → ronda
     const base=baseByRound[round];
     if(!base)continue; // clave de ronda desconocida → se ignora
-    if(bracketPreds[k]&&bracketPreds[k]===koResults[k])pts+=base;
+    if(bracketPreds[k]&&bracketPreds[k]===koResults[k])out[round]+=base;
   }
-  return pts;
+  return out;
+}
+function bracketPts(bracketPreds,koResults){
+  if(!bracketPreds||!koResults)return 0;
+  const byRound=koPointsByRound(bracketPreds,koResults);
+  let pts=0;for(const k in byRound)pts+=byRound[k];return pts;
+}
+// Desglose de puntos por fase de un jugador: {grupos, <rondas KO...>}. Todas las
+// rondas KO se inicializan a 0 (vía koPointsByRound). NO incluye pódium: son
+// grupos + las 6 rondas KO. Invariante: grupos + Σ(rondas KO) === gPts + bracketPts.
+function phasePoints(player,groupResults,koResults){
+  player=player||{};
+  const out={grupos:gPts(player.group_predictions||{},groupResults||{})};
+  const ko=koPointsByRound(player.bracket_predictions||{},koResults||{});
+  for(const k in ko)out[k]=ko[k];
+  return out;
 }
 
 // ─── ESTADÍSTICAS POR PARTIDO ───────────────────────────────────────────────
@@ -1246,11 +1265,15 @@ function renderPodium(){
 
 // ─── RANKING ──────────────────────────────────────────────────────────────────
 function renderRanking(){
+  // Etiquetas de fase derivadas de KO_ROUNDS (no hardcodear) + Grupos.
+  const phaseLabels={grupos:"⚽ Grupos"};for(const r of KO_ROUNDS)phaseLabels[r.key]=r.label;
+  const phaseOrder=["grupos",...KO_ROUNDS.map(r=>r.key)];
   const scores=S.players.map(p=>({
     name:p.nombre,
     gpts:gPts(p.group_predictions||{},S.groupResults),
     ppts:podiumBonus(p.podium,null),
     bpts:bracketPts(p.bracket_predictions||{},S.koResults||{}),
+    phases:phasePoints(p,S.groupResults,S.koResults||{}),
     get total(){return this.gpts+this.ppts+this.bpts;}
   })).sort((a,b)=>b.total-a.total);
   const medals=["🥇","🥈","🥉"];
@@ -1263,12 +1286,15 @@ function renderRanking(){
     if(s.total!==prevTotal){pos=i+1;prevTotal=s.total;}
     const tied=s.total>0&&tiedTotals[s.total]>1;
     const badge=(s.total>0&&pos<=3)?medals[pos-1]:pos+".";
+    // Chips por fase: solo fases con puntos > 0 (mobile-first).
+    const chips=phaseOrder.filter(k=>s.phases[k]>0).map(k=>
+      `<span class="phase-chip"><span class="phase-chip-lbl">${esc(phaseLabels[k])}</span><span class="phase-chip-pts">${s.phases[k]}</span></span>`).join("");
     return `
     <div class="rank-row${s.name===S.user?' rank-row--me':''}${tied?' rank-row--tie':''}">
       <span class="rank-pos">${badge}</span>
       <div class="grow">
         <p class="rank-name">${esc(s.name)}${s.name===S.user?' <span class="rank-you">(tú)</span>':''}${tied?' <span class="rank-tie">empate</span>':''}</p>
-        <p class="rank-detail">Grupos: ${s.gpts}pts · Pódium: ${s.ppts}pts · Bracket: ${s.bpts}pts</p>
+        ${chips?`<div class="phase-breakdown">${chips}</div>`:''}
       </div>
       <div class="rank-total"><p class="rank-total-num">${s.total}</p><p class="rank-total-lbl">pts</p></div>
     </div>`;}).join("");

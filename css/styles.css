@@ -1515,10 +1515,31 @@ body {
   vertical-align: middle;
 }
 
-.rank-detail {
-  font-size: .65rem;
-  color: #9ca3af;
-  margin: 0;
+.phase-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-top: .25rem;
+}
+
+.phase-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .1rem .4rem;
+  border-radius: .5rem;
+  background: rgba(59, 130, 246, .12);
+  font-size: .62rem;
+  line-height: 1.4;
+}
+
+.phase-chip-lbl {
+  color: #cbd5e1;
+}
+
+.phase-chip-pts {
+  font-weight: 700;
+  color: #93c5fd;
 }
 
 .rank-total {

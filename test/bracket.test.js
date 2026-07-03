@@ -545,9 +545,8 @@ test("renderRanking: un jugador con aciertos en el cuadro suma esos puntos al to
     koResults: { "r16_España_Francia": "España" }, // Ana acierta r16 (base 4)
   });
   const html = app.renderRanking();
-  // Ana debe mostrar "Bracket: 4pts" y total 4.
-  assert.match(html, /Bracket: 4pts/);
-  assert.match(html, /Bracket: 0pts/);
+  // Ana debe mostrar un chip de la fase "Octavos" (r16) con 4 pts y total 4.
+  assert.match(html, /phase-chip-lbl">Octavos<\/span><span class="phase-chip-pts">4</);
   // El total de Ana (4) aparece como número de puntos.
   assert.match(html, /rank-total-num">4</);
 });

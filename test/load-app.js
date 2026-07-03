@@ -9,7 +9,7 @@ const APP_PATH = path.join(__dirname, "..", "js", "app.js");
 // Nombres definidos en el ámbito superior de app.js que queremos exponer al test.
 const EXPOSED = [
   // helpers / lógica pura
-  "gPts", "podiumBonus", "bracketPts", "fmtTime", "fmtKO", "tvChannel", "isLocked", "fl", "pill", "card", "esc",
+  "gPts", "podiumBonus", "bracketPts", "phasePoints", "fmtTime", "fmtKO", "tvChannel", "isLocked", "fl", "pill", "card", "esc",
   "groupPickTally", "bracketPickTally", "matchHitStats", "renderMatchStatsGroup", "renderMatchStatsKO",
   // datos
   "GROUPS", "GM", "ALL_TEAMS", "TOTAL_MATCHES", "FLAGS", "MATCH_TIMES", "LA1_MATCHES", "KO_ROUNDS",

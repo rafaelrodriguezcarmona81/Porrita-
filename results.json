@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-03T00:03:57Z",
+  "updated": "2026-07-03T05:55:29Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -713,7 +713,9 @@
     "r32_M80": "Inglaterra",
     "r32_M81": "Estados Unidos",
     "r32_M82": "Bélgica",
-    "r32_M84": "España"
+    "r32_M83": "Portugal",
+    "r32_M84": "España",
+    "r32_M85": "Suiza"
   },
   "ko": {
     "r32_M73": {
@@ -816,6 +818,11 @@
       "home": "México",
       "away": "Inglaterra"
     },
+    "r16_M93": {
+      "key": "r16_M93",
+      "home": "Portugal",
+      "away": "España"
+    },
     "r16_M94": {
       "key": "r16_M94",
       "home": "Estados Unidos",
@@ -833,6 +840,8 @@
     "r32_M80": "2-1",
     "r32_M81": "2-0",
     "r32_M82": "3-2",
-    "r32_M84": "3-0"
+    "r32_M83": "2-1",
+    "r32_M84": "3-0",
+    "r32_M85": "2-0"
   }
 }

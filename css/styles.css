@@ -1664,3 +1664,65 @@ body {
 .admin-msg--err {
   color: #dc2626;
 }
+
+/* ─── Estadísticas por partido (reparto de apuestas + % de aciertos) ─────────
+   Solo se pinta cuando el partido está bloqueado o ya tiene resultado (regla
+   aplicada en JS). Reutiliza la paleta de .pick para los chips 1/X/2. */
+.match-stats {
+  margin-top: .5rem;
+  padding-top: .5rem;
+  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .6rem;
+}
+
+.match-stats-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.match-stats-opt {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .12rem .45rem;
+  border-radius: .35rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.match-stats-opt--1 {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.match-stats-opt--x {
+  border-color: #e5e7eb;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.match-stats-opt--2 {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* El resultado oficial (chip que coincide con lo que pasó). */
+.match-stats-opt--result {
+  border-color: #22c55e;
+  background: #dcfce7;
+  color: #166534;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, .35);
+}
+
+.match-stats-hits {
+  font-size: .72rem;
+  font-weight: 800;
+  color: #166534;
+  margin-left: auto;
+}

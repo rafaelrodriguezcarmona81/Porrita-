@@ -206,3 +206,74 @@ test("datos: cada equipo de FLAGS aparece en algún grupo", () => {
     assert.ok(ALL_TEAMS.includes(team), `${team} tiene bandera pero no está en ningún grupo`);
   }
 });
+
+// ─── Estadísticas por partido (funciones puras) ─────────────────────────────
+const { groupPickTally, bracketPickTally, matchHitStats } = app;
+
+test("groupPickTally: cuenta apuestas 1/X/2 y total", () => {
+  const players = [
+    { group_predictions: { K: "1" } },
+    { group_predictions: { K: "1" } },
+    { group_predictions: { K: "X" } },
+    { group_predictions: { K: "2" } },
+    { group_predictions: { OTRO: "1" } }, // no cuenta para K
+  ];
+  assert.deepEqual(groupPickTally(players, "K"), { counts: { "1": 2, "X": 1, "2": 1 }, total: 4 });
+});
+
+test("groupPickTally: robusto ante group_predictions ausente/vacío", () => {
+  const players = [{}, { group_predictions: {} }, { group_predictions: { K: "" } }, null];
+  assert.deepEqual(groupPickTally(players, "K"), { counts: { "1": 0, "X": 0, "2": 0 }, total: 0 });
+});
+
+test("bracketPickTally: cuenta apuestas por equipo sin filtro", () => {
+  const players = [
+    { bracket_predictions: { K: "España" } },
+    { bracket_predictions: { K: "España" } },
+    { bracket_predictions: { K: "Francia" } },
+    { bracket_predictions: {} },
+    {},
+  ];
+  const t = bracketPickTally(players, "K");
+  assert.equal(t.total, 3);
+  assert.deepEqual(t.counts, { España: 2, Francia: 1 });
+});
+
+test("bracketPickTally: filtra por home/away e ignora apuestas rancias", () => {
+  const players = [
+    { bracket_predictions: { K: "España" } },
+    { bracket_predictions: { K: "Francia" } },
+    { bracket_predictions: { K: "Alemania" } }, // rancia: ya no es del cruce
+  ];
+  const t = bracketPickTally(players, "K", "España", "Francia");
+  assert.equal(t.total, 2);
+  assert.deepEqual(t.counts, { España: 1, Francia: 1 });
+});
+
+test("bracketPickTally: robusto ante bracket_predictions ausente", () => {
+  assert.deepEqual(bracketPickTally([{}, null], "K"), { counts: {}, total: 0 });
+});
+
+test("matchHitStats: null si no hay resultado oficial", () => {
+  assert.equal(matchHitStats([{ group_predictions: { K: "1" } }], "group_predictions", "K", null), null);
+  assert.equal(matchHitStats([{ group_predictions: { K: "1" } }], "group_predictions", "K", ""), null);
+});
+
+test("matchHitStats: 15/17 -> pct 88", () => {
+  const players = [];
+  for (let i = 0; i < 15; i++) players.push({ group_predictions: { K: "1" } });
+  for (let i = 0; i < 2; i++) players.push({ group_predictions: { K: "2" } });
+  assert.deepEqual(matchHitStats(players, "group_predictions", "K", "1"), { aciertos: 15, total: 17, pct: 88 });
+});
+
+test("matchHitStats: total 0 -> pct 0 (nadie apostó)", () => {
+  assert.deepEqual(matchHitStats([{}, { group_predictions: {} }], "group_predictions", "K", "1"), { aciertos: 0, total: 0, pct: 0 });
+});
+
+test("matchHitStats: funciona con bracket_predictions y equipos", () => {
+  const players = [
+    { bracket_predictions: { K: "España" } },
+    { bracket_predictions: { K: "Francia" } },
+  ];
+  assert.deepEqual(matchHitStats(players, "bracket_predictions", "K", "España"), { aciertos: 1, total: 2, pct: 50 });
+});

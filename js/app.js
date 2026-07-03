@@ -580,6 +580,87 @@ function bracketPts(bracketPreds,koResults){
   return pts;
 }
 
+// ─── ESTADÍSTICAS POR PARTIDO ───────────────────────────────────────────────
+// Reparto de apuestas de un partido de grupos: cuántos jugadores han apostado a
+// cada resultado (1/X/2). `players` son las filas de S.players (cada una con su
+// mapa `group_predictions` clave→"1"/"X"/"2"). Tolera filas sin predicciones.
+function groupPickTally(players,key){
+  const counts={"1":0,"X":0,"2":0};let total=0;
+  for(const p of players||[]){
+    const v=(p&&p.group_predictions||{})[key];
+    if(v==="1"||v==="X"||v==="2"){counts[v]++;total++;}
+  }
+  return{counts,total};
+}
+// Reparto de apuestas de un cruce KO: cuántos jugadores han apostado a cada
+// equipo. `home`/`away` (opcionales) son los equipos del cruce ya resuelto; si
+// se pasan, solo se cuentan apuestas a alguno de ellos (ignora apuestas rancias
+// de una resolución anterior del hueco). Sin home/away se cuentan todas.
+function bracketPickTally(players,key,home,away){
+  const filter=home!=null||away!=null;
+  const counts={};let total=0;
+  for(const p of players||[]){
+    const v=(p&&p.bracket_predictions||{})[key];
+    if(v==null||v==="")continue;
+    if(filter&&v!==home&&v!==away)continue;
+    counts[v]=(counts[v]||0)+1;total++;
+  }
+  return{counts,total};
+}
+// % de aciertos de un partido con resultado oficial. `predField` es el nombre
+// del mapa de predicciones de cada jugador ("group_predictions" o
+// "bracket_predictions"), `key` la match-key y `official` el resultado oficial
+// (1/X/2 en grupos, equipo en KO). Devuelve null si no hay resultado oficial.
+// `total` = jugadores con predicción no vacía para ese partido; pct redondeado
+// (0 si nadie apostó).
+function matchHitStats(players,predField,key,official){
+  if(official==null||official==="")return null;
+  let aciertos=0,total=0;
+  for(const p of players||[]){
+    const v=(p&&p[predField]||{})[key];
+    if(v==null||v==="")continue;
+    total++;
+    if(v===official)aciertos++;
+  }
+  const pct=total?Math.round(aciertos/total*100):0;
+  return{aciertos,total,pct};
+}
+// Helpers de render (puros, leen S). Aplican la REGLA de visibilidad decidida:
+// el reparto de apuestas SOLO se muestra si el partido está bloqueado
+// (isLocked) o ya tiene resultado oficial — nunca abierto (evita copiar
+// tendencias). El % de aciertos, solo con resultado. Devuelven "" si no aplica
+// o no hay participantes. Todo valor controlable se escapa con esc().
+function renderMatchStatsGroup(key){
+  const official=S.groupResults[key];
+  const hasR=official!=null&&official!=="";
+  if(!hasR&&!isLocked(key))return"";
+  const{counts,total}=groupPickTally(S.players||[],key);
+  if(!total)return"";
+  const opts=["1","X","2"].map(v=>{
+    const isRes=hasR&&official===v;
+    return`<span class="match-stats-opt match-stats-opt--${v.toLowerCase()}${isRes?' match-stats-opt--result':''}">${v}: ${counts[v]}</span>`;
+  }).join("");
+  const hits=matchHitStats(S.players||[],"group_predictions",key,official);
+  const hitsHtml=hits?`<span class="match-stats-hits">🎯 ${hits.aciertos}/${hits.total} aciertos (${hits.pct}%)</span>`:"";
+  return`<div class="match-stats"><div class="match-stats-tally">${opts}</div>${hitsHtml}</div>`;
+}
+function renderMatchStatsKO(key,home,away){
+  const official=S.koResults[key];
+  const hasR=official!=null&&official!=="";
+  if(!hasR&&!isLocked(key))return"";
+  const{counts,total}=bracketPickTally(S.players||[],key,home,away);
+  if(!total)return"";
+  // Orden estable: local primero, visitante después (solo si tienen apuestas).
+  const order=[home,away].filter(t=>t!=null&&counts[t]!=null);
+  const opts=order.map(t=>{
+    const isRes=hasR&&official===t;
+    return`<span class="match-stats-opt${isRes?' match-stats-opt--result':''}">${fl(t)} ${esc(t)}: ${counts[t]}</span>`;
+  }).join("");
+  const hits=matchHitStats(S.players||[],"bracket_predictions",key,official);
+  const hitsHtml=hits?`<span class="match-stats-hits">🎯 ${hits.aciertos}/${hits.total} aciertos (${hits.pct}%)</span>`:"";
+  return`<div class="match-stats"><div class="match-stats-tally">${opts}</div>${hitsHtml}</div>`;
+}
+
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 async function loadData(){
   try{
@@ -930,6 +1011,7 @@ function renderGrupos(){
         </div>
         <span class="team team--away">${fl(m[1])} ${m[1]}</span>
       </div>
+      ${renderMatchStatsGroup(key)}
     </div>`;
   }).join("");
 
@@ -1077,6 +1159,7 @@ function renderToday(){
           ${center}
           <span class="team team--away">${o.away?fl(o.away):""} ${esc(away)}</span>
         </div>
+        ${renderMatchStatsKO(key,o.home,o.away)}
       </div>`;
     }
     // key = "{GRUPO}_{LOCAL}_{VISITANTE}". Recuperamos local/visitante de GM por la
@@ -1095,6 +1178,7 @@ function renderToday(){
         ${center}
         <span class="team team--away">${fl(away)} ${away}</span>
       </div>
+      ${renderMatchStatsGroup(key)}
     </div>`;
   }).join("");
   // Bloque "Tu jornada" (resumen diario del usuario) encima de la lista.
@@ -1401,6 +1485,7 @@ function renderBracket(){
             ${sep}
             ${cell(b.away,o.away,labAway)}
           </div>
+          ${renderMatchStatsKO(key,o.home,o.away)}
         </div>`;
       }
       // Cada equipo es una card-button; el "vs" queda fuera, entre ambas.
@@ -1418,6 +1503,7 @@ function renderBracket(){
         ${badge}
         ${meta}
         <div class="bracket-options">${teamBtn(o.home)}${sep}${teamBtn(o.away)}</div>
+        ${renderMatchStatsKO(key,o.home,o.away)}
       </div>`;
     }).join("");
     return`${card(`<div class="section-head"><h3 class="title">${esc(r.label)}</h3><span class="bracket-round-base">Base ${r.base}pts</span></div>

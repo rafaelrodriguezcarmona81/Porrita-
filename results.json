@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-05T12:49:21Z",
+  "updated": "2026-07-05T22:07:09Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -720,7 +720,8 @@
     "r32_M87": "Colombia",
     "r32_M88": "Egipto",
     "r16_M89": "Francia",
-    "r16_M90": "Marruecos"
+    "r16_M90": "Marruecos",
+    "r16_M91": "Noruega"
   },
   "ko": {
     "r32_M73": {
@@ -867,6 +868,7 @@
     "r32_M87": "1-0",
     "r32_M88": "1-1",
     "r16_M89": "0-1",
-    "r16_M90": "0-3"
+    "r16_M90": "0-3",
+    "r16_M91": "1-2"
   }
 }

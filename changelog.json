@@ -1,5 +1,14 @@
 [
   {
+    "id": "2026-07-03",
+    "fecha": "2026-07-03",
+    "items": [
+      "Cada partido muestra ahora cuántos jugadores han apostado a cada resultado (1/X/2 en grupos y por equipo en las eliminatorias). El reparto solo se revela cuando el partido está bloqueado o ya tiene resultado, para que nadie pueda copiar la tendencia mientras aún se puede apostar.",
+      "Cuando un partido ya tiene resultado oficial, verás también el porcentaje de aciertos de la porra (por ejemplo «15/17 aciertos (88%)»).",
+      "La clasificación ahora desglosa los puntos de cada jugador por fase (Grupos, Dieciseisavos, Octavos, Cuartos, Semifinales, 3º/4º puesto y Gran Final), además del total. Solo se muestran las fases en las que ya has sumado puntos."
+    ]
+  },
+  {
     "id": "2026-06-30",
     "fecha": "2026-06-30",
     "items": [

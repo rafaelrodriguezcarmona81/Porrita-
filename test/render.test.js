@@ -926,3 +926,64 @@ test("renderBracket: en vista mapa llama a renderBracketMap (contiene bmap-tree)
   // La vista mapa no muestra el botón de guardar del modo lista
   assert.doesNotMatch(html, /GUARDAR CUADRO/);
 });
+
+// ─── Estadísticas por partido (render) ──────────────────────────────────────
+// Partido A_México_Sudáfrica: kickoff 2026-06-11T21:00 CEST == 19:00 UTC.
+const STATS_KEY = "A_México_Sudáfrica";
+const KICK_MS = Date.parse("2026-06-11T19:00:00Z");
+const BEFORE_LOCK = KICK_MS - 2 * 3600 * 1000; // 2h antes -> abierto
+const AFTER_KICK = KICK_MS + 3600 * 1000;       // ya jugándose
+
+const STATS_PLAYERS = [
+  { nombre: "A", group_predictions: { [STATS_KEY]: "1" } },
+  { nombre: "B", group_predictions: { [STATS_KEY]: "1" } },
+  { nombre: "C", group_predictions: { [STATS_KEY]: "X" } },
+];
+
+test("renderMatchStatsGroup: NO aparece con el partido abierto", () => {
+  const app = withState(
+    { players: STATS_PLAYERS, groupResults: {} },
+    { now: BEFORE_LOCK }
+  );
+  assert.equal(app.renderMatchStatsGroup(STATS_KEY), "");
+});
+
+test("renderMatchStatsGroup: aparece bloqueado (sin resultado) con conteos y sin línea de aciertos", () => {
+  const app = withState(
+    { players: STATS_PLAYERS, groupResults: {} },
+    { now: AFTER_KICK }
+  );
+  const html = app.renderMatchStatsGroup(STATS_KEY);
+  assert.match(html, /class="match-stats"/);
+  assert.match(html, /1: 2/);
+  assert.match(html, /X: 1/);
+  assert.doesNotMatch(html, /aciertos/);
+});
+
+test("renderMatchStatsGroup: con resultado muestra conteos y línea de aciertos", () => {
+  const app = withState(
+    { players: STATS_PLAYERS, groupResults: { [STATS_KEY]: "1" } },
+    { now: AFTER_KICK }
+  );
+  const html = app.renderMatchStatsGroup(STATS_KEY);
+  assert.match(html, /class="match-stats-hits"/);
+  assert.match(html, /2\/3 aciertos \(67%\)/);
+  assert.match(html, /match-stats-opt--result/);
+});
+
+test("renderMatchStatsGroup: vacío si no hay participantes", () => {
+  const app = withState(
+    { players: [], groupResults: { [STATS_KEY]: "1" } },
+    { now: AFTER_KICK }
+  );
+  assert.equal(app.renderMatchStatsGroup(STATS_KEY), "");
+});
+
+test("renderGrupos: incluye el bloque de estadísticas cuando hay resultado", () => {
+  const app = withState(
+    { user: "A", players: STATS_PLAYERS, groupResults: { [STATS_KEY]: "1" }, activeGroup: "A" },
+    { now: AFTER_KICK }
+  );
+  const html = app.renderGrupos();
+  assert.match(html, /class="match-stats"/);
+});

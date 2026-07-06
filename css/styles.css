@@ -1525,21 +1525,22 @@ body {
 .phase-chip {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
-  padding: .1rem .4rem;
+  gap: .3rem;
+  padding: .15rem .45rem;
   border-radius: .5rem;
-  background: rgba(59, 130, 246, .12);
-  font-size: .62rem;
+  background: rgba(59, 130, 246, .16);
+  border: 1px solid rgba(59, 130, 246, .28);
+  font-size: .7rem;
   line-height: 1.4;
 }
 
 .phase-chip-lbl {
-  color: #cbd5e1;
+  color: #334155;
 }
 
 .phase-chip-pts {
   font-weight: 700;
-  color: #93c5fd;
+  color: #1d4ed8;
 }
 
 .rank-total {

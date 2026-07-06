@@ -1,5 +1,12 @@
 [
   {
+    "id": "2026-07-06",
+    "fecha": "2026-07-06",
+    "items": [
+      "Mejorada la legibilidad del desglose de puntos por fase en la clasificación: las etiquetas y los puntos de cada fase ahora se leen con más contraste y un tamaño algo mayor."
+    ]
+  },
+  {
     "id": "2026-07-03",
     "fecha": "2026-07-03",
     "items": [

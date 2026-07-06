@@ -654,6 +654,40 @@ test("renderRanking: sin participantes muestra mensaje vacío", () => {
   assert.match(html, /Aún no hay participantes/);
 });
 
+test("renderRanking: muestra chips de fase con el nombre de fase correcto", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: { "A_x_y": "1" }, podium: null,
+        bracket_predictions: { "r32_A_B": "A" } },
+    ],
+    groupResults: { "A_x_y": "1" },
+    koResults: { "r32_A_B": "A" },
+  });
+  const html = app.renderRanking();
+  assert.match(html, /phase-chip/);
+  assert.match(html, /phase-chip-lbl">⚽ Grupos<\/span><span class="phase-chip-pts">1</);   // fase de grupos, 1 pt
+  assert.match(html, /phase-chip-lbl">Dieciseisavos<\/span><span class="phase-chip-pts">2</); // r32 (base 2) desde KO_ROUNDS
+});
+
+test("renderRanking: no muestra chips de fases con 0 puntos", () => {
+  const app = withState({
+    user: "Ana",
+    players: [
+      { nombre: "Ana", group_predictions: { "A_x_y": "1" }, podium: null,
+        bracket_predictions: {} },
+    ],
+    groupResults: { "A_x_y": "1" },
+    koResults: {},
+  });
+  const html = app.renderRanking();
+  // Grupos sí (1 pt): hay un chip de grupos.
+  assert.match(html, /phase-chip-lbl">⚽ Grupos</);
+  // Ninguna fase KO tiene chip (todas a 0): no aparecen etiquetas de KO en un chip.
+  assert.ok(!/phase-chip-lbl">Dieciseisavos</.test(html), "no debe mostrar chip de r32 con 0 pts");
+  assert.ok(!/phase-chip-lbl">Gran Final</.test(html), "no debe mostrar chip de final con 0 pts");
+});
+
 // ─── render (enrutado por estado) ─────────────────────────────────────────────
 test("render: estado loading pinta 'Conectando'", () => {
   const app = withState({ loading: true });

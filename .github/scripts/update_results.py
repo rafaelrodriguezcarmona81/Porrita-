@@ -204,9 +204,52 @@ for g in data.get("games", []):
     away_score = int(g.get("away_score", 0))
   except (ValueError, TypeError):
     continue
-  winner = home if home_score > away_score else away
+  pen_home = pen_away = None
+  if home_score > away_score:
+    winner = home
+  elif away_score > home_score:
+    winner = away
+  else:
+    # Empate en eliminatoria (prórroga/penaltis).
+    # Intentamos leer el marcador de penaltis con los nombres de campo
+    # más habituales; si ninguno está presente, omitimos el resultado
+    # (mejor "pendiente" en pantalla que un ganador incorrecto).
+    for fh, fa in [
+        ("home_penalty_score", "away_penalty_score"),
+        ("penalty_home_score", "penalty_away_score"),
+        ("home_score_p",       "away_score_p"),
+        ("home_penalties",     "away_penalties"),
+    ]:
+      rh = g.get(fh)
+      ra = g.get(fa)
+      if rh is not None and ra is not None:
+        try:
+          pen_home = int(rh)
+          pen_away = int(ra)
+        except (ValueError, TypeError):
+          pass
+        break
+    if pen_home is not None and pen_away is not None:
+      winner = home if pen_home > pen_away else away
+    else:
+      # Volcamos todos los campos del partido para identificar el nombre
+      # correcto del campo de penaltis en la API (visible en los logs de CI).
+      print(
+        f"AVISO: {key} ({home} vs {away}) terminó {home_score}-{away_score}"
+        " sin datos de penaltis — campos disponibles en la API:",
+        file=sys.stderr,
+      )
+      print(json.dumps({k: v for k, v in g.items()
+                        if k not in ("home_team_name_en", "away_team_name_en",
+                                     "home_score", "away_score", "finished",
+                                     "type", "id", "group")},
+                       ensure_ascii=False), file=sys.stderr)
+      continue
   ko_results[key] = winner
-  ko_scores[key] = f"{home_score}-{away_score}"
+  if pen_home is not None and pen_away is not None:
+    ko_scores[key] = f"{home_score}-{away_score} ({pen_home}-{pen_away} pen.)"
+  else:
+    ko_scores[key] = f"{home_score}-{away_score}"
 
 output = {
   "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

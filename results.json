@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-09T17:06:25Z",
+  "updated": "2026-07-09T22:05:23Z",
   "results": {
     "D_Australia_Turquía": "1",
     "B_Catar_Suiza": "X",
@@ -719,6 +719,7 @@
     "r16_M92": "Inglaterra",
     "r16_M94": "Bélgica",
     "r16_M91": "Noruega",
+    "qf_M97": "Francia",
     "r32_M74": "Paraguay",
     "r32_M81": "Estados Unidos",
     "r32_M75": "Marruecos",
@@ -887,6 +888,7 @@
     "r16_M92": "2-3",
     "r16_M94": "1-4",
     "r16_M91": "1-2",
+    "qf_M97": "2-0",
     "r32_M74": "1-1 (3-4 pen.)",
     "r32_M81": "2-0",
     "r32_M75": "1-1 (2-3 pen.)",

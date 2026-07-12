@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-11T11:32:02Z",
+  "updated": "2026-07-12T00:48:58Z",
   "results": {
     "A_México_Sudáfrica": "1",
     "A_Corea del Sur_Rep. Checa": "1",
@@ -728,7 +728,8 @@
     "r16_M95": "Argentina",
     "r16_M96": "Suiza",
     "qf_M97": "Francia",
-    "qf_M98": "España"
+    "qf_M98": "España",
+    "qf_M99": "Inglaterra"
   },
   "ko": {
     "r32_M73": {
@@ -903,6 +904,7 @@
     "r16_M95": "3-2",
     "r16_M96": "0-0 (4-3 pen.)",
     "qf_M97": "2-0",
-    "qf_M98": "2-1"
+    "qf_M98": "2-1",
+    "qf_M99": "1-2"
   }
 }

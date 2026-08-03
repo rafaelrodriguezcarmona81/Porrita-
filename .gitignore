@@ -3,3 +3,6 @@
 !.env.example
 node_modules
 preview.html
+.pytest_cache/
+__pycache__/
+*.pyc

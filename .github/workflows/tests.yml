@@ -22,6 +22,28 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+  # Tests de .github/scripts/update_results.py contra un servidor WireMock real
+  # (testcontainers), no contra la API en vivo: cubren que un fallo/degradación
+  # de la API (p. ej. el 404 que empezó a devolver tras acabar el Mundial 2026)
+  # no tumbe el cron diario. El runner de ubuntu-latest ya trae Docker.
+  python-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install test deps
+        run: pip install -r .github/scripts/requirements-test.txt
+
+      - name: Run update_results.py tests
+        run: pytest .github/scripts/test_update_results.py -v
+
   # Integration contra un Supabase local real (Postgres + PostgREST + GoTrue),
   # orquestado con testcontainers: RLS por el camino real + flujo de invitaciones.
   # Obligatorio: si falla, el workflow falla → y las migraciones (gated por

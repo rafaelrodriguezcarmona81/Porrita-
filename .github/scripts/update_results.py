@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import urllib.request
 import json
 import sys
@@ -61,7 +62,7 @@ TEAM_MAP = {
 def translate(name):
   return TEAM_MAP.get(name, name)
 
-url = "https://worldcup26.ir/get/games"
+url = os.environ.get("WORLDCUP_API_URL", "https://worldcup26.ir/get/games")
 try:
   req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
   with urllib.request.urlopen(req, timeout=20) as r:

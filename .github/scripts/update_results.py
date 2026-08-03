@@ -67,8 +67,12 @@ try:
   with urllib.request.urlopen(req, timeout=20) as r:
     data = json.loads(r.read().decode("utf-8"))
 except Exception as e:
-  print(f"Error al obtener datos: {e}", file=sys.stderr)
-  sys.exit(1)
+  # La API puede desaparecer o fallar (p. ej. tras acabar el torneo devuelve
+  # 404). No es un error nuestro: conservamos el results.json ya publicado y
+  # salimos con éxito para que el cron diario no aparezca en rojo.
+  print(f"AVISO: no se pudo obtener datos ({e}); "
+        "se conserva results.json tal cual.", file=sys.stderr)
+  sys.exit(0)
 
 results = {}
 scores = {}
@@ -262,6 +266,31 @@ output = {
 }
 
 out_path = "results.json"
+
+# ── Salvaguardas antes de escribir ────────────────────────────────────────────
+# 1) Nunca degradar: si la API devuelve menos datos de los ya publicados (p. ej.
+#    una respuesta vacía una vez terminado el torneo), conservamos el fichero.
+# 2) Sin cambios reales (ignorando el timestamp `updated`), no reescribimos:
+#    evita un commit diario del bot que solo cambia la fecha.
+DATA_KEYS = ("results", "scores", "standings", "koResults", "ko", "koScores")
+try:
+  with open(out_path, encoding="utf-8") as f:
+    existing = json.load(f)
+except (OSError, ValueError):
+  existing = None
+
+if existing is not None:
+  if (len(results) < len(existing.get("results", {}))
+      or len(ko_results) < len(existing.get("koResults", {}))):
+    print("AVISO: la API devolvió menos datos que los ya publicados "
+          f"({len(results)}/{len(existing.get('results', {}))} resultados, "
+          f"{len(ko_results)}/{len(existing.get('koResults', {}))} KO); "
+          "se conserva results.json tal cual.", file=sys.stderr)
+    sys.exit(0)
+  if all(output[k] == existing.get(k) for k in DATA_KEYS):
+    print("Sin cambios en los datos; results.json se deja como está.")
+    sys.exit(0)
+
 with open(out_path, "w", encoding="utf-8") as f:
   json.dump(output, f, ensure_ascii=False, indent=2)
 

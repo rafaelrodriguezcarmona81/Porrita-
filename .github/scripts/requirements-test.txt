@@ -1,0 +1,11 @@
+# Dependencias para `pytest .github/scripts/` (no se instalan en el cron diario,
+# solo se usan en CI/local para probar update_results.py).
+#
+# requests/urllib3 se fijan por debajo de las versiones que rompen docker-py 6.x
+# (https://github.com/docker/docker-py/issues/3113 — "Not supported URL scheme
+# http+docker"), que es la versión de `docker` que exige el extra [testing] de
+# wiremock mientras no publiquen un release compatible con docker-py 7.
+pytest>=8
+wiremock[testing]>=2.7
+requests<2.32
+urllib3<2.1

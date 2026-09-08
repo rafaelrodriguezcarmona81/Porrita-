@@ -27,6 +27,9 @@ node --test test/render.test.js       # run a single unit test file
 node --test --test-name-pattern="isLocked"   # run tests whose name matches
 
 python3 .github/scripts/update_results.py    # regenerate results.json from the live API
+
+pip install -r .github/scripts/requirements-test.txt   # deps for the updater's own tests
+pytest .github/scripts/test_update_results.py -v        # tests it against a real WireMock container (needs Docker)
 ```
 
 No build/lint step. The **app** has zero runtime dependencies; unit tests use Node's built-in runner
@@ -123,6 +126,26 @@ to `results.json`. Standings are computed here, not pulled from the API's `/get/
 which proved unreliable (stale/inconsistent rows). The `update-results.yml` workflow runs it on a
 daily cron (with `contents: write`) and commits any change as the `bot:` commits seen in history.
 
+The script is resilient to the upstream API being unavailable or degraded (this is what actually
+happened once the tournament ended and `worldcup26.ir/get/games` started returning 404): a
+fetch error, or a response with fewer results/KO entries than what's already in `results.json`,
+prints an `AVISO` to stderr and exits **0** without touching the file — the daily cron must never
+go red just because there's nothing new to scrape. If the freshly-computed output is byte-identical
+to what's already on disk (ignoring the `updated` timestamp), it also skips the write, which is why
+the `bot:` commit history isn't one entry per day. The script reads its API URL from
+`WORLDCUP_API_URL` (falling back to the real endpoint), solely so `test_update_results.py` can point
+it at a fake server — production never sets that variable.
+
+**`.github/scripts/test_update_results.py`** (`pytest .github/scripts/test_update_results.py -v`,
+needs Docker) runs the real script as a subprocess against a **WireMock container via
+testcontainers** (`wiremock[testing]`) — not a mocked `urllib`, so it exercises the exact code path
+CI runs. Covers: API failure and API degradation both preserving `results.json` and exiting 0,
+correct parsing of a fresh finished group + KO match, the no-op skip when nothing changed, and a
+drawn KO match with no penalty fields (logs the field-discovery `AVISO`, no winner assigned).
+`.github/scripts/requirements-test.txt` pins `requests`/`urllib3` below the versions that break
+`docker-py` 6.x (the version wiremock's `[testing]` extra currently requires) — see the comment in
+that file if this needs revisiting once wiremock/testcontainers-python catch up.
+
 ## Testing architecture (read before touching tests)
 
 `js/app.js` is a **classic browser script that self-executes** (creates the Supabase client,
@@ -158,10 +181,12 @@ production. PostgREST runs with `PGRST_DB_USE_LEGACY_GUCS=true` so `auth.uid()` 
 
 ## CI
 
-`.github/workflows/tests.yml` (workflow **Tests**) has two jobs: `test` runs `npm test` (unit), and
-`integration` runs `npm run test:integration` — the **integration suite against a real local Supabase**
-(Postgres + PostgREST + GoTrue), orchestrated with **testcontainers** (needs only Docker, no Supabase
-CLI). Both must pass — migrations (gated on the Tests workflow) won't apply otherwise.
+`.github/workflows/tests.yml` (workflow **Tests**) has three jobs: `test` runs `npm test` (unit),
+`python-tests` runs `pytest .github/scripts/test_update_results.py` — the results-updater script
+against a real **WireMock** container via testcontainers — and `integration` runs
+`npm run test:integration` — the **integration suite against a real local Supabase** (Postgres +
+PostgREST + GoTrue), orchestrated with **testcontainers** (needs only Docker, no Supabase CLI). All
+three must pass — migrations (gated on the Tests workflow) won't apply otherwise.
 `.github/workflows/changelog.yml` runs on PRs and **fails** any PR that doesn't modify
 `changelog.json` unless it carries the `skip-changelog` label. Workflows pin GitHub Actions to **full
 commit SHAs** (with the version as a trailing comment) rather than tags — keep new actions pinned the
